@@ -77,9 +77,10 @@ func New() *analysis.Analyzer {
 			"render green 'pass' on health dashboards but cannot actually fail",
 		URL:       "https://github.com/LarsArtmann/samber-linter",
 		Run:       run,
-		FactTypes: []analysis.Fact{PackageFacts{}},
+		FactTypes: []analysis.Fact{(*PackageFacts)(nil)},
 	}
 	a.Flags.Bool("strict", false, "report HW-unresolved for unresolvable service types instead of staying silent")
+	a.Flags.String("disable", "", "comma-separated rule IDs to skip (e.g. HW-1,HW-4) — testing/migration aid")
 	return a
 }
 
@@ -99,6 +100,15 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		pass.Analyzer.Flags.Lookup("strict").Value.String() == "true"
 
 	directives := collectDirectives(pass.Fset, pass.Files)
+	disabled := map[string]bool{}
+	if f := pass.Analyzer.Flags.Lookup("disable"); f != nil {
+		for _, r := range strings.Split(f.Value.String(), ",") {
+			r = strings.ToUpper(strings.TrimSpace(r))
+			if r != "" {
+				disabled[r] = true
+			}
+		}
+	}
 
 	var records []ServiceRecord
 	var reports []siteReport
@@ -148,7 +158,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				}
 			}
 		}
-		if suppressed {
+		if suppressed || disabled[strings.ToUpper(d.rule)] {
 			continue
 		}
 		pass.Report(analysis.Diagnostic{
@@ -158,7 +168,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		})
 	}
 
-	pass.ExportPackageFact(PackageFacts{Records: records})
+	pass.ExportPackageFact(&PackageFacts{Records: records})
 	return nil, nil
 }
 
