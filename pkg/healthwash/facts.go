@@ -23,10 +23,15 @@ package healthwash
 type ServiceKind string
 
 const (
-	KindLazy      ServiceKind = "lazy"      // Provide*/Override* → serviceLazy
-	KindEager     ServiceKind = "eager"     // ProvideValue*/OverrideValue* → serviceEager
-	KindTransient ServiceKind = "transient" // ProvideTransient*/OverrideTransient* → serviceTransient
-	KindAlias     ServiceKind = "alias"     // As/AsNamed → serviceAlias (delegates to target)
+	// KindLazy is created by Provide*/Override* (serviceLazy): nil until built.
+	KindLazy ServiceKind = "lazy"
+	// KindEager is created by ProvideValue*/OverrideValue* (serviceEager).
+	KindEager ServiceKind = "eager"
+	// KindTransient is created by ProvideTransient*/OverrideTransient*
+	// (serviceTransient): healthcheck is an upstream TODO, always nil.
+	KindTransient ServiceKind = "transient"
+	// KindAlias is created by As/AsNamed (serviceAlias): delegates to target.
+	KindAlias ServiceKind = "alias"
 )
 
 // ServiceRecord is one registration site as seen by the sweep. It is exported
@@ -54,6 +59,7 @@ type PackageFacts struct {
 	Records []ServiceRecord `json:"records"`
 }
 
+// AFact marks PackageFacts as an analysis.Fact.
 func (PackageFacts) AFact() {}
 
 func (f PackageFacts) String() string { return "healthwash: registration records" }

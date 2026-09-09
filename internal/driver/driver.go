@@ -223,7 +223,7 @@ func runAnalyzer(analyzer *analysis.Analyzer, pkg *packages.Package) (
 	return diags, records
 }
 
-func toFinding(analyzer *analysis.Analyzer, d analysis.Diagnostic, fset *token.FileSet, version string) finding.Finding {
+func toFinding(analyzer *analysis.Analyzer, d analysis.Diagnostic, fset *token.FileSet, _ string) finding.Finding {
 	rule := d.Category
 	if rule == "" {
 		rule = analyzer.Name

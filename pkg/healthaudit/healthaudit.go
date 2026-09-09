@@ -53,8 +53,8 @@ func New() *Audit {
 	}
 }
 
-// Register wires the audit's hooks into a scope's injector options. Call it
-// on every scope whose sweeps should be counted:
+// AfterRegistration returns a do registration hook recording every service
+// name entering the audited scopes. Wire it into InjectorOpts.
 //
 //	audit := healthaudit.New()
 //	injector := do.NewWithOpts(&do.InjectorOpts{

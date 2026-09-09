@@ -3,6 +3,7 @@ package healthaudit
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	do "github.com/samber/do/v2"
@@ -57,26 +58,7 @@ func TestAuditCounts(t *testing.T) {
 		t.Fatalf("errored = %d, want 1 (only a non-nil result proves a check can fail)", got)
 	}
 	skipped := audit.Skipped()
-	if len(skipped) != 1 || !strings_Contains(skipped, "example.com/healthaudit/healthy") &&
-		!strings_Contains(skipped, "healthy") {
+	if len(skipped) != 1 || !strings.Contains(skipped[0], "healthy") {
 		t.Fatalf("skipped = %v, want the healthy service only", skipped)
 	}
-}
-
-func strings_Contains(list []string, needle string) bool {
-	for _, s := range list {
-		if s == needle || (len(s) > 0 && len(needle) > 0 && contains(s, needle)) {
-			return true
-		}
-	}
-	return false
-}
-
-func contains(s, sub string) bool {
-	for i := 0; i+len(sub) <= len(s); i++ {
-		if s[i:i+len(sub)] == sub {
-			return true
-		}
-	}
-	return false
 }

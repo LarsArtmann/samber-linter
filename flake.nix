@@ -18,12 +18,15 @@
         pkgs = import nixpkgs { inherit system; };
         goVersion = pkgs.go_1_26 or pkgs.go;
 
+        # go-finding requires GOEXPERIMENT=jsonv2 (ecosystem invariant,
+        # documented loudly while required).
         samber-linter = pkgs.buildGoModule {
           pname = "samber-linter";
           version = "0.1.0";
           src = ./.;
           vendorHash = null; # deps are vendored
           doCheck = true;
+          env = { GOEXPERIMENT = "jsonv2"; CGO_ENABLED = "0"; };
         };
       in
       {
@@ -45,6 +48,7 @@
             {
               nativeBuildInputs = [ goVersion ];
               src = ./.;
+              env = { GOEXPERIMENT = "jsonv2"; CGO_ENABLED = "0"; };
             }
             ''
               export GOCACHE="$TMPDIR/go-cache"
@@ -64,6 +68,9 @@
             ''
               export GOCACHE="$TMPDIR/go-cache"
               export GOPATH="$TMPDIR/gopath"
+              export GOLANGCI_LINT_CACHE="$TMPDIR/golangci-lint-cache"
+              export CGO_ENABLED=0
+              export GOEXPERIMENT=jsonv2
               cp -r "$src" work
               chmod -R u+w work
               cd work

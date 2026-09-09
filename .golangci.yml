@@ -13,6 +13,18 @@ linters:
     - misspell
     - unconvert
     - copyloopvar
+  settings:
+    errcheck:
+      exclude-functions:
+        - fmt.Fprintf
+        - fmt.Fprintln
+        - fmt.Fprint
+    revive:
+      rules:
+        - name: unused-parameter
+          disabled: true
+        - name: redefines-builtin-id
+          disabled: true
 
 issues:
   max-issues-per-linter: 0
