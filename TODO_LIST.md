@@ -20,6 +20,7 @@ Mark items `[x]` when done and move them to the Done section at the bottom.
 ### M02 Scaffold
 
 - [ ] A09 `go mod init github.com/larsartmann/samber-linter` + x/tools + samber/do v2.1.0 test dep
+- [ ] A93 Add deps: go-finding (+ `analysis` subpackage) + go-atomic-write; pin versions
 - [ ] A10 internal/healthwash + cmd/samber-linter skeletons
 - [ ] A11 flake.nix: build/test/lint/flake-check/devShell
 - [ ] A12 .gitignore + minimal .golangci.yml
@@ -77,6 +78,8 @@ Mark items `[x]` when done and move them to the Done section at the bottom.
 
 - [ ] A41 singlechecker main.go wiring
 - [ ] A42 End-to-end run on fixture module
+- [ ] A94 Driver: run analyzer via `analysis.NewAnalyzerDetector` → `finding.Report`
+- [ ] A95 Confidence stamping per rule via `Builder.WithConfidence` (Diagnostic carries none)
 
 ## Tier 2 — 4% → 64%: Trustworthy analyzer
 
@@ -96,6 +99,7 @@ Mark items `[x]` when done and move them to the Done section at the bottom.
 - [ ] A51 Attach suppressions to registration sites
 - [ ] A52 HW-0 rule: reason missing
 - [ ] A53 Suppression fixtures
+- [ ] A97 Map suppressions onto go-finding `Suppression{Kind, Rule, Reason, ExpiresAt}` model; decide `until` syntax
 - [ ] A58 HW-2 evaluation (contextless, info)
 - [ ] A59 HW-2 fixture
 
@@ -111,6 +115,10 @@ Mark items `[x]` when done and move them to the Done section at the bottom.
 - [ ] A60 Config allowlist loading (path patterns)
 - [ ] A61 Allowlist fixture test
 
+### M28 Trust engineering
+
+- [ ] A96 Per-rule FP budgets (HW-1 < 1% on CV + branching-flow) + severity/confidence matrix doc (HW-1/3/5 Full, HW-2 High, HW-4 Medium)
+
 ## Tier 3 — 20% → 80%: CI-gate product
 
 ### M19 HW-6 ratchet
@@ -120,6 +128,8 @@ Mark items `[x]` when done and move them to the Done section at the bottom.
 - [ ] A64 --set-baseline write
 - [ ] A65 --coverage-min gate + exit code
 - [ ] A66 Ratchet integration test
+- [ ] A98 Ratchet as Report post-pass in driver (project-level, never per-package Analyzer.Run)
+- [ ] A99 Baseline read + --set-baseline via `atomicwrite.WriteIfChanged` (idempotent)
 
 ### M20/M21 CLI polish + version awareness
 
@@ -129,6 +139,8 @@ Mark items `[x]` when done and move them to the Done section at the bottom.
 - [ ] A70 Help text + README CLI sync
 - [ ] A71 Read target go.mod samber/do version
 - [ ] A72 Info finding outside verified set
+- [ ] A100 SARIF export via go-finding sarif package
+- [ ] A101 Exit codes 0/1/2 via `linter.ExitCodeByConfidence`
 
 ### M22 Hardening
 
@@ -147,6 +159,7 @@ Mark items `[x]` when done and move them to the Done section at the bottom.
 
 - [ ] A80 golangci-lint plugin module layout
 - [ ] A81 Build verified against pinned golangci version
+- [ ] A102 Copy go-humanize-linter `plugin/plugin.go` wiring (`.custom-gcl.yml` → `golangci-lint custom`)
 
 ## Tier 4 — 80% → 100%: Ecosystem
 
@@ -161,6 +174,18 @@ Mark items `[x]` when done and move them to the Done section at the bottom.
 - [ ] A90 README §7 runtime integration doc
 - [ ] A91 Website / launch decision
 - [ ] A92 Tag v0.1.0 release
+
+## Stack adoption (verified 2026-09-09)
+
+- Detection core stays a plain `*analysis.Analyzer` (golangci plugin contract)
+- go-finding: finding model at driver chokepoint (`analysis.FromDiagnostic` /
+  `NewAnalyzerDetector`), severity AND confidence axes, `Suppression` data model
+  with expiry, JSON + SARIF export
+- go-linter-sdk: `ExitCodeByConfidence` only; Registry core deliberately NOT
+  adopted (directory-scoped, samber-linter needs cross-package types)
+- go-atomic-write: `WriteIfChanged` for idempotent baseline writes
+- go-humanize-linter: golangci v2 module-plugin wiring template
+- samber-do-auditlog: wrap pattern for the P3 healthaudit companion
 
 ## Done
 
