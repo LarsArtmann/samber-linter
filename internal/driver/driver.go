@@ -14,6 +14,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"strings"
 
 	"github.com/larsartmann/go-atomic-write"
 	"github.com/larsartmann/go-finding"
