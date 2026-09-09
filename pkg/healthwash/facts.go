@@ -54,6 +54,8 @@ type PackageFacts struct {
 	Records []ServiceRecord `json:"records"`
 }
 
+func (PackageFacts) AFact() {}
+
 func (f PackageFacts) String() string { return "healthwash: registration records" }
 
 // AffectsHW6 reports whether the record counts toward the coverage ratchet.

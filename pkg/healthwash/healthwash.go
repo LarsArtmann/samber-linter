@@ -24,8 +24,16 @@ const (
 	RuleHW5        = "HW-5"
 	RuleUnresolved = "HW-unresolved"
 
-	RuleCodeAll    = "all"
-	RuleMessageHW0 = "suppression directive without a reason; unexplained suppressions rot into permanent darkness"
+	RuleCodeHW0     = "hw-0"
+	RuleCodeHW1     = "hw-1"
+	RuleCodeHW2     = "hw-2"
+	RuleCodeHW3     = "hw-3"
+	RuleCodeHW4     = "hw-4"
+	RuleCodeHW5     = "hw-5"
+	RuleCodeUnres   = "hw-unresolved"
+	RuleCodeAll     = "all"
+	RuleMessageHW0  = "suppression directive without a reason; unexplained suppressions rot into permanent darkness"
+	MessageUnresolv = "service type could not be resolved statically"
 )
 
 // regKindOf maps a samber/do registration function name to the wrapper kind
