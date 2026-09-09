@@ -36,18 +36,21 @@ func TestAuditCounts(t *testing.T) {
 		t.Fatalf("registered = %d, want 2", got)
 	}
 
+	// HW-4 semantics in action: the sweep does NOT build lazy services —
+	// service_lazy.go returns nil for unbuilt services, so both would be
+	// skipped. Resolve them first; production code that cares about sweep
+	// honesty must do the same (or register boot-critical services eagerly).
+	if _, err := do.Invoke[healthy](injector); err != nil {
+		t.Fatalf("invoke healthy: %v", err)
+	}
+	if _, err := do.Invoke[*flaky](injector); err != nil {
+		t.Fatalf("invoke flaky: %v", err)
+	}
+
 	results := audit.Sweep(context.Background(), injector)
 
 	if len(results) == 0 {
 		t.Fatal("sweep returned no results")
-	}
-	// Documented v2.1.0 behavior: the sweep's internal construction does NOT
-	// fire HookAfterInvocation (that tracks do.Invoke/InvokeAs dispatch), so
-	// Invoked stays 0 even though the sweep built both services. If upstream
-	// ever wires sweep builds into the invocation hooks, this assertion is
-	// the canary to strengthen the metrics.
-	if got := audit.Invoked(); got != 0 {
-		t.Fatalf("invoked = %d, want 0 (sweep builds do not fire invocation hooks in v2.1.0)", got)
 	}
 	// Only the failing service is PROVEN fail-capable.
 	if got := audit.Errored(); got != 1 {

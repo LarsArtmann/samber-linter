@@ -1,0 +1,11 @@
+go 1.26.5
+
+use (
+	.
+	./agent
+	./bridge
+	./diagnose
+	./diagnose/git
+	./diagnose/postgres
+	./examples
+)

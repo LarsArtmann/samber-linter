@@ -11,6 +11,35 @@ checks that can actually fail. samber/do's `HealthCheck*` sweep silently
 inflates that denominator with always-green rows. This linter finds them at
 CI time, before they become production theater.
 
+## Quick start
+
+```bash
+# Analyze a module (text output + coverage line)
+go run github.com/larsartmann/samber-linter/cmd/samber-linter@latest ./...
+
+# CI gate: fail on high-confidence findings
+go run github.com/larsartmann/samber-linter/cmd/samber-linter@latest ./...
+
+# Machine-readable output
+samber-linter --json ./...     # go-finding JSON
+samber-linter --sarif ./...    # SARIF 2.1
+
+# Coverage ratchet (HW-6)
+samber-linter --set-baseline ./...       # lock current coverage as the floor
+samber-linter --coverage-min 0.6 ./...   # fail below 60%
+```
+
+Exit codes: `0` clean, `1` high-confidence findings (or a coverage gate
+failure), `2` findings that need triage only.
+
+Rules: **HW-1** Shutdowner-without-Healthchecker (the headline), **HW-2**
+contextless check, **HW-3** transient health-washing, **HW-4** lazy
+never-built pass, **HW-5** pointer-receiver-value registration, **HW-0**
+suppression without a reason. Suppress with
+`//samber-linter:allow hw-1 <reason>` directly above the registration.
+
+As a golangci-lint v2 plugin, see `plugin/` and `.custom-gcl.yml`.
+
 ---
 
 ## 1. The problem (real-world evidence)
