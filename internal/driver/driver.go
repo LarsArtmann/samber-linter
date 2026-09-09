@@ -332,7 +332,7 @@ func reportCoverage(out io.Writer, records []healthwash.ServiceRecord, opts Opti
 		return coverage
 	}
 
-	if opts.CoverageMin >= 0 {
+	if opts.CoverageMin > 0 {
 		fmt.Fprintf(out, "health-coverage: %d/%d = %.0f%% (threshold: %.0f%%)\n",
 			checked, registered, coverage*100, opts.CoverageMin*100)
 		if registered > 0 && coverage < opts.CoverageMin {
