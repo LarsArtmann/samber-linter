@@ -31,7 +31,7 @@ func main() {
 		fs.PrintDefaults()
 	}
 	_ = fs.Parse(os.Args[1:])
-	if showVersion {
+	if *showVersion {
 		fmt.Println(version)
 		return
 	}

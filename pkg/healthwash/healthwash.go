@@ -6,6 +6,7 @@ import (
 	"go/token"
 	"go/types"
 	"strings"
+	"time"
 
 	"golang.org/x/tools/go/analysis"
 )
@@ -142,7 +143,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 					})
 					continue
 				}
-				if matchesRule(fd.rule, d.rule) {
+				if !fd.expired && matchesRule(fd.rule, d.rule) {
 					suppressed = true
 				}
 			}
@@ -173,10 +174,13 @@ type foundDirective struct {
 
 // directive is the analyzer-side view; invalid marks a malformed directive
 // (missing rule token or missing reason), which must itself trigger HW-0.
+// expired marks a directive whose `until` re-review deadline has passed: it
+// no longer suppresses (the finding resurfaces for re-review).
 type directive struct {
 	rule    string // lowercased token, "" when missing
 	reason  string
 	invalid bool
+	expired bool
 }
 
 func matchesRule(token, rule string) bool {
@@ -216,6 +220,9 @@ func parseDirectiveComment(text string) (directive, bool) {
 	res := directive{rule: d.Rule, reason: d.Reason}
 	if d.Rule == "" || d.Reason == "" {
 		res.invalid = true
+	}
+	if d.Expires != nil && d.Expired(time.Now()) {
+		res.expired = true
 	}
 	return res, true
 }
