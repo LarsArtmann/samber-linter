@@ -214,7 +214,7 @@ func runAnalyzer(analyzer *analysis.Analyzer, pkg *packages.Package) (
 	var records []healthwash.ServiceRecord
 	pass.Report = func(d analysis.Diagnostic) { diags = append(diags, d) }
 	pass.ExportPackageFact = func(fact analysis.Fact) {
-		if pf, ok := fact.(healthwash.PackageFacts); ok {
+		if pf, ok := fact.(*healthwash.PackageFacts); ok {
 			records = append(records, pf.Records...)
 		}
 	}
@@ -368,8 +368,8 @@ func reportCoverage(out io.Writer, records []healthwash.ServiceRecord, opts Opti
 
 func printText(out io.Writer, findings []finding.Finding) {
 	for _, f := range findings {
-		fmt.Fprintf(out, "%s:%d:%d: %s: %s\n",
-			f.Position.File, f.Position.Line, f.Position.Column, f.Rule, f.Message)
+		fmt.Fprintf(out, "%s:%d:%d: %s\n",
+			f.Position.File, f.Position.Line, f.Position.Column, f.Message)
 	}
 	if len(findings) == 0 {
 		fmt.Fprintln(out, "no health-washing found")
