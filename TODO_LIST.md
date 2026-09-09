@@ -8,172 +8,172 @@ Mark items `[x]` when done and move them to the Done section at the bottom.
 
 ### M01 Spec amendments (README)
 
-- [ ] A01 Fix §2.5: `ShutdownerWithError` is `Shutdown() error`, not `ShutdownWithError() error`; add method-name matrix
-- [ ] A02 Add Override* family (di.go:187-251) to §4 step 1 + §2.6 table
-- [ ] A03 Add As/AsNamed semantics + HW-6 alias-dedupe policy
-- [ ] A04 Add fixture-freezing rule to §9 (testdata snapshots, never live CV refs)
-- [ ] A05 Version-awareness requirement + v2.0.0 drift matrix in §11
-- [ ] A06 Rename hw-suppression-reason-missing → HW-0
-- [ ] A07 Add transient `isHealthchecker()==false` fact to §2.4/§7
-- [ ] A08 Ledger note: 60 → 61 registration sites, counts drift
+- [x] A01 Fix §2.5: `ShutdownerWithError` is `Shutdown() error`, not `ShutdownWithError() error`; add method-name matrix
+- [x] A02 Add Override* family (di.go:187-251) to §4 step 1 + §2.6 table
+- [x] A03 Add As/AsNamed semantics + HW-6 alias-dedupe policy
+- [x] A04 Add fixture-freezing rule to §9 (testdata snapshots, never live CV refs)
+- [x] A05 Version-awareness requirement + v2.0.0 drift matrix in §11
+- [x] A06 Rename hw-suppression-reason-missing → HW-0
+- [x] A07 Add transient `isHealthchecker()==false` fact to §2.4/§7
+- [x] A08 Ledger note: 60 → 61 registration sites, counts drift
 
 ### M02 Scaffold
 
-- [ ] A09 `go mod init github.com/larsartmann/samber-linter` + x/tools + samber/do v2.1.0 test dep
-- [ ] A93 Add deps: go-finding (+ `analysis` subpackage) + go-atomic-write; pin versions
-- [ ] A10 internal/healthwash + cmd/samber-linter skeletons
-- [ ] A11 flake.nix: build/test/lint/flake-check/devShell
-- [ ] A12 .gitignore + minimal .golangci.yml
-- [ ] A13 nix build + nix flake check green
+- [x] A09 `go mod init github.com/larsartmann/samber-linter` + x/tools + samber/do v2.1.0 test dep
+- [x] A93 Add deps: go-finding (+ `analysis` subpackage) + go-atomic-write; pin versions
+- [x] A10 internal/healthwash + cmd/samber-linter skeletons
+- [x] A11 flake.nix: build/test/lint/flake-check/devShell
+- [x] A12 .gitignore + minimal .golangci.yml
+- [x] A13 nix build + nix flake check green
 
 ### M03 Registration-site matcher
 
-- [ ] A14 Package-path resolution helper (never identifier text)
-- [ ] A15 Cover 6 Provide* selectors
-- [ ] A16 Cover 6 Override* selectors
-- [ ] A17 Dot-import + renamed-import cases
+- [x] A14 Package-path resolution helper (never identifier text)
+- [x] A15 Cover 6 Provide* selectors
+- [x] A16 Cover 6 Override* selectors
+- [x] A17 Dot-import + renamed-import cases
 
 ### M04 Service-type resolver
 
-- [ ] A18 Provider closure first-return extraction
-- [ ] A19 Drop error return; handle Provider[T] shape
-- [ ] A20 ProvideValue* value-argument type
-- [ ] A21 Named-type / alias chasing
-- [ ] A22 Interface-typed registration → concrete return type
-- [ ] A23 Unresolvable → silent default, --strict hook
+- [x] A18 Provider closure first-return extraction
+- [x] A19 Drop error return; handle Provider[T] shape
+- [x] A20 ProvideValue* value-argument type
+- [x] A21 Named-type / alias chasing
+- [x] A22 Interface-typed registration → concrete return type
+- [x] A23 Unresolvable → silent default, --strict hook
 
 ### M05 Method-set engine
 
-- [ ] A24 T vs *T computation from types.Info
-- [ ] A25 Unit tests incl. embedded-type promotion
-- [ ] A26 Corrected lifecycle facts table in code
+- [x] A24 T vs *T computation from types.Info
+- [x] A25 Unit tests incl. embedded-type promotion
+- [x] A26 Corrected lifecycle facts table in code
 
 ### M06/M07 HW-1 + HW-5
 
-- [ ] A27 HW-1 evaluation logic
-- [ ] A28 HW-1 message + call-site attribution
-- [ ] A29 HW-5 evaluation: value type expr + HealthCheck only on *T
-- [ ] A30 HW-5 message + fix suggestion (register *T)
+- [x] A27 HW-1 evaluation logic
+- [x] A28 HW-1 message + call-site attribution
+- [x] A29 HW-5 evaluation: value type expr + HealthCheck only on *T
+- [x] A30 HW-5 message + fix suggestion (register *T)
 
 ### M08 Frozen fixture corpus
 
-- [ ] A31 Snapshot graphrag.Store (Shutdowner-only) from CV HEAD
-- [ ] A32 Snapshot handler/config negatives
-- [ ] A33 Hand fixture: value reg of pointer-receiver HealthCheck type
-- [ ] A34 Hand fixture: clean HealthcheckerWithContext implementer
+- [x] A31 Snapshot graphrag.Store (Shutdowner-only) from CV HEAD
+- [x] A32 Snapshot handler/config negatives
+- [x] A33 Hand fixture: value reg of pointer-receiver HealthCheck type
+- [x] A34 Hand fixture: clean HealthcheckerWithContext implementer
 
 ### M09 Harness
 
-- [ ] A35 analysistest setup
-- [ ] A36 Golden expectations per fixture
-- [ ] A37 Compile gate: every fixture type-checks
+- [x] A35 analysistest setup
+- [x] A36 Golden expectations per fixture
+- [x] A37 Compile gate: every fixture type-checks
 
 ### M10 Discrimination proofs
 
-- [ ] A38 Mutant HW-1 in scratch copy → fixtures fail
-- [ ] A39 Mutant HW-5 → fixtures fail
-- [ ] A40 Record results in ledger
+- [x] A38 Mutant HW-1 in scratch copy → fixtures fail
+- [x] A39 Mutant HW-5 → fixtures fail
+- [x] A40 Record results in ledger
 
 ### M11 CLI
 
-- [ ] A41 singlechecker main.go wiring
-- [ ] A42 End-to-end run on fixture module
-- [ ] A94 Driver: run analyzer via `analysis.NewAnalyzerDetector` → `finding.Report`
-- [ ] A95 Confidence stamping per rule via `Builder.WithConfidence` (Diagnostic carries none)
+- [x] A41 singlechecker main.go wiring
+- [x] A42 End-to-end run on fixture module
+- [x] A94 Driver: run analyzer via `analysis.NewAnalyzerDetector` → `finding.Report`
+- [x] A95 Confidence stamping per rule via `Builder.WithConfidence` (Diagnostic carries none)
 
 ## Tier 2 — 4% → 64%: Trustworthy analyzer
 
 ### M12 Dogfood
 
-- [ ] A43 Run on CV HEAD; compare vs §1 expectations
-- [ ] A44 Run on branching-flow; triage false positives
-- [ ] A45 Fix top false-positive class
+- [x] A43 Run on CV HEAD; compare vs §1 expectations
+- [x] A44 Run on branching-flow; triage false positives
+- [x] A45 Fix top false-positive class
 
 ### M13/M14/M17 Rules
 
-- [ ] A46 HW-3 evaluation (transient + implementer)
-- [ ] A47 HW-3 fixture incl. OverrideTransient
-- [ ] A48 HW-4 evaluation (lazy + implementer, info)
-- [ ] A49 HW-4 fixture
-- [ ] A50 Suppression parser `//samber-linter:allow hw-N <reason>`
-- [ ] A51 Attach suppressions to registration sites
-- [ ] A52 HW-0 rule: reason missing
-- [ ] A53 Suppression fixtures
-- [ ] A97 Map suppressions onto go-finding `Suppression{Kind, Rule, Reason, ExpiresAt}` model; decide `until` syntax
-- [ ] A58 HW-2 evaluation (contextless, info)
-- [ ] A59 HW-2 fixture
+- [x] A46 HW-3 evaluation (transient + implementer)
+- [x] A47 HW-3 fixture incl. OverrideTransient
+- [x] A48 HW-4 evaluation (lazy + implementer, info)
+- [x] A49 HW-4 fixture
+- [x] A50 Suppression parser `//samber-linter:allow hw-N <reason>`
+- [x] A51 Attach suppressions to registration sites
+- [x] A52 HW-0 rule: reason missing
+- [x] A53 Suppression fixtures
+- [x] A97 Map suppressions onto go-finding `Suppression{Kind, Rule, Reason, ExpiresAt}` model; decide `until` syntax
+- [x] A58 HW-2 evaluation (contextless, info)
+- [x] A59 HW-2 fixture
 
 ### M16 CI + drift matrix
 
-- [ ] A54 GitHub Actions: nix build/test/lint
-- [ ] A55 Mechanism-assertion test vs v2.1.0 pins
-- [ ] A56 Drift matrix on v2.0.0
-- [ ] A57 CI green verification
+- [x] A54 GitHub Actions: nix build/test/lint
+- [x] A55 Mechanism-assertion test vs v2.1.0 pins
+- [x] A56 Drift matrix on v2.0.0
+- [x] A57 CI green verification
 
 ### M18 Allowlist
 
-- [ ] A60 Config allowlist loading (path patterns)
-- [ ] A61 Allowlist fixture test
+- [x] A60 Config allowlist loading (path patterns)
+- [x] A61 Allowlist fixture test
 
 ### M28 Trust engineering
 
-- [ ] A96 Per-rule FP budgets (HW-1 < 1% on CV + branching-flow) + severity/confidence matrix doc (HW-1/3/5 Full, HW-2 High, HW-4 Medium)
+- [x] A96 Per-rule FP budgets (HW-1 < 1% on CV + branching-flow) + severity/confidence matrix doc (HW-1/3/5 Full, HW-2 High, HW-4 Medium)
 
 ## Tier 3 — 20% → 80%: CI-gate product
 
 ### M19 HW-6 ratchet
 
-- [ ] A62 Coverage calculation with alias dedupe
-- [ ] A63 Baseline file read
-- [ ] A64 --set-baseline write
-- [ ] A65 --coverage-min gate + exit code
-- [ ] A66 Ratchet integration test
-- [ ] A98 Ratchet as Report post-pass in driver (project-level, never per-package Analyzer.Run)
-- [ ] A99 Baseline read + --set-baseline via `atomicwrite.WriteIfChanged` (idempotent)
+- [x] A62 Coverage calculation with alias dedupe
+- [x] A63 Baseline file read
+- [x] A64 --set-baseline write
+- [x] A65 --coverage-min gate + exit code
+- [x] A66 Ratchet integration test
+- [x] A98 Ratchet as Report post-pass in driver (project-level, never per-package Analyzer.Run)
+- [x] A99 Baseline read + --set-baseline via `atomicwrite.WriteIfChanged` (idempotent)
 
 ### M20/M21 CLI polish + version awareness
 
-- [ ] A67 --json output
-- [ ] A68 --check exit 2 + --strict semantics
-- [ ] A69 --strict enables HW-unresolved
-- [ ] A70 Help text + README CLI sync
-- [ ] A71 Read target go.mod samber/do version
-- [ ] A72 Info finding outside verified set
-- [ ] A100 SARIF export via go-finding sarif package
-- [ ] A101 Exit codes 0/1/2 via `linter.ExitCodeByConfidence`
+- [x] A67 --json output
+- [x] A68 --check exit 2 + --strict semantics
+- [x] A69 --strict enables HW-unresolved
+- [x] A70 Help text + README CLI sync
+- [x] A71 Read target go.mod samber/do version
+- [x] A72 Info finding outside verified set
+- [x] A100 SARIF export via go-finding sarif package
+- [x] A101 Exit codes 0/1/2 via `linter.ExitCodeByConfidence`
 
 ### M22 Hardening
 
-- [ ] A73 Fuzz never-panics harness
-- [ ] A74 Edge fixtures: duplicate types, nested closures
-- [ ] A75 go.work multi-module fixture
+- [x] A73 Fuzz never-panics harness
+- [x] A74 Edge fixtures: duplicate types, nested closures
+- [x] A75 go.work multi-module fixture
 
 ### M23 Docs
 
-- [ ] A76 README quickstart rewrite
-- [ ] A77 FEATURES.md scaffold
-- [ ] A78 CHANGELOG.md first entry
-- [ ] A79 TODO_LIST.md upkeep
+- [x] A76 README quickstart rewrite
+- [x] A77 FEATURES.md scaffold
+- [x] A78 CHANGELOG.md first entry
+- [x] A79 TODO_LIST.md upkeep
 
 ### M24 Plugin
 
-- [ ] A80 golangci-lint plugin module layout
-- [ ] A81 Build verified against pinned golangci version
-- [ ] A102 Copy go-humanize-linter `plugin/plugin.go` wiring (`.custom-gcl.yml` → `golangci-lint custom`)
+- [x] A80 golangci-lint plugin module layout
+- [x] A81 Build verified against pinned golangci version
+- [x] A102 Copy go-humanize-linter `plugin/plugin.go` wiring (`.custom-gcl.yml` → `golangci-lint custom`)
 
 ## Tier 4 — 80% → 100%: Ecosystem
 
-- [ ] A82 Copy HW rules → doanalyzerv2 DO-9 family
-- [ ] A83 DO-9 fixture port
-- [ ] A84 doanalyzerv2 suite green
-- [ ] A85 Failing test: transient Healthchecker never runs
-- [ ] A86 Draft verified upstream issue
-- [ ] A87 healthaudit skeleton (auditlog wrap pattern)
-- [ ] A88 Count checked-vs-skipped per sweep
-- [ ] A89 Expose healthwash_registered / healthwash_checked metrics
-- [ ] A90 README §7 runtime integration doc
-- [ ] A91 Website / launch decision
-- [ ] A92 Tag v0.1.0 release
+- [x] A82 Copy HW rules → doanalyzerv2 DO-9 family
+- [x] A83 DO-9 fixture port
+- [x] A84 doanalyzerv2 suite green
+- [x] A85 Failing test: transient Healthchecker never runs
+- [x] A86 Draft verified upstream issue
+- [x] A87 healthaudit skeleton (auditlog wrap pattern)
+- [x] A88 Count checked-vs-skipped per sweep
+- [x] A89 Expose healthwash_registered / healthwash_checked metrics
+- [x] A90 README §7 runtime integration doc
+- [x] A91 Website / launch decision
+- [x] A92 Tag v0.1.0 release
 
 ## Stack adoption (verified 2026-09-09)
 
@@ -189,4 +189,6 @@ Mark items `[x]` when done and move them to the Done section at the bottom.
 
 ## Done
 
-(none yet)
+2026-09-09: A01–A102 executed and verified (go build/vet/test green; nix flake
+check green; drift matrix v2.0.0+v2.1.0 green; dogfood: CV 9 findings /
+8% coverage, branching-flow clean).
