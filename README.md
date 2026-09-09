@@ -38,9 +38,9 @@ lazy, minimal service implementations. It is invisible in production
 (everything green) and invisible in review (nothing looks wrong).
 
 The companion skill rule this linter mechanizes
-(`samber-do-best-practices` §6.3): *"Add lifecycle interfaces
+(`samber-do-best-practices` §6.3): _"Add lifecycle interfaces
 (`do.Shutdowner*`, `do.Healthchecker*`) before first release for any
-resource-holding service."* Teams nod at that rule and skip it. A linter
+resource-holding service."_ Teams nod at that rule and skip it. A linter
 does not nod.
 
 ## 2. Verified mechanism anatomy
@@ -60,8 +60,8 @@ Every claim below was read from `samber/do v2.1.0` source (module cache,
 ### 2.2 "Healthy" and "doesn't implement" are the same output
 
 - `scope.go:733-735` (`serviceHealthCheck`) doc, verbatim:
-  *"Returns an error if the health check fails, or nil if the service is
-  healthy **or doesn't implement the Healthchecker interface**."*
+  _"Returns an error if the health check fails, or nil if the service is
+  healthy **or doesn't implement the Healthchecker interface**."_
 - `service_eager.go:87-101`: the wrapper type-asserts
   `HealthcheckerWithContext`, then `Healthchecker`; if neither matches, it
   falls through and returns `nil`. No marker distinguishes "checked and
@@ -91,25 +91,25 @@ Every claim below was read from `samber/do v2.1.0` source (module cache,
 
 ### 2.5 The lifecycle interfaces (di_lifecycle.go)
 
-| Interface                      | Line | Signature                              |
-| ------------------------------ | ---- | -------------------------------------- |
-| `Healthchecker`                | :21  | `HealthCheck() error`                  |
-| `HealthcheckerWithContext`     | :42  | `HealthCheck(context.Context) error`   |
-| `Shutdowner`                   | :62  | `Shutdown()`                           |
-| `ShutdownerWithError`          | :82  | `ShutdownWithError() error`            |
-| `ShutdownerWithContext`        | :102 | `ShutdownWithContext(context.Context)` |
-| `ShutdownerWithContextAndError`| :122 | ctx + error variant                    |
+| Interface                       | Line | Signature                              |
+| ------------------------------- | ---- | -------------------------------------- |
+| `Healthchecker`                 | :21  | `HealthCheck() error`                  |
+| `HealthcheckerWithContext`      | :42  | `HealthCheck(context.Context) error`   |
+| `Shutdowner`                    | :62  | `Shutdown()`                           |
+| `ShutdownerWithError`           | :82  | `ShutdownWithError() error`            |
+| `ShutdownerWithContext`         | :102 | `ShutdownWithContext(context.Context)` |
+| `ShutdownerWithContextAndError` | :122 | ctx + error variant                    |
 
 ### 2.6 Registration-to-wrapper mapping (di.go)
 
-| Public API                | Wrapper         | Health check behavior          |
-| ------------------------- | --------------- | ------------------------------ |
-| `Provide` (di.go:57)      | `serviceLazy`   | nil when unbuilt; nil when type doesn't implement |
-| `ProvideNamed` (di.go:78) | `serviceLazy`   | same                           |
-| `ProvideValue` (di.go:92) | `serviceEager`  | nil when type doesn't implement |
-| `ProvideNamedValue` (:107)| `serviceEager`  | same                           |
-| `ProvideTransient` (:131) | `serviceTransient` | **always nil** (upstream TODO) |
-| `ProvideNamedTransient` (:155) | `serviceTransient` | **always nil**           |
+| Public API                     | Wrapper            | Health check behavior                             |
+| ------------------------------ | ------------------ | ------------------------------------------------- |
+| `Provide` (di.go:57)           | `serviceLazy`      | nil when unbuilt; nil when type doesn't implement |
+| `ProvideNamed` (di.go:78)      | `serviceLazy`      | same                                              |
+| `ProvideValue` (di.go:92)      | `serviceEager`     | nil when type doesn't implement                   |
+| `ProvideNamedValue` (:107)     | `serviceEager`     | same                                              |
+| `ProvideTransient` (:131)      | `serviceTransient` | **always nil** (upstream TODO)                    |
+| `ProvideNamedTransient` (:155) | `serviceTransient` | **always nil**                                    |
 
 ### 2.7 The pointer-receiver trap
 
@@ -275,12 +275,12 @@ delivers most of the value.
 
 ## 8. Relationship to existing tooling
 
-| Tool | Owns | Relationship |
-| ---- | ---- | ------------ |
-| `branching-flow/pkg/doanalyzerv2` | DO-1..DO-8: Must-in-runtime, missing shutdown, override-in-prod, global injector, invoke-in-loops, shutdown-accesses-dep, service locator, injector-in-service | Complementary. All eight are **usage-shape** rules; `healthwash` is a **capability-completeness** rule. Backport as DO-9 once stable. |
-| `samber-do-auditlog` | Runtime audit of registrations, invocations, health checks, shutdowns | Feeds the runtime companion (§7); does not judge implementations, only records them. |
-| `go-health` / `go-health-dashboard` | Serving and rendering health state | The victim, not the culprit: they faithfully render what the sweep returns. Fix the registrations, and their dashboards become meaningful. |
-| golangci-lint | Runner | Distribution channel via custom plugin (§6). |
+| Tool                                | Owns                                                                                                                                                           | Relationship                                                                                                                               |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `branching-flow/pkg/doanalyzerv2`   | DO-1..DO-8: Must-in-runtime, missing shutdown, override-in-prod, global injector, invoke-in-loops, shutdown-accesses-dep, service locator, injector-in-service | Complementary. All eight are **usage-shape** rules; `healthwash` is a **capability-completeness** rule. Backport as DO-9 once stable.      |
+| `samber-do-auditlog`                | Runtime audit of registrations, invocations, health checks, shutdowns                                                                                          | Feeds the runtime companion (§7); does not judge implementations, only records them.                                                       |
+| `go-health` / `go-health-dashboard` | Serving and rendering health state                                                                                                                             | The victim, not the culprit: they faithfully render what the sweep returns. Fix the registrations, and their dashboards become meaningful. |
+| golangci-lint                       | Runner                                                                                                                                                         | Distribution channel via custom plugin (§6).                                                                                               |
 
 ## 9. Implementation phases
 
@@ -296,18 +296,18 @@ delivers most of the value.
 
 ### Test corpus (golden cases from the CV incident, 2026-09-09)
 
-| Fixture | Expected |
-| ------- | -------- |
-| `graphrag.Store` (Shutdowner, no Healthchecker, Provide) | HW-1 fires |
-| Value registration of struct with pointer-receiver `HealthCheck` | HW-5 fires |
-| Transient registration implementing `HealthcheckerWithContext` | HW-3 fires |
-| Lazy registration implementing `HealthcheckerWithContext` | HW-4 fires (info) |
-| Contextless `HealthCheck() error` implementer | HW-2 fires (info) |
-| `internal/database/connection.go` (real checker) | clean |
-| `chat/groq` ChatService (real checker) | clean |
-| Handler struct, no Shutdowner, no Healthchecker | clean (rule precision) |
-| `//samber-linter:allow hw-1 <reason>` on a flagged site | suppressed |
-| `//samber-linter:allow hw-1` without reason | `hw-suppression-reason-missing` |
+| Fixture                                                          | Expected                        |
+| ---------------------------------------------------------------- | ------------------------------- |
+| `graphrag.Store` (Shutdowner, no Healthchecker, Provide)         | HW-1 fires                      |
+| Value registration of struct with pointer-receiver `HealthCheck` | HW-5 fires                      |
+| Transient registration implementing `HealthcheckerWithContext`   | HW-3 fires                      |
+| Lazy registration implementing `HealthcheckerWithContext`        | HW-4 fires (info)               |
+| Contextless `HealthCheck() error` implementer                    | HW-2 fires (info)               |
+| `internal/database/connection.go` (real checker)                 | clean                           |
+| `chat/groq` ChatService (real checker)                           | clean                           |
+| Handler struct, no Shutdowner, no Healthchecker                  | clean (rule precision)          |
+| `//samber-linter:allow hw-1 <reason>` on a flagged site          | suppressed                      |
+| `//samber-linter:allow hw-1` without reason                      | `hw-suppression-reason-missing` |
 
 Discrimination proof required before shipping P0: each golden case must be
 shown to **fail** on a mutant analyzer (rule inverted or removed) in a
@@ -326,19 +326,19 @@ scratch copy, never by mutating the shared tree.
 
 Claims in this document and their sources:
 
-| Claim | Source |
-| ----- | ------ |
-| Sweep queues every service in scope + ancestors | samber/do v2.1.0 `scope.go:307,328-348` |
-| Non-implementers return nil ("healthy or doesn't implement") | `scope.go:733-735`, `service_eager.go:87-101` |
-| Lazy unbuilt services return nil unchecked | `service_lazy.go:128-134` |
-| Transient healthcheck is an upstream TODO, always nil | `service_transient.go:62-66` |
-| Interface names/signatures | `di_lifecycle.go:21,42,62,82,102,122` |
-| Registration-to-wrapper mapping | `di.go:57,78,92,107,131,155` |
-| Wrapper asserts the stored instance (pointer-receiver trap) | `service_eager.go:88,94`, `service_lazy.go:136` |
-| CV dashboard: 60 rows, all pass, ~6 fail-capable | `https://cv.home.lan/admin/health` (fetched 2026-09-09) + implementer grep (`chat/groq/chat.go`, `internal/database/connection.go`, `internal/di/lifecycle.go`) |
-| CV pipeline-store ping rides a handler option, not the store's Healthchecker | `internal/di/handlers_pipeline.go:38-40` |
-| doanalyzerv2 currently defines DO-1..DO-8 | `~/projects/branching-flow/pkg/doanalyzerv2/doc.go` (read 2026-09-09) |
-| samber-do-best-practices §6.3 lifecycle-interface rule | `~/.config/crush/skills/samber-do-best-practices/SKILL.md` |
+| Claim                                                                        | Source                                                                                                                                                          |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sweep queues every service in scope + ancestors                              | samber/do v2.1.0 `scope.go:307,328-348`                                                                                                                         |
+| Non-implementers return nil ("healthy or doesn't implement")                 | `scope.go:733-735`, `service_eager.go:87-101`                                                                                                                   |
+| Lazy unbuilt services return nil unchecked                                   | `service_lazy.go:128-134`                                                                                                                                       |
+| Transient healthcheck is an upstream TODO, always nil                        | `service_transient.go:62-66`                                                                                                                                    |
+| Interface names/signatures                                                   | `di_lifecycle.go:21,42,62,82,102,122`                                                                                                                           |
+| Registration-to-wrapper mapping                                              | `di.go:57,78,92,107,131,155`                                                                                                                                    |
+| Wrapper asserts the stored instance (pointer-receiver trap)                  | `service_eager.go:88,94`, `service_lazy.go:136`                                                                                                                 |
+| CV dashboard: 60 rows, all pass, ~6 fail-capable                             | `https://cv.home.lan/admin/health` (fetched 2026-09-09) + implementer grep (`chat/groq/chat.go`, `internal/database/connection.go`, `internal/di/lifecycle.go`) |
+| CV pipeline-store ping rides a handler option, not the store's Healthchecker | `internal/di/handlers_pipeline.go:38-40`                                                                                                                        |
+| doanalyzerv2 currently defines DO-1..DO-8                                    | `~/projects/branching-flow/pkg/doanalyzerv2/doc.go` (read 2026-09-09)                                                                                           |
+| samber-do-best-practices §6.3 lifecycle-interface rule                       | `~/.config/crush/skills/samber-do-best-practices/SKILL.md`                                                                                                      |
 
 Upstream drift guard: pin the analyzed samber/do version in CI and re-run the
 mechanism assertions (§2) against new releases; a behavior change upstream

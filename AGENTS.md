@@ -80,9 +80,9 @@ task automation belongs in **`flake.nix`** (`nix build`, `nix flake check`,
 
 ## Ecosystem references (local, on this machine)
 
-| Artifact | Relevance |
-| -------- | --------- |
-| `~/projects/branching-flow/pkg/doanalyzerv2` | DO-1..DO-8 usage-shape rules; HW-* backports there as DO-9 family once stable |
-| `samber-do-auditlog` | Wrapping pattern the phase-3 runtime companion is modeled on |
-| `~/.config/crush/skills/samber-do-best-practices/SKILL.md` §6.3 | The skill rule this linter mechanizes |
-| `samber/do v2.1.0` module cache | Source of all mechanism pins in README §2 |
+| Artifact                                                        | Relevance                                                                     |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `~/projects/branching-flow/pkg/doanalyzerv2`                    | DO-1..DO-8 usage-shape rules; HW-* backports there as DO-9 family once stable |
+| `samber-do-auditlog`                                            | Wrapping pattern the phase-3 runtime companion is modeled on                  |
+| `~/.config/crush/skills/samber-do-best-practices/SKILL.md` §6.3 | The skill rule this linter mechanizes                                         |
+| `samber/do v2.1.0` module cache                                 | Source of all mechanism pins in README §2                                     |
