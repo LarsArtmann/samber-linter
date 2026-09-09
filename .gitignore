@@ -47,6 +47,9 @@ reports/
 /samber-linter
 *.out
 
+# Crush session database (never commit: private session content)
+.crush/
+
 # Nix
 result
 result-*
