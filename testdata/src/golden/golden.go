@@ -1,20 +1,19 @@
-// Package golden is the frozen CV-incident corpus: each fixture mirrors a
-// golden case from README §9. Expected findings are annotated inline; the
-// analysistest run fails if any expectation is missed or any unexpected
-// diagnostic appears (this doubles as the compile gate — fixtures must
-// type-check cleanly).
+// want package:"healthwash: registration records"
+
+// Package golden is the frozen CV-incident corpus (README §9): each fixture
+// mirrors a golden case. Expectations are annotated inline; the analysistest
+// run fails on any miss (this doubles as the compile gate).
 package golden
 
 import (
 	"context"
-
 	"database/sql"
 
 	do "github.com/samber/do/v2"
 )
 
-// Store mirrors CV's graphrag.Store at incident HEAD: Shutdowner (ctx+error
-// variant), no Healthchecker, registered lazily. HW-1 fires.
+// Store mirrors CV's graphrag.Store at incident HEAD: Shutdowner (ctx+error),
+// no Healthchecker, registered lazily. HW-1 fires.
 type Store struct {
 	db *sql.DB
 }
@@ -27,14 +26,12 @@ func (s *Store) Shutdown(_ context.Context) error {
 	return s.db.Close()
 }
 
-// want HW-1 on the Provide line below.
 var _ = func() bool {
-	do.Provide(nil, NewStore) // want `HW-1: \*golden\.Store implements do\.Shutdowner but no Healthchecker`
+	do.Provide(nil, NewStore) // want `HW-1: \*Store implements do\.Shutdowner but no Healthchecker`
 	return true
 }()
 
-// GroqChat mirrors a real CV checker: implements the context variant and is
-// registered eagerly — clean by construction.
+// GroqChat mirrors a real CV checker: context variant, eager — clean.
 type GroqChat struct{}
 
 func (g *GroqChat) HealthCheck(context.Context) error { return nil }
@@ -46,8 +43,8 @@ var _ = func() bool {
 	return true
 }()
 
-// Handler mirrors CV's DI-registered handlers: no lifecycle interfaces at
-// all — rule precision requires this to stay clean.
+// Handler mirrors DI-registered handlers: no lifecycle interfaces — rule
+// precision requires clean.
 type Handler struct{}
 
 func NewHandler(i do.Injector) (*Handler, error) { return &Handler{}, nil }
@@ -57,7 +54,7 @@ var _ = func() bool {
 	return true
 }()
 
-// ConfigValue mirrors inert config registered by value — clean.
+// ConfigValue mirrors inert config by value — clean.
 type ConfigValue struct {
 	ListenAddr string
 }

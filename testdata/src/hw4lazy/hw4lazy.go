@@ -1,6 +1,7 @@
-// Package hw4lazy: a lazy registration whose type implements the context
-// health check — until first resolution the sweep reports green without
-// constructing the service. HW-4 fires (informational; a conscious choice).
+// want package:"healthwash: registration records"
+
+// Package hw4lazy: lazy registration + Healthchecker variant — green until
+// first resolution. HW-4 (informational; a conscious choice).
 package hw4lazy
 
 import (

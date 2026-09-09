@@ -1,10 +1,9 @@
-// Package unresolvedstrict mirrors the unresolvable fixture for --strict
-// runs: the interface-typed closure result emits HW-unresolved here.
+// want package:"healthwash: registration records"
+
+// Package unresolvedstrict mirrors unresolvable for --strict runs.
 package unresolvedstrict
 
-import (
-	do "github.com/samber/do/v2"
-)
+import do "github.com/samber/do/v2"
 
 type Checker interface {
 	HealthCheck() error

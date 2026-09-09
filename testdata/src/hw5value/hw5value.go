@@ -1,6 +1,7 @@
-// Package hw5value is the pointer-receiver trap: the health check exists on
-// receiver *T only, but the registration stores value T — the sweep's type
-// assertion never sees the check. HW-5 fires on both registration styles.
+// want package:"healthwash: registration records"
+
+// Package hw5value is the pointer-receiver trap: the check exists on *T only
+// but the registration stores value T — the sweep's assertion never sees it.
 package hw5value
 
 import (
@@ -9,8 +10,6 @@ import (
 	do "github.com/samber/do/v2"
 )
 
-// DeadCheck reads like a plausible implementation — that is exactly why HW-5
-// is the nastiest variant (README §2.7).
 type DeadCheck struct{}
 
 func (d *DeadCheck) HealthCheck(context.Context) error { return nil }
@@ -31,7 +30,7 @@ var _ = func() bool {
 	return true
 }()
 
-// The fix: register the pointer.
+// The fix: register the pointer — clean.
 var _ = func() bool {
 	do.ProvideValue(nil, &DeadCheck{})
 	return true

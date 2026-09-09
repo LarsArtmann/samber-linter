@@ -1,6 +1,7 @@
+// want package:"healthwash: registration records"
+
 // Package unresolvable: interface-typed closure results are statically
-// unknowable (the sweep asserts the stored concrete instance). Silent by
-// default — this fixture must produce ZERO diagnostics without --strict.
+// unknowable. Silent by default — zero diagnostics without --strict.
 package unresolvable
 
 import (
@@ -9,8 +10,6 @@ import (
 	do "github.com/samber/do/v2"
 )
 
-// Checker is the registration interface; which concrete type lands in the
-// container is a runtime decision.
 type Checker interface {
 	HealthCheck(context.Context) error
 }

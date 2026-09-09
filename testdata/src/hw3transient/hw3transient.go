@@ -1,7 +1,7 @@
-// Package hw3transient: a transient registration whose type implements a
-// Healthchecker variant — the transient healthcheck is an upstream TODO that
-// always returns nil, so the implementation is dead code advertising false
-// confidence. HW-3 fires.
+// want package:"healthwash: registration records"
+
+// Package hw3transient: transient registrations whose type implements a
+// Healthchecker variant — the transient healthcheck is an upstream TODO.
 package hw3transient
 
 import (

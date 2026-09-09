@@ -49,6 +49,7 @@ type Options struct {
 
 	MinConfidence finding.Confidence
 	Version       string
+	Dir           string // working directory for package loading (tests)
 
 	Stdout io.Writer
 	Stderr io.Writer
@@ -108,7 +109,7 @@ func Run(opts Options) int {
 		opts.BaselinePath = DefaultBaselinePath
 	}
 
-	pkgs, err := load(opts.Patterns)
+	pkgs, err := load(opts)
 	if err != nil {
 		fmt.Fprintf(errw, "%s: load failed: %v\n", ToolName, err)
 		return 1
@@ -171,15 +172,16 @@ func Run(opts Options) int {
 	return code
 }
 
-func load(patterns []string) ([]*packages.Package, error) {
+func load(opts Options) ([]*packages.Package, error) {
 	cfg := &packages.Config{
 		Mode: packages.NeedName | packages.NeedFiles | packages.NeedCompiledGoFiles |
 			packages.NeedSyntax | packages.NeedTypes | packages.NeedTypesInfo |
 			packages.NeedTypesSizes | packages.NeedDeps | packages.NeedImports |
 			packages.NeedModule,
+		Dir:   opts.Dir,
 		Tests: false, // composition roots are what dashboards see; DO-3 keeps Override* in tests
 	}
-	return packages.Load(cfg, patterns...)
+	return packages.Load(cfg, opts.Patterns...)
 }
 
 // runAnalyzer builds an analysis.Pass by hand (the x/tools checker internals

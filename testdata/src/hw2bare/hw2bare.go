@@ -1,7 +1,7 @@
-// Package hw2bare: implements the bare HealthCheck() without the context
-// variant — a hung bare check cannot be cancelled and degrades the sweep.
-// HW-2 fires (info). Registered eagerly with the value implementing the
-// check, so no HW-1/HW-4/HW-5 applies.
+// want package:"healthwash: registration records"
+
+// Package hw2bare: bare HealthCheck() without the context variant. HW-2
+// (info). Eager value registration with the check on the value: no HW-1/4/5.
 package hw2bare
 
 import do "github.com/samber/do/v2"

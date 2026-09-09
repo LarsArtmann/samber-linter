@@ -112,6 +112,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 
 	var records []ServiceRecord
 	var reports []siteReport
+	hw0Reported := map[token.Pos]bool{}
 
 	for _, file := range pass.Files {
 		ast.Inspect(file, func(n ast.Node) bool {
@@ -146,11 +147,17 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		for _, line := range []int{pos.Line - 1, pos.Line} {
 			for _, fd := range directives[dirKey{pos.Filename, line}] {
 				if fd.invalid {
-					pass.Report(analysis.Diagnostic{
-						Pos:      fd.pos,
-						Category: RuleHW0,
-						Message:  fmt.Sprintf("%s: %s", RuleHW0, RuleMessageHW0),
-					})
+					// A suppression without a reason is itself a finding,
+					// attributed to the suppressible site (where the fix
+					// lands). It never suppresses.
+					if !hw0Reported[d.pos] {
+						hw0Reported[d.pos] = true
+						pass.Report(analysis.Diagnostic{
+							Pos:      d.pos,
+							Category: RuleHW0,
+							Message:  fmt.Sprintf("%s: %s", RuleHW0, RuleMessageHW0),
+						})
+					}
 					continue
 				}
 				if !fd.expired && matchesRule(fd.rule, d.rule) {
