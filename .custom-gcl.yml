@@ -1,0 +1,10 @@
+# Build configuration for `golangci-lint custom`.
+# Produces ./custom-gcl with the healthwash module plugin compiled in.
+#
+# Usage:
+#   golangci-lint custom && ./custom-gcl run ./...
+version: v2.12.2
+plugins:
+  - module: github.com/larsartmann/samber-linter
+    import: github.com/larsartmann/samber-linter/plugin
+    path: .

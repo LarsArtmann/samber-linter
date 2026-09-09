@@ -42,3 +42,11 @@ workflow-audit-log.*
 /coverage
 reports/
 # <<< buildflow-managed (.gitignore) <<<
+
+# Go build/test artifacts
+/samber-linter
+*.out
+
+# Nix
+result
+result-*
