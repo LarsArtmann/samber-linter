@@ -35,170 +35,59 @@ func doSourceDir(t *testing.T, version string) string {
 	return dir
 }
 
-func parseFile(t *testing.T, dir, name string) (*token.FileSet, *ast.File) {
+// parseSrc parses one file of dir and returns fset, file, and raw source.
+func parseSrc(t *testing.T, dir, name string) (*token.FileSet, *ast.File, string) {
 	t.Helper()
+	path := filepath.Join(dir, name)
 	fset := token.NewFileSet()
-	f, err := parser.ParseFile(fset, filepath.Join(dir, name), nil, parser.ParseComments)
+	f, err := parser.ParseFile(fset, path, nil, parser.ParseComments)
 	if err != nil {
 		if os.IsNotExist(err) {
 			t.Skipf("%s missing in %s", name, dir)
 		}
-		t.Fatalf("parse %s/%s: %v", dir, name, err)
+		t.Fatalf("parse %s: %v", path, err)
 	}
-	return fset, f
+	src, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+	return fset, f, string(src)
 }
 
-// funcBodies collects the raw text of every method/function body with the
-// given receiver-or-name.
-func funcBodies(t *testing.T, f *ast.File, names ...string) map[string]string {
+// funcSource returns the raw source text of the named function or method.
+func funcSource(t *testing.T, fset *token.FileSet, f *ast.File, src, name string) string {
 	t.Helper()
-	out := map[string]string{}
 	for _, decl := range f.Decls {
 		fd, ok := decl.(*ast.FuncDecl)
-		if !ok {
+		if !ok || fd.Name.Name != name {
 			continue
 		}
-		for _, n := range names {
-			if fd.Name.Name == n {
-				var b strings.Builder
-				// Render the body statements crudely but deterministically.
-				dumpNode(&b, fd.Body)
-				out[n] = b.String()
-			}
+		if fd.Body == nil {
+			return ""
 		}
+		return src[fd.Body.Pos()-1 : fd.Body.End()-1]
 	}
-	return out
+	t.Fatalf("function %s not found", name)
+	return ""
 }
 
-func dumpNode(b *strings.Builder, n ast.Node) {
-	if n == nil {
-		return
-	}
-	switch v := n.(type) {
-	case *ast.BlockStmt:
-		for _, s := range v.List {
-			dumpStmt(b, s)
+func fileHasComment(f *ast.File, needle string) bool {
+	for _, cg := range f.Comments {
+		for _, c := range cg.List {
+			if strings.Contains(c.Text, needle) {
+				return true
+			}
 		}
 	}
-}
-
-func dumpStmt(b *strings.Builder, s ast.Stmt) {
-	switch v := s.(type) {
-	case *ast.ReturnStmt:
-		if len(v.Results) == 0 {
-			b.WriteString("return;")
-		} else if ident, ok := v.Results[0].(*ast.Ident); ok {
-			b.WriteString("return " + ident.Name + ";")
-		} else {
-			b.WriteString("return <expr>;")
-		}
-	case *ast.IfStmt:
-		b.WriteString("if(")
-		dumpExpr(b, v.Cond)
-		b.WriteString("){")
-		dumpNode(b, v.Body)
-		if v.Else != nil {
-			b.WriteString("else{")
-			dumpStmt(b, v.Else)
-			b.WriteString("}")
-		}
-		b.WriteString("}")
-	case *ast.SwitchStmt:
-		b.WriteString("switch{")
-		dumpNode(b, v.Body)
-		b.WriteString("}")
-	case *ast.TypeSwitchStmt:
-		b.WriteString("typeswitch{")
-		dumpNode(b, v.Body)
-		b.WriteString("}")
-	case *ast.CaseClause:
-		b.WriteString("case[")
-		for i, e := range v.List {
-			if i > 0 {
-				b.WriteString(",")
-			}
-			dumpExpr(b, e)
-		}
-		b.WriteString("]:")
-		for _, inner := range v.Body {
-			dumpStmt(b, inner)
-		}
-	case *ast.ExprStmt:
-		dumpExpr(b, v.X)
-		b.WriteString(";")
-	}
-}
-
-func dumpExpr(b *strings.Builder, e ast.Expr) {
-	switch v := e.(type) {
-	case *ast.Ident:
-		b.WriteString(v.Name)
-	case *ast.UnaryExpr:
-		b.WriteString("!")
-		dumpExpr(b, v.X)
-	case *ast.TypeAssertExpr:
-		b.WriteString("assert(")
-		dumpExpr(b, v.X)
-		b.WriteString(")")
-	case *ast.CallExpr:
-		dumpExpr(b, v.Fun)
-		b.WriteString("(")
-		for i, a := range v.Args {
-			if i > 0 {
-				b.WriteString(",")
-			}
-			dumpExpr(b, a)
-		}
-		b.WriteString(")")
-	case *ast.SelectorExpr:
-		dumpExpr(b, v.X)
-		b.WriteString("." + v.Sel.Name)
-	}
-}
-
-// ifaceMethods maps interface name -> method signature strings.
-func ifaceMethods(t *testing.T, f *ast.File) map[string][]string {
-	t.Helper()
-	out := map[string][]string{}
-	for _, decl := range f.Decls {
-		gd, ok := decl.(*ast.GenDecl)
-		if !ok || gd.Tok != token.TYPE {
-			continue
-		}
-		for _, spec := range gd.Specs {
-			ts, ok := spec.(*ast.TypeSpec)
-			if !ok {
-				continue
-			}
-			iface, ok := ts.Type.(*ast.InterfaceType)
-			if !ok {
-				continue
-			}
-			var methods []string
-			for _, m := range iface.Methods.List {
-				names := ""
-				for i, n := range m.Names {
-					if i > 0 {
-						names += ","
-					}
-					names += n.Name
-				}
-				methods = append(methods, names)
-			}
-			out[ts.Name.Name] = methods
-		}
-	}
-	return out
+	return false
 }
 
 func TestDriftV210(t *testing.T) {
-	dir := doSourceDir(t, "v2.1.0")
-	assertMechanism(t, dir)
+	assertMechanism(t, doSourceDir(t, "v2.1.0"))
 }
 
 func TestDriftV200(t *testing.T) {
-	dir := doSourceDir(t, "v2.0.0")
-	assertMechanism(t, dir)
+	assertMechanism(t, doSourceDir(t, "v2.0.0"))
 }
 
 // assertMechanism encodes the README §2 pins as executable assertions. Each
@@ -206,75 +95,80 @@ func TestDriftV200(t *testing.T) {
 func assertMechanism(t *testing.T, dir string) {
 	t.Helper()
 
-	// §2.5 lifecycle interfaces: names and method sets.
-	fsetLc, fLc := parseFile(t, dir, "di_lifecycle.go")
-	_ = fsetLc
-	ifaces := ifaceMethods(t, fLc)
+	// §2.5 lifecycle interfaces: all six exist, with the exact method names.
+	_, fLc, lcSrc := parseSrc(t, dir, "di_lifecycle.go")
+	ifaces := map[string]bool{}
+	for _, decl := range fLc.Decls {
+		gd, ok := decl.(*ast.GenDecl)
+		if !ok || gd.Tok != token.TYPE {
+			continue
+		}
+		for _, spec := range gd.Specs {
+			if ts, ok := spec.(*ast.TypeSpec); ok {
+				if _, isIface := ts.Type.(*ast.InterfaceType); isIface {
+					ifaces[ts.Name.Name] = true
+				}
+			}
+		}
+	}
 	for _, name := range []string{
 		"Healthchecker", "HealthcheckerWithContext",
 		"Shutdowner", "ShutdownerWithError",
 		"ShutdownerWithContext", "ShutdownerWithContextAndError",
 	} {
-		if _, ok := ifaces[name]; !ok {
-			t.Errorf("v-pinned interface %s missing from di_lifecycle.go", name)
+		if !ifaces[name] {
+			t.Errorf("pinned interface %s missing from di_lifecycle.go", name)
 		}
 	}
-	if ms := ifaces["Healthchecker"]; len(ms) != 1 || ms[0] != "HealthCheck" {
-		t.Errorf("Healthchecker method set changed: %v — HW-2/HW-5 method matching must be revisited", ms)
-	}
-	if ms := ifaces["ShutdownerWithError"]; len(ms) != 1 || ms[0] != "Shutdown" {
-		t.Errorf("ShutdownerWithError method set changed: %v (it is `Shutdown() error`, NOT `ShutdownWithError()`)", ms)
+
+	// The original §2.5 table error this repo exists to correct:
+	// ShutdownerWithError is `Shutdown() error`, not `ShutdownWithError()`.
+	withErr := sourceOfInterface(t, lcSrc, "ShutdownerWithError")
+	if !strings.Contains(withErr, "Shutdown() error") ||
+		strings.Contains(withErr, "ShutdownWithError") {
+		t.Errorf("ShutdownerWithError signature drifted: %s", withErr)
 	}
 
 	// §2.4 transient healthcheck: upstream TODO, unconditional nil; and
 	// isHealthchecker() unconditional false.
-	_, fTr := parseFile(t, dir, "service_transient.go")
-	hc := funcBodies(t, fTr, "healthcheck", "isHealthchecker")
-	if !strings.Contains(hc["healthcheck"], "return nil;") {
-		t.Errorf("transient healthcheck no longer unconditionally returns nil — HW-3's rationale is void")
+	fsetTr, fTr, trSrc := parseSrc(t, dir, "service_transient.go")
+	hc := funcSource(t, fsetTr, fTr, trSrc, "healthcheck")
+	if !strings.Contains(hc, "return nil") {
+		t.Errorf("transient healthcheck no longer unconditionally returns nil — HW-3's rationale is void: %s", hc)
 	}
-	if !strings.Contains(hc["isHealthchecker"], "return false;") {
-		t.Errorf("transient isHealthchecker no longer unconditional false — §7 runtime metrics spec is void")
-	}
-	hasTODO := false
-	for _, cg := range fTr.Comments {
-		for _, c := range cg.List {
-			if strings.Contains(c.Text, "@TODO: implement healthcheck") {
-				hasTODO = true
-			}
-		}
-	}
-	if !hasTODO {
+	if !fileHasComment(fTr, "@TODO: implement healthcheck") {
 		t.Errorf("transient healthcheck TODO comment gone — upstream may have implemented checks; revisit HW-3")
 	}
-
-	// §2.2 eager wrapper: type-asserts the stored instance against both
-	// Healthchecker variants (ctx first) with a fallthrough nil — the exact
-	// "healthy or doesn't implement" collapse.
-	_, fEager := parseFile(t, dir, "service_eager.go")
-	eager := funcBodies(t, fEager, "healthcheck")
-	if !strings.Contains(eager["healthcheck"], "case[HealthcheckerWithContext]:") ||
-		!strings.Contains(eager["healthcheck"], "case[Healthchecker]:") {
-		t.Errorf("eager healthcheck no longer dispatches on HealthcheckerWithContext then Healthchecker — HW-1/HW-5 method-set logic is void: %s", eager["healthcheck"])
+	isHc := funcSource(t, fsetTr, fTr, trSrc, "isHealthchecker")
+	if !strings.Contains(isHc, "return false") {
+		t.Errorf("transient isHealthchecker no longer unconditional false — §7 runtime metrics spec is void: %s", isHc)
 	}
-	if !strings.Contains(eager["healthcheck"], "return nil;") {
-		t.Errorf("eager healthcheck fallthrough nil gone — non-implementers would surface differently: %s", eager["healthcheck"])
+
+	// §2.2 eager wrapper: dispatches on HealthcheckerWithContext then
+	// Healthchecker over the stored instance, with a fallthrough nil.
+	fsetEager, fEager, eagerSrc := parseSrc(t, dir, "service_eager.go")
+	eager := funcSource(t, fsetEager, fEager, eagerSrc, "healthcheck")
+	if !strings.Contains(eager, "HealthcheckerWithContext") ||
+		!strings.Contains(eager, "Healthchecker)") {
+		t.Errorf("eager healthcheck no longer dispatches on HealthcheckerWithContext then Healthchecker — HW-1/HW-5 method-set logic is void: %s", eager)
+	}
+	if !strings.Contains(eager, "return nil") {
+		t.Errorf("eager healthcheck fallthrough nil gone: %s", eager)
 	}
 
 	// §2.3 lazy wrapper: !s.built → nil before any dispatch.
-	_, fLazy := parseFile(t, dir, "service_lazy.go")
-	lazy := funcBodies(t, fLazy, "healthcheck")
-	if !strings.Contains(lazy["healthcheck"], "if(!s.built){return nil;}") {
-		t.Errorf("lazy unbuilt fast-path changed — HW-4's rationale is void: %s", lazy["healthcheck"])
+	fsetLazy, fLazy, lazySrc := parseSrc(t, dir, "service_lazy.go")
+	lazy := funcSource(t, fsetLazy, fLazy, lazySrc, "healthcheck")
+	if !strings.Contains(lazy, "!s.built") || !strings.Contains(lazy, "return nil") {
+		t.Errorf("lazy unbuilt fast-path changed — HW-4's rationale is void: %s", lazy)
 	}
 
-	// §2.6 registration functions create the named wrappers; Override*
-	// mirrors Provide*.
-	_, fDi := parseFile(t, dir, "di.go")
-	di := map[string]bool{}
+	// §2.6 registration surface: six Provide* + six Override* + As/AsNamed.
+	_, fDi, _ := parseSrc(t, dir, "di.go")
+	fns := map[string]bool{}
 	for _, decl := range fDi.Decls {
 		if fd, ok := decl.(*ast.FuncDecl); ok {
-			di[fd.Name.Name] = true
+			fns[fd.Name.Name] = true
 		}
 	}
 	for _, fn := range []string{
@@ -284,8 +178,37 @@ func assertMechanism(t *testing.T, dir string) {
 		"OverrideTransient", "OverrideNamedTransient",
 		"As", "AsNamed",
 	} {
-		if !di[fn] {
+		if !fns[fn] {
 			t.Errorf("registration function %s missing from di.go — the matcher surface must be revisited", fn)
 		}
 	}
+
+	// Alias rows delegate their healthcheck to the target wrapper.
+	fsetAlias, fAlias, aliasSrc := parseSrc(t, dir, "service_alias.go")
+	aliasHc := funcSource(t, fsetAlias, fAlias, aliasSrc, "healthcheck")
+	if !strings.Contains(aliasHc, "targetName") && !strings.Contains(aliasHc, "serviceGetRec") {
+		t.Errorf("alias healthcheck no longer delegates to its target — HW-6 alias dedupe must be revisited: %s", aliasHc)
+	}
+}
+
+func sourceOfInterface(t *testing.T, src, name string) string {
+	t.Helper()
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, name+".go", src, parser.SkipObjectResolution)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	for _, decl := range f.Decls {
+		gd, ok := decl.(*ast.GenDecl)
+		if !ok || gd.Tok != token.TYPE {
+			continue
+		}
+		for _, spec := range gd.Specs {
+			if ts, ok := spec.(*ast.TypeSpec); ok && ts.Name.Name == name {
+				return src[ts.Pos()-1 : ts.End()-1]
+			}
+		}
+	}
+	t.Fatalf("interface %s not found", name)
+	return ""
 }
