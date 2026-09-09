@@ -79,8 +79,9 @@ func TestRunEndToEnd(t *testing.T) {
 	app := e2eModule(t)
 	var out, errOut bytes.Buffer
 	code := Run(Options{
-		Patterns:      []string{"./..."},
+		Patterns: []string{"./..."},
 		Dir:           app,
+		Env:           []string{"GOFLAGS=-mod=mod"},
 		Version:       "test",
 		Stdout:        &out,
 		Stderr:        &errOut,
@@ -109,6 +110,7 @@ func TestSetBaselineAndRatchet(t *testing.T) {
 	code := Run(Options{
 		Patterns:     []string{"./..."},
 		Dir:          app,
+		Env:          []string{"GOFLAGS=-mod=mod"},
 		Version:      "test",
 		Stdout:       &out,
 		Stderr:       &errOut,
@@ -140,6 +142,7 @@ func TestSetBaselineAndRatchet(t *testing.T) {
 	code = Run(Options{
 		Patterns:     []string{"./..."},
 		Dir:          app,
+		Env:          []string{"GOFLAGS=-mod=mod"},
 		Version:      "test",
 		Stdout:       &out,
 		Stderr:       &errOut,
@@ -176,6 +179,7 @@ func TestJSONAndSARIF(t *testing.T) {
 	var out, errOut bytes.Buffer
 	code := Run(Options{
 		Patterns: []string{"./..."}, Dir: app, Version: "test",
+		Env:      []string{"GOFLAGS=-mod=mod"},
 		Stdout: &out, Stderr: &errOut, JSON: true,
 		MinConfidence: finding.ConfidenceHigh,
 	})
@@ -190,6 +194,7 @@ func TestJSONAndSARIF(t *testing.T) {
 	out.Reset()
 	code = Run(Options{
 		Patterns: []string{"./..."}, Dir: app, Version: "test",
+		Env:      []string{"GOFLAGS=-mod=mod"},
 		Stdout: &out, Stderr: &errOut, SARIF: true,
 		MinConfidence: finding.ConfidenceHigh,
 	})
@@ -240,6 +245,7 @@ func main() {
 	var out, errOut bytes.Buffer
 	code := Run(Options{
 		Patterns: []string{"./..."}, Dir: app, Version: "test",
+		Env:      []string{"GOFLAGS=-mod=mod"},
 		Stdout: &out, Stderr: &errOut,
 	})
 	if code != 0 {

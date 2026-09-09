@@ -49,7 +49,8 @@ type Options struct {
 
 	MinConfidence finding.Confidence
 	Version       string
-	Dir           string // working directory for package loading (tests)
+	Dir           string   // working directory for package loading (tests)
+	Env           []string // extra env for package loading (tests: GOFLAGS=-mod=mod)
 
 	Stdout io.Writer
 	Stderr io.Writer
@@ -179,6 +180,7 @@ func load(opts Options) ([]*packages.Package, error) {
 			packages.NeedTypesSizes | packages.NeedDeps | packages.NeedImports |
 			packages.NeedModule,
 		Dir:   opts.Dir,
+		Env:   append(os.Environ(), opts.Env...),
 		Tests: false, // composition roots are what dashboards see; DO-3 keeps Override* in tests
 	}
 	return packages.Load(cfg, opts.Patterns...)
