@@ -96,9 +96,14 @@ Every claim below was read from `samber/do v2.1.0` source (module cache,
 | `Healthchecker`                 | :21  | `HealthCheck() error`                  |
 | `HealthcheckerWithContext`      | :42  | `HealthCheck(context.Context) error`   |
 | `Shutdowner`                    | :62  | `Shutdown()`                           |
-| `ShutdownerWithError`           | :82  | `ShutdownWithError() error`            |
-| `ShutdownerWithContext`         | :102 | `ShutdownWithContext(context.Context)` |
-| `ShutdownerWithContextAndError` | :122 | ctx + error variant                    |
+| `ShutdownerWithError`           | :82  | `Shutdown() error`                     |
+| `ShutdownerWithContext`         | :102 | `Shutdown(context.Context)`            |
+| `ShutdownerWithContextAndError` | :122 | `Shutdown(context.Context) error`      |
+
+All four `Shutdowner*` variants share the method name `Shutdown`, differing
+only in parameters/returns. Method-set matching must compare exact
+signatures — a naive name-only match conflates `Shutdowner` with
+`ShutdownerWithError` and misses real implementers.
 
 ### 2.6 Registration-to-wrapper mapping (di.go)
 
@@ -110,6 +115,25 @@ Every claim below was read from `samber/do v2.1.0` source (module cache,
 | `ProvideNamedValue` (:107)     | `serviceEager`     | same                                              |
 | `ProvideTransient` (:131)      | `serviceTransient` | **always nil** (upstream TODO)                    |
 | `ProvideNamedTransient` (:155) | `serviceTransient` | **always nil**                                    |
+| `Override` (di.go:187)         | `serviceLazy`      | same as `Provide`                                 |
+| `OverrideNamed` (:199)         | `serviceLazy`      | same                                              |
+| `OverrideValue` (:212)         | `serviceEager`     | same as `ProvideValue`                            |
+| `OverrideNamedValue` (:224)    | `serviceEager`     | same                                              |
+| `OverrideTransient` (:238)     | `serviceTransient` | **always nil**                                    |
+| `OverrideNamedTransient` (:251)| `serviceTransient` | **always nil**                                    |
+
+The six `Override*` functions (di.go:187-251) create the identical wrappers
+(`newServiceLazy`:201, `newServiceEager`:226, `newServiceTransient`:253)
+with identical health-check semantics. Override\* belongs in tests per DO-3 —
+but this linter analyzes test files too, and production DO-3 violations are
+exactly where blindness hurts.
+
+`As`/`AsNamed` (di.go:456/507) register `serviceAlias` rows
+(`service_alias.go`): the alias's `healthcheck` delegates to the target
+wrapper (:114-126), so aliases introduce no new washing class — but they DO
+add sweep rows. HW-6's coverage math dedupes aliases by target type;
+HW-1..5 attribute only to `Provide*`/`Override*` sites (an alias adds no new
+method set).
 
 ### 2.7 The pointer-receiver trap
 
@@ -121,7 +145,9 @@ silently never runs. This compiles clean and renders green forever.
 
 ## 3. Rules
 
-Analyzer package name: `healthwash`. Rule IDs `HW-*`. (Backport IDs into
+Analyzer package name: `healthwash`. Rule IDs `HW-*` — stable forever once
+shipped; suppressions and configs key on them (`HW-0` is the suppression
+meta-rule, `HW-unresolved` the strict-mode placeholder). (Backport IDs into
 `branching-flow/pkg/doanalyzerv2` as `DO-9` family; that analyzer currently
 ends at DO-8 — verified locally 2026-09-09.)
 
@@ -201,11 +227,10 @@ baseline file; coverage below baseline fails CI; improving coverage requires
 Built on `golang.org/x/tools/go/analysis` (type-checking based; AST alone
 cannot decide interface satisfaction).
 
-1. **Find registration sites.** Selector calls matching
-   `do.Provide`, `do.ProvideNamed`, `do.ProvideValue`,
-   `do.ProvideNamedValue`, `do.ProvideTransient`,
-   `do.ProvideNamedTransient` (resilient to dot-imports and renames via
-   package-path match, not identifier text).
+1. **Find registration sites.** Selector calls matching the six `Provide*`
+   functions AND the six `Override*` functions (resilient to dot-imports and
+   renames via package-path match, not identifier text). `As`/`AsNamed`
+   alias rows are tracked but never attributed (§2.6).
 2. **Resolve the service type.**
    - `Provide*`: the provider closure's **return type** (first return; drop
      the error return). Chase named types and type aliases to the underlying
@@ -238,9 +263,14 @@ runtime companion's job (§7).
   do.ProvideValue(injector, cfg)
   ```
 
-- A suppression without a reason text is itself a finding (`hw-suppression-reason-missing`).
-  Mirrors the `//nolint // rationale` discipline: unexplained suppressions
-  rot into permanent darkness.
+- A suppression without a reason text is itself a finding (`HW-0`), mirroring
+  the `//nolint // rationale` discipline: unexplained suppressions rot into
+  permanent darkness.
+- Suppressions map onto `go-finding`'s `Suppression{Kind, Rule, Reason,
+  ExpiresAt}` data model (verified 2026-09-09): inline directives are
+  `SuppressionInSource`, the config allowlist is `SuppressionInConfig`. The
+  optional `until <date>` expiry triggers `IsExpired()` re-review; adopted
+  in P2 alongside the config layer.
 - Config-file allowlist for recurring categories (e.g. `*.handlers.*`), kept
   separate from inline suppressions so inline remains the default.
 
@@ -248,13 +278,23 @@ runtime companion's job (§7).
 
 ```
 samber-linter ./...                     # analyze, text output
-samber-linter --json ./...              # machine output (rule, pos, type, service name)
+samber-linter --json ./...              # go-finding JSON (rule, pos, type, service, confidence)
+samber-linter --sarif ./...             # SARIF 2.1 for code scanning
 samber-linter --coverage-min 0.6 ./...  # HW-6 as a gate
-samber-linter --set-baseline ./...      # lock current coverage as the new floor
+samber-linter --set-baseline ./...      # lock current coverage as the new floor (atomic write)
 ```
 
-Ship as a `go vet`-style singlechecker and as a `golangci-lint` custom plugin
-(the analyzer interface is already the plugin contract).
+Exit codes follow the confidence ternary (`go-linter-sdk`'s
+`ExitCodeByConfidence`): `0` clean, `1` high-confidence findings, `2` needs
+triage. Severity ≠ confidence: HW-1/3/5 are type facts (confidence Full),
+HW-2 High, HW-4 Medium — a judgment call by design.
+
+Stack: detection is a plain `*analysis.Analyzer` (golangci plugin contract);
+findings, confidence, suppression, JSON/SARIF, and the HW-6 ratchet (a
+project-level Report post-pass, never per-package `Analyzer.Run`) live in
+the driver via `go-finding`. Baselines persist through `go-atomic-write`.
+Ship as a `go vet`-style driver and as a `golangci-lint` custom plugin
+(wiring copied from `go-humanize-linter/plugin`).
 
 ## 7. Runtime companion (optional, phase 3)
 
@@ -270,7 +310,9 @@ healthwash_checked{scope="root"} 6
 ```
 
 If `checked / registered` dips below the static baseline, the runtime caught
-what the compiler could not. Optional; the static analyzer is the MVP and
+what the compiler could not. Transients count as *skipped*, never *checked*
+(`serviceTransient.isHealthchecker()` returns `false` unconditionally,
+`service_transient.go:58-60`). Optional; the static analyzer is the MVP and
 delivers most of the value.
 
 ## 8. Relationship to existing tooling
@@ -307,11 +349,16 @@ delivers most of the value.
 | `chat/groq` ChatService (real checker)                           | clean                           |
 | Handler struct, no Shutdowner, no Healthchecker                  | clean (rule precision)          |
 | `//samber-linter:allow hw-1 <reason>` on a flagged site          | suppressed                      |
-| `//samber-linter:allow hw-1` without reason                      | `hw-suppression-reason-missing` |
+| `//samber-linter:allow hw-1` without reason                      | `HW-0` fires                    |
 
 Discrimination proof required before shipping P0: each golden case must be
 shown to **fail** on a mutant analyzer (rule inverted or removed) in a
 scratch copy, never by mutating the shared tree.
+
+Fixture-freezing rule: all golden fixtures are **frozen snapshots copied
+into `testdata/`** at authoring time, never live references into the CV (or
+any) repository. CV's `graphrag.Store` gained a `HealthCheck` in its working
+tree within hours of the incident analysis — live references rot.
 
 ## 10. Non-goals
 
@@ -339,7 +386,16 @@ Claims in this document and their sources:
 | CV pipeline-store ping rides a handler option, not the store's Healthchecker | `internal/di/handlers_pipeline.go:38-40`                                                                                                                        |
 | doanalyzerv2 currently defines DO-1..DO-8                                    | `~/projects/branching-flow/pkg/doanalyzerv2/doc.go` (read 2026-09-09)                                                                                           |
 | samber-do-best-practices §6.3 lifecycle-interface rule                       | `~/.config/crush/skills/samber-do-best-practices/SKILL.md`                                                                                                      |
+| `ShutdownerWithError` is `Shutdown() error`, not `ShutdownWithError()`       | `di_lifecycle.go:82-83` (re-read 2026-09-09; the original table was wrong)                                                                                      |
+| Override\* family registers identical wrappers                               | `di.go:187-251` (`newServiceLazy`:201, `newServiceEager`:226, `newServiceTransient`:253)                                                                        |
+| As/AsNamed register delegating alias rows                                    | `di.go:456,507`, `service_alias.go:100-126`                                                                                                                     |
+| transient `isHealthchecker()` returns `false` unconditionally                | `service_transient.go:58-60`                                                                                                                                    |
+| CV registration sites: 61 today (53 `Provide`, 8 `ProvideValue`) — counts drift | `~/projects/CV` grep 2026-09-09                                                                                                                              |
+| go-finding / go-linter-sdk / go-atomic-write APIs                            | local source reads 2026-09-09 (`analysis/analysis.go`, `registry.go:358`, `atomicwrite.go:66-140`)                                                              |
 
 Upstream drift guard: pin the analyzed samber/do version in CI and re-run the
 mechanism assertions (§2) against new releases; a behavior change upstream
-should fail the build loudly rather than silently invalidate the rules.
+should fail the build loudly rather than silently invalidate the rules. The
+matrix covers **v2.0.0 and v2.1.0** (both in the local module cache); the
+driver reads the target module's samber/do version and emits an info finding
+when it falls outside the verified set.
