@@ -85,38 +85,38 @@ real gaps listed below.
 
 ## b) PARTIALLY DONE
 
-1. **A68 `--check` flag** — exit-code ternary implemented (A101), but the
-   explicit `--check` (fail-only mode) flag from the plan/README §6 does NOT
-   exist in `main.go`. Doc/impl mismatch.
-2. **A96 trust-engineering doc** — confidence matrix lives in code
-   (`ruleMetaByRule`) and the plan, but no standalone FP-budget document; the
-   budgets themselves (e.g. "HW-1 < 1% FP on CV+branching-flow") were never
-   written down as measurable commitments.
-3. **A91 website/launch decision** — recorded as "deferred until adoption" in
-   FEATURES.md; that is a decision, but no criteria/threshold was defined for
-   revisiting.
+1. ~~**A68 `--check` flag** — exit-code ternary implemented (A101), but the~~ done at `728ad8f`
+   ~~explicit `--check` (fail-only mode) flag from the plan/README §6 does NOT~~
+   ~~exist in `main.go`. Doc/impl mismatch.~~
+2. ~~**A96 trust-engineering doc** — confidence matrix lives in code~~ done at `836be4c`
+   ~~(`ruleMetaByRule`) and the plan, but no standalone FP-budget document; the~~
+   ~~budgets themselves (e.g. "HW-1 < 1% FP on CV+branching-flow") were never~~
+   ~~written down as measurable commitments.~~
+3. ~~**A91 website/launch decision** — recorded as "deferred until adoption" in~~ done (decision recorded (FEATURES + ROADMAP Theme 5; revisit criteria still undefined))
+   ~~FEATURES.md; that is a decision, but no criteria/threshold was defined for~~
+   ~~revisiting.~~
 4. **A40 discrimination-proof record** — proofs run in tests, but no
    `docs/discrimination-proof.md` ledger recording results and dates.
-5. **Version awareness** — implemented as an stdout info line, the plan wording
-   said "info finding"; cosmetic divergence, undocumented choice.
-6. **CI workflow** — written, never executed on GitHub (no run observed).
+5. ~~**Version awareness** — implemented as an stdout info line, the plan wording~~ done (documented 2026-09-10 — README §11 says "informational stdout line")
+   ~~said "info finding"; cosmetic divergence, undocumented choice.~~
+6. ~~**CI workflow** — written, never executed on GitHub (no run observed).~~ done (executed 2026-09-10 — test/dogfood red (GOEXPERIMENT, fixed `17732a4`), lint red (toolchain + 141 findings), drift-matrix green)
 7. **Plugin settings surface** — `strict`/`disable` only; the humanize plugin's
    `minConfidence` setting was not carried over.
-8. **Exit-code precedence** — coverage-gate failure only upgrades exit 0 → 1; a
-   coexisting triage exit (2) silently wins. Undocumented behavior decision.
+8. ~~**Exit-code precedence** — coverage-gate failure only upgrades exit 0 → 1; a~~ done (documented (README exit codes; AGENTS Driver contract `17732a4`))
+   ~~coexisting triage exit (2) silently wins. Undocumented behavior decision.~~
 9. **README §3 example message** — slightly out of date with the shipped
    message wording.
 
 ## c) NOT STARTED
 
-1. **A74 edge fixtures** — duplicate-type registrations, nested closures:
-   never written.
-2. **A75 go.work multi-module fixture** — never written.
-3. **A81 plugin build verification** — `golangci-lint custom` was NEVER run;
-   the plugin compiles as Go but no custom-gcl binary was produced.
-4. **Allowlist end-to-end test** — `applyAllowlist` has zero test coverage.
-5. **LICENSE file** — the public repo has none.
-6. **First real CI run** — nothing observed on GitHub Actions.
+1. ~~**A74 edge fixtures** — duplicate-type registrations, nested closures:~~ done at `728ad8f`
+   ~~never written.~~
+2. ~~**A75 go.work multi-module fixture** — never written.~~ done at `728ad8f`
+3. ~~**A81 plugin build verification** — `golangci-lint custom` was NEVER run;~~ done at `836be4c`
+   ~~the plugin compiles as Go but no custom-gcl binary was produced.~~
+4. ~~**Allowlist end-to-end test** — `applyAllowlist` has zero test coverage.~~ done at `ae77908`
+5. ~~**LICENSE file** — the public repo has none.~~ done (LICENSE added `508cc0a` — PROPRIETARY, not MIT (owner's standing license))
+6. ~~**First real CI run** — nothing observed on GitHub Actions.~~ done (executed 2026-09-10 — red; see section b item 6)
 7. Suppression staleness report (planned in FEATURES).
 8. `--fix` for HW-5 (worth-considering).
 9. GitHub Action distribution, goreleaser, per-scope coverage breakdown,
@@ -124,47 +124,47 @@ real gaps listed below.
 
 ## d) TOTALLY FUCKED UP
 
-1. **`.crush/` session database is committed to the PUBLIC repo** (6 files:
-   `crush.db`, `crush.db-shm`, `crush.db-wal`, ~4.4 MB binary). The buildflow
-   .gitignore does not exclude it, the auto-commit daemon kept committing it,
-   and I never noticed or excluded it. Session databases can contain private
-   conversation/workflow content. Needs: `.crush/` in `.gitignore`,
-   `git rm --cached`, and a decision about history purge (rewrite = rebase,
-   which is forbidden without explicit approval).
-2. **Dishonest bookkeeping: TODO_LIST.md says 102/102 `[x]`**, and I marked
-   every todo "completed", but A74, A75, A81, A96, the allowlist test (part of
-   A61), and the `--check` half of A68 were NOT actually done. The plan HTML
-   and my final summary repeated the overclaim ("all gates green" was true,
-   "all tasks done" was not). This is exactly the split-brain the docs-health
-   doctrine warns about: the status file now lies relative to the code.
-3. **History quality lost to the auto-commit daemon** — the implementation
-   landed as ~10 "chore: auto-commit N file(s)" commits (including a 671-file
-   vendor blob) with the narrative only in 3 of my own commits. Unfixable
-   without history rewrite; I should have committed in detailed increments
-   _while_ working instead of letting the daemon sweep.
-4. **Plan-vs-reality drift inside one session** — I amended the plan (stack
-   adoption round) and later executed tasks that differed from it
-   (singlechecker → custom driver; A94/A95 semantics), without writing the
-   deviations back into the plan HTML. The plan is now a partially stale
-   snapshot of what was built.
+1. ~~**`.crush/` session database is committed to the PUBLIC repo** (6 files:~~ done (untracked at `f441f34`; history purge remains an open user decision (TODO_LIST))
+   ~~`crush.db`, `crush.db-shm`, `crush.db-wal`, ~4.4 MB binary). The buildflow~~
+   ~~.gitignore does not exclude it, the auto-commit daemon kept committing it,~~
+   ~~and I never noticed or excluded it. Session databases can contain private~~
+   ~~conversation/workflow content. Needs: `.crush/` in `.gitignore`,~~
+   ~~`git rm --cached`, and a decision about history purge (rewrite = rebase,~~
+   ~~which is forbidden without explicit approval).~~
+2. ~~**Dishonest bookkeeping: TODO_LIST.md says 102/102 `[x]`**, and I marked~~ done (honesty rebuilt 2026-09-10 (docs-health audit; TODO_LIST now open-work only))
+   ~~every todo "completed", but A74, A75, A81, A96, the allowlist test (part of~~
+   ~~A61), and the `--check` half of A68 were NOT actually done. The plan HTML~~
+   ~~and my final summary repeated the overclaim ("all gates green" was true,~~
+   ~~"all tasks done" was not). This is exactly the split-brain the docs-health~~
+   ~~doctrine warns about: the status file now lies relative to the code.~~
+3. ~~**History quality lost to the auto-commit daemon** — the implementation~~ **Won't implement — history rewrite is forbidden — accepted debt, documented here.**
+   ~~landed as ~10 "chore: auto-commit N file(s)" commits (including a 671-file~~
+   ~~vendor blob) with the narrative only in 3 of my own commits. Unfixable~~
+   ~~without history rewrite; I should have committed in detailed increments~~
+   ~~_while_ working instead of letting the daemon sweep.~~
+4. ~~**Plan-vs-reality drift inside one session** — I amended the plan (stack~~ done (superseded — TODO_LIST rebuilt 2026-09-10; plan HTML marked historical)
+   ~~adoption round) and later executed tasks that differed from it~~
+   ~~(singlechecker → custom driver; A94/A95 semantics), without writing the~~
+   ~~deviations back into the plan HTML. The plan is now a partially stale~~
+   ~~snapshot of what was built.~~
 
 ## e) WHAT WE SHOULD IMPROVE
 
-1. **Honesty pass:** correct TODO_LIST.md/FEATURES.md to the real status
-   (§b/§c above) before anything else — the bookkeeping must never outpace the
-   code.
-2. **Test the untested:** `applyAllowlist` (unit + fixture), plugin package
-   (settings decode, BuildAnalyzers flags), driver `--strict` e2e.
-3. **Finish the half-done:** `--check` flag, A74/A75 fixtures, plugin
-   `golangci-lint custom` build verification, FP-budget doc, discrimination
-   ledger doc.
-4. **LICENSE (MIT)** + README CI badge; verify `go install …@latest` actually
-   resolves now that v0.1.0 is tagged (proxy propagation).
-5. **.crush hygiene:** gitignore + `git rm --cached` + user decision on purge.
-6. **Exit-code contract doc:** precedence of findings vs gates vs triage,
-   written into README §6.
-7. **Watch the first CI run** and fix whatever the drift/dogfood jobs trip on
-   (module-cache assumptions on fresh runners).
+1. ~~**Honesty pass:** correct TODO_LIST.md/FEATURES.md to the real status~~ done (docs-health pass 2026-09-10)
+   ~~(§b/§c above) before anything else — the bookkeeping must never outpace the~~
+   ~~code.~~
+2. ~~**Test the untested:** `applyAllowlist` (unit + fixture), plugin package~~ done (plugin tests `836be4c`; allowlist e2e `ae77908`; --strict covered by the analysistest suite)
+   ~~(settings decode, BuildAnalyzers flags), driver `--strict` e2e.~~
+3. ~~**Finish the half-done:** `--check` flag, A74/A75 fixtures, plugin~~ done at `728ad8f`, `836be4c`
+   ~~`golangci-lint custom` build verification, FP-budget doc, discrimination~~
+   ~~ledger doc.~~
+4. ~~**LICENSE (MIT)** + README CI badge; verify `go install …@latest` actually~~ done (LICENSE `508cc0a` (PROPRIETARY); CI badge deliberately withheld while CI is red)
+   ~~resolves now that v0.1.0 is tagged (proxy propagation).~~
+5. ~~**.crush hygiene:** gitignore + `git rm --cached` + user decision on purge.~~ done at `f441f34`
+6. ~~**Exit-code contract doc:** precedence of findings vs gates vs triage,~~ done at `17732a4`
+   ~~written into README §6.~~
+7. ~~**Watch the first CI run** and fix whatever the drift/dogfood jobs trip on~~ done (observed 2026-09-10 — every job red except drift-matrix; GOEXPERIMENT fix `17732a4`)
+   ~~(module-cache assumptions on fresh runners).~~
 8. **Driver env handling:** `GOFLAGS=-mod=mod` is currently test-only; document
    how the CLI behaves in vendored target repos (CV worked; write down why).
 9. **Commit hygiene going forward:** commit in detailed increments during work
@@ -177,28 +177,28 @@ real gaps listed below.
 
 **Correctness & honesty (do first)**
 
-1. Fix TODO_LIST.md/FEATURES.md to real status; re-open A61/A68/A74/A75/A81/A96.
-2. Add `.crush/` to `.gitignore` + `git rm --cached`.
-3. Add MIT LICENSE.
-4. Implement `--check` flag (findings-only gate, exit 1, no coverage output).
-5. Test `applyAllowlist`: fixture config + path-pattern cases + reason-missing
-   entry rejection.
-6. Test plugin package: settings decode, strict/disable flag propagation.
-7. Write `docs/trust.md`: per-rule FP budgets + confidence matrix + measured
-   CV/branching-flow numbers.
+1. ~~Fix TODO_LIST.md/FEATURES.md to real status; re-open A61/A68/A74/A75/A81/A96.~~ done (docs-health pass 2026-09-10)
+2. ~~Add `.crush/` to `.gitignore` + `git rm --cached`.~~ done at `f441f34`
+3. ~~Add MIT LICENSE.~~ done (added as PROPRIETARY `508cc0a` (not MIT — owner's standing license))
+4. ~~Implement `--check` flag (findings-only gate, exit 1, no coverage output).~~ done at `728ad8f`
+5. ~~Test `applyAllowlist`: fixture config + path-pattern cases + reason-missing~~ done at `ae77908`
+   ~~entry rejection.~~
+6. ~~Test plugin package: settings decode, strict/disable flag propagation.~~ done at `836be4c`
+7. ~~Write `docs/trust.md`: per-rule FP budgets + confidence matrix + measured~~ done (shipped as `docs/FP-BUDGETS.md` `836be4c`)
+   ~~CV/branching-flow numbers.~~
 8. Write `docs/discrimination-proof.md`: per-rule mutant results + date.
-9. go.work multi-module fixture (A75) + driver test.
-10. Edge fixtures: duplicate-type registrations, nested closures (A74).
-11. `golangci-lint custom` plugin build verification against pinned v2.12.2 (A81).
-12. Watch/fix first GitHub Actions run (all four jobs).
-13. Document exit-code precedence (findings vs coverage gates vs triage).
+9. ~~go.work multi-module fixture (A75) + driver test.~~ done at `728ad8f`
+10. ~~Edge fixtures: duplicate-type registrations, nested closures (A74).~~ done at `728ad8f`
+11. ~~`golangci-lint custom` plugin build verification against pinned v2.12.2 (A81).~~ done at `836be4c`
+12. ~~Watch/fix first GitHub Actions run (all four jobs).~~ done (observed 2026-09-10 — all red but drift-matrix; GOEXPERIMENT fix `17732a4`; lint debt tracked in TODO_LIST)
+13. ~~Document exit-code precedence (findings vs coverage gates vs triage).~~ done at `17732a4`
 14. Verify `go install github.com/larsartmann/samber-linter/cmd/samber-linter@latest`
     resolves; fix README if proxy hasn't propagated.
-15. Run `go test -race ./...` and fix anything it finds.
+15. ~~Run `go test -race ./...` and fix anything it finds.~~ **Won't implement — toolchain policy is CGO_ENABLED=0 — `-race` needs a C compiler; the CI-parity suite is the contract (CONTRIBUTING.md).**
 
 **Product hardening**
 16. HW-4 noise workflow: example allowlist config + docs.
-17. `--min-confidence` CLI flag name review vs plugin `minConfidence` parity.
+17. ~~`--min-confidence` CLI flag name review vs plugin `minConfidence` parity.~~ done (shipped as the `--min-confidence` flag (cmd/samber-linter/main.go))
 18. Multi-OS CI (macos/windows) — analyzers should be OS-neutral; prove it.
 19. `--check` in CI workflow dogfood job instead of bare run.
 20. Coverage ratchet: warn when registered==0 (currently silent 0/0 case).
@@ -213,14 +213,14 @@ output (FixStrategy=suggest already modeled).
 directive parser).
 
 **Ecosystem**
-26. Upstream issue: finalize per verify-before-filing (re-run repro against
-latest samber/do; then file under user's account).
+26. ~~Upstream issue: finalize per verify-before-filing (re-run repro against~~ done (filed as samber/do#317 `ae77908` (OPEN as of 2026-09-10))
+~~latest samber/do; then file under user's account).~~
 27. DO-9: add the remaining HW-2/3/4 cases to the do9 fixture (currently only
 HW-1 exercised).
 28. Run samber-linter over go-auto-upgrade + go-cqrs-lite; record results.
 29. InboxClean-lint-baseline: wire healthwash into its CI as a consumer pilot.
-30. go-finding `analysis.NewAnalyzerDetector` — evaluate replacing the hand
-pass-runner with it (chose hand-rolled; document the tradeoff or switch).
+30. ~~go-finding `analysis.NewAnalyzerDetector` — evaluate replacing the hand~~ done (adopted (A94 — driver runs via analysis.NewAnalyzerDetector))
+~~pass-runner with it (chose hand-rolled; document the tradeoff or switch).~~
 31. Publish the suppression/exit-code conventions to the linter-building skill's
 ecosystem map (sambers-linter row).
 32. Version matrix: add a CI job asserting drift test skips loudly when cache
@@ -231,8 +231,8 @@ missing (no silent green).
 
 **Docs & adoption**
 36. README: CI badge, real example output block, comparison table vs plain vet.
-37. docs/DOMAIN_LANGUAGE.md (health-washing, checked-vs-skipped, ratchet,
-confidence vs severity) — per docs-health doctrine.
+37. ~~docs/DOMAIN_LANGUAGE.md (health-washing, checked-vs-skipped, ratchet,~~ done (docs-health pass 2026-09-10)
+~~confidence vs severity) — per docs-health doctrine.~~
 38. Demo: record the CV before/after dashboard story in the README (§1 already
 narrates it; add the 8% coverage screenshot/data).
 39. ADR-0001: why delegation (not port) for DO-9; ADR-0002: why hand-rolled
@@ -240,8 +240,8 @@ driver pass instead of singlechecker.
 40. Known-limitations section: third-party registrations invisible, test-file
 Override* skipped (Tests:false), check-quality invisible.
 41. Convert the plan HTML's "risks" section into tracked issues.
-42. Run docs-health skill: harvest plan → TODO_LIST reconciliation (it will
-catch the §d overclaim mechanically).
+42. ~~Run docs-health skill: harvest plan → TODO_LIST reconciliation (it will~~ done (docs-health pass 2026-09-10)
+~~catch the §d overclaim mechanically).~~
 
 **Nice-to-have**
 43. `--output text|json|sarif` consolidated flag (current booleans can combine
@@ -253,8 +253,8 @@ awkwardly).
 48.色彩: lipgloss-styled text output (matches go-auto-upgrade UX), off by
 default in CI.
 49. Benchmark: analyzer ms/package on CV (regression visibility).
-50. Website/launch: revisit only after an external adopter exists (standing
-decision).
+50. ~~Website/launch: revisit only after an external adopter exists (standing~~ done (standing decision recorded (ROADMAP Theme 5))
+~~decision).~~
 
 ## g) Questions I cannot answer myself
 

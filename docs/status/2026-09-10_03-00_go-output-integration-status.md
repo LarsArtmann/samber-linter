@@ -32,7 +32,7 @@
 
 ### What is something stupid we do anyway?
 
-- **Pipeline-masked exit codes.** Twice this session I ran `cmd | head` / `cmd | grep && echo OK` and read a green banner while the underlying command had failed (`$?` after `head`, `tail` swallowing `nix flake check`'s failure). AGENTS.md *literally documents this exact trap* ("verify the raw summaries, not the filtered tail") and I still walked into it. Both were caught on re-check, but only by luck of re-verification habit.
+- **Pipeline-masked exit codes.** Twice this session I ran `cmd | head` / `cmd | grep && echo OK` and read a green banner while the underlying command had failed (`$?` after `head`, `tail` swallowing `nix flake check`'s failure). AGENTS.md _literally documents this exact trap_ ("verify the raw summaries, not the filtered tail") and I still walked into it. Both were caught on re-check, but only by luck of re-verification habit.
 - **`go mod tidy` before imports exist** — tidy silently removed the freshly-added dep; wasted a cycle. Correct order is code-first-then-tidy.
 - **The `nix hash path vendor/` shortcut** — I flagged it as risky in my own reasoning and used it anyway. It produced a hash that doesn't match the goModules fetcher layout; wasted a full nix build cycle. The canonical fakeHash→`got:` loop is the only correct method.
 
@@ -65,49 +65,49 @@ No. But two claims were softer than they sounded and are now stated precisely: (
 
 ## a) FULLY DONE
 
-| # | Item | Evidence |
-|---|------|----------|
-| 1 | go-output v0.38.0 integrated (root + table, delimited, markdown, markup; escape pinned v0.38.0) | `go.mod:10-14,34` |
-| 2 | `--output <fmt>` end-to-end: flag → ParseOutputFormat validation → findings table render; default text mode untouched | `internal/driver/output.go`, `internal/driver/driver.go:157-166`, `cmd/samber-linter/main.go:23-25,50-56` |
-| 3 | 6 new tests, all passing; full suite green under CI-parity env | `internal/driver/output_test.go` |
-| 4 | escape sibling-tag misalignment diagnosed, pinned, documented | `go.mod:34`, AGENTS.md |
-| 5 | Format-registration mechanism documented (init()-per-submodule, auditlog transit) | AGENTS.md |
-| 6 | flake.nix vendorHash updated; hermetic `nix build` (incl. full test suite checkPhase) green | `flake.nix:29` |
-| 7 | treefmt/format checks green for all touched files | `nix build .#checks.x86_64-linux.{treefmt,format}` exit 0 |
-| 8 | README (contract) §Quick start + §6 CLI surface updated | README.md |
-| 9 | AGENTS.md memory updated (repo status + 2 new gotcha bullets) | AGENTS.md |
-| 10 | My lint hits zeroed (err113 → `ErrUnsupportedOutputFormat` sentinel; varnamelen renames) | hermetic lint log: 0 hits in touched files |
+| #  | Item                                                                                                                  | Evidence                                                                                                  |
+| -- | --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| 1  | go-output v0.38.0 integrated (root + table, delimited, markdown, markup; escape pinned v0.38.0)                       | `go.mod:10-14,34`                                                                                         |
+| 2  | `--output <fmt>` end-to-end: flag → ParseOutputFormat validation → findings table render; default text mode untouched | `internal/driver/output.go`, `internal/driver/driver.go:157-166`, `cmd/samber-linter/main.go:23-25,50-56` |
+| 3  | 6 new tests, all passing; full suite green under CI-parity env                                                        | `internal/driver/output_test.go`                                                                          |
+| 4  | escape sibling-tag misalignment diagnosed, pinned, documented                                                         | `go.mod:34`, AGENTS.md                                                                                    |
+| 5  | Format-registration mechanism documented (init()-per-submodule, auditlog transit)                                     | AGENTS.md                                                                                                 |
+| 6  | flake.nix vendorHash updated; hermetic `nix build` (incl. full test suite checkPhase) green                           | `flake.nix:29`                                                                                            |
+| 7  | treefmt/format checks green for all touched files                                                                     | `nix build .#checks.x86_64-linux.{treefmt,format}` exit 0                                                 |
+| 8  | README (contract) §Quick start + §6 CLI surface updated                                                               | README.md                                                                                                 |
+| 9  | AGENTS.md memory updated (repo status + 2 new gotcha bullets)                                                         | AGENTS.md                                                                                                 |
+| 10 | My lint hits zeroed (err113 → `ErrUnsupportedOutputFormat` sentinel; varnamelen renames)                              | hermetic lint log: 0 hits in touched files                                                                |
 
 ## b) PARTIALLY DONE
 
-| # | Item | Gap |
-|---|------|-----|
-| 1 | Docs-suite update | FEATURES.md / TODO_LIST.md / CHANGELOG.md missing the feature + follow-ups |
-| 2 | Hermetic lint gate | My files clean; gate still exits 1 on ~30 pre-existing hits; no fix-or-scope decision made |
-| 3 | CSV output composability | Coverage/summary lines stay plain text → CSV not end-to-end machine-parseable (documented, not solved) |
-| 4 | Table UX | Absolute filesystem paths in Location column; long messages make very wide tables (no wrap/trim check done) |
-| 5 | Plugin compatibility | Assumed unaffected; never ran a custom-gcl build |
+| # | Item                     | Gap                                                                                                         |
+| - | ------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| 1 | Docs-suite update        | FEATURES.md / TODO_LIST.md / CHANGELOG.md missing the feature + follow-ups                                  |
+| 2 | Hermetic lint gate       | My files clean; gate still exits 1 on ~30 pre-existing hits; no fix-or-scope decision made                  |
+| 3 | CSV output composability | Coverage/summary lines stay plain text → CSV not end-to-end machine-parseable (documented, not solved)      |
+| 4 | Table UX                 | Absolute filesystem paths in Location column; long messages make very wide tables (no wrap/trim check done) |
+| 5 | Plugin compatibility     | Assumed unaffected; never ran a custom-gcl build                                                            |
 
 ## c) NOT STARTED
 
-| # | Item |
-|---|------|
-| 1 | HW-1..HW-6 backport to `branching-flow/pkg/doanalyzerv2` as DO-9 family |
-| 2 | Upstream conversation with samber/do (transient HealthCheck returning nil is an upstream TODO) |
-| 3 | `--output` smoke step in `.github/workflows/ci.yml` dogfood job |
-| 4 | Confirm/cite GitHub Actions lint job status on master (`gh run list`) |
+| # | Item                                                                                                       |
+| - | ---------------------------------------------------------------------------------------------------------- |
+| 1 | HW-1..HW-6 backport to `branching-flow/pkg/doanalyzerv2` as DO-9 family                                    |
+| 2 | Upstream conversation with samber/do (transient HealthCheck returning nil is an upstream TODO)             |
+| 3 | `--output` smoke step in `.github/workflows/ci.yml` dogfood job                                            |
+| 4 | Confirm/cite GitHub Actions lint job status on master (`gh run list`)                                      |
 | 5 | Release engineering for the new flag (tag, `go run @latest` smoke — README quick-start advertises @latest) |
-| 6 | Runtime-companion metrics export polish (phase 3 stretch beyond current healthaudit) |
+| 6 | Runtime-companion metrics export polish (phase 3 stretch beyond current healthaudit)                       |
 
 ## d) TOTALLY FUCKED UP
 
-Nothing shipped is broken — the feature works and is verified. What *is* fucked up:
+Nothing shipped is broken — the feature works and is verified. What _is_ fucked up:
 
-| # | Item | Status |
-|---|------|--------|
-| 1 | **Repo-wide hermetic lint gate is red** (pre-existing: varnamelen ×22, wrapcheck ×3, tparallel, unparam, forbidigo, mnd, predeclared, gochecknoglobals, cyclop, nestif, lll across `driver.go`, `main.go`, `healthwash/`, tests). `nix flake check` therefore **cannot serve as a merge gate** — it fails on every tree, clean or not. Pre-dates this session (evidence: hits in untouched files); unproven against the exact pre-change commit. | Red, unowned |
-| 2 | **Two false-green moments this session** (masked exit codes). Caught, but the process that allowed them is the same one documented in AGENTS.md as a known trap. | Process debt |
-| 3 | **Broken intermediate edit** sat in the working tree (never committed — verified). Cost: one wasted round trip + an apology-grade mistake in exact-match editing. | Fixed, historical |
+| # | Item                                                                                                                                                                                                                                                                                                                                                                                                                                             | Status            |
+| - | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------- |
+| 1 | **Repo-wide hermetic lint gate is red** (pre-existing: varnamelen ×22, wrapcheck ×3, tparallel, unparam, forbidigo, mnd, predeclared, gochecknoglobals, cyclop, nestif, lll across `driver.go`, `main.go`, `healthwash/`, tests). `nix flake check` therefore **cannot serve as a merge gate** — it fails on every tree, clean or not. Pre-dates this session (evidence: hits in untouched files); unproven against the exact pre-change commit. | Red, unowned      |
+| 2 | **Two false-green moments this session** (masked exit codes). Caught, but the process that allowed them is the same one documented in AGENTS.md as a known trap.                                                                                                                                                                                                                                                                                 | Process debt      |
+| 3 | **Broken intermediate edit** sat in the working tree (never committed — verified). Cost: one wasted round trip + an apology-grade mistake in exact-match editing.                                                                                                                                                                                                                                                                                | Fixed, historical |
 
 ## e) WHAT WE SHOULD IMPROVE
 
@@ -122,6 +122,7 @@ Nothing shipped is broken — the feature works and is verified. What *is* fucke
 ## f) TOP 50 NEXT THINGS (brainstorm, sorted by impact; most are ROADMAP fuel)
 
 **Quality gate & CI**
+
 1. Decide + execute lint-gate policy: fix all ~30 pre-existing hits **or** scope the gate (see question 1)
 2. Confirm GitHub Actions `lint` job status on master (`gh run list`) and align expectations
 3. Pin CI golangci-lint version to the exact hermetic version (three-tool drift caused confusion)
@@ -189,4 +190,4 @@ Nothing shipped is broken — the feature works and is verified. What *is* fucke
 
 ---
 
-*Point-in-time snapshot 2026-09-10 03:00 CEST. Verification commands this session: `go build ./...`, `go vet ./...`, `GOEXPERIMENT=jsonv2 CGO_ENABLED=0 go test -count=1 ./...`, `golangci-lint run`, `nix build`, `nix build .#checks.x86_64-linux.{build,treefmt,format,lint}`, CLI smoke + cmdguard dogfood.*
+_Point-in-time snapshot 2026-09-10 03:00 CEST. Verification commands this session: `go build ./...`, `go vet ./...`, `GOEXPERIMENT=jsonv2 CGO_ENABLED=0 go test -count=1 ./...`, `golangci-lint run`, `nix build`, `nix build .#checks.x86_64-linux.{build,treefmt,format,lint}`, CLI smoke + cmdguard dogfood._

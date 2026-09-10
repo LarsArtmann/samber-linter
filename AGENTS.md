@@ -84,7 +84,7 @@ These come straight from the spec; violating any of them invalidates the analyze
 - Snippet gate: every Go block in `docs/upstream/*.md` is compiled and run
   verbatim by `scripts/check-upstream-snippets.sh` (CI job
   `upstream-snippets`). Blocks quoting upstream source must be marked
-  ` ```go snippet-skip `; unclassified blocks fail the check.
+  `` ```go snippet-skip ``; unclassified blocks fail the check.
 - Verification lessons (encoded after two incidents): execute snippets
   verbatim before filing; print whole structures, never map-index lookups
   (a missing key and a nil value print identically — `res["x"] == nil`
@@ -168,9 +168,9 @@ Non-obvious, easy to break:
 
 ## Ecosystem references (local, on this machine)
 
-| Artifact                                                        | Relevance                                                                     |
-| --------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| `~/projects/branching-flow/pkg/doanalyzerv2`                    | DO-1..DO-8 usage-shape rules + DO-9a–e delegating to this repo's healthwash  |
-| `samber-do-auditlog`                                            | Wrapping pattern the runtime companion is modeled on; biggest ecology offender (7×HW-1 + 5×HW-2 + 1×HW-3)                                     |
-| `~/.config/crush/skills/samber-do-best-practices/SKILL.md` §6.3 | The skill rule this linter mechanizes                                         |
-| `samber/do v2.1.0` module cache                                 | Source of all mechanism pins in README §2                                     |
+| Artifact                                                        | Relevance                                                                                                 |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `~/projects/branching-flow/pkg/doanalyzerv2`                    | DO-1..DO-8 usage-shape rules + DO-9a–e delegating to this repo's healthwash                               |
+| `samber-do-auditlog`                                            | Wrapping pattern the runtime companion is modeled on; biggest ecology offender (7×HW-1 + 5×HW-2 + 1×HW-3) |
+| `~/.config/crush/skills/samber-do-best-practices/SKILL.md` §6.3 | The skill rule this linter mechanizes                                                                     |
+| `samber/do v2.1.0` module cache                                 | Source of all mechanism pins in README §2                                                                 |

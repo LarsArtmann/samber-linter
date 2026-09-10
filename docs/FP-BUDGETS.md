@@ -1,6 +1,6 @@
 # False-Positive Budgets
 
-Per-rule statement of where healthwash *could* over-report, why each residual
+Per-rule statement of where healthwash _could_ over-report, why each residual
 risk is tolerated, and the empirical evidence from the 2026-09-10 ecology scan
 (43 samber/do v2 consumers analyzed, 66 findings, **0 confirmed false
 positives**). A rule that exceeds its budget is a bug: fix the rule, don't
@@ -9,7 +9,7 @@ grow the budget.
 ## How FPs are prevented structurally
 
 1. **Type-based detection only.** Every rule keys on interface satisfaction of
-   the *stored instance* — exactly what the samber/do sweep type-asserts
+   the _stored instance_ — exactly what the samber/do sweep type-asserts
    (`service_eager.go:88,94`, `service_lazy.go:136`). No name heuristics, no
    comment guessing, no flow analysis that can misfire.
 2. **Interface-satisfaction, not method-name matching.** All four Shutdowner
@@ -26,15 +26,15 @@ grow the budget.
 
 ## Budgets
 
-| Rule | Findings (ecology) | FP class | Budget | Mitigation when exceeded |
-|------|-------------------|----------|--------|--------------------------|
-| HW-1 | 30 | "Service can't meaningfully fail" disagreement | **0** — the finding is a type fact: Shutdowner without any Healthchecker renders an unconditional pass. Whether a check is *worth writing* is the user's call, expressed via a reasoned suppression, not an FP. | allowlist entry or `//samber-linter:allow hw-1 <reason>` |
-| HW-2 | 11 | "This bare check never blocks" | **0** — the sweep cannot cancel a bare check; the degradation is factual regardless of the check's current body. | reasoned suppression |
-| HW-3 | 1 | none known | **0** — the transient healthcheck is an upstream TODO that always returns nil; a check on a transient *never executes*. | reasoned suppression |
-| HW-4 | 24 | **Judgment calls only.** A lazily-built service that is in fact constructed during boot reports green "until first resolution" for microseconds; HW-4 still flags it. | **Soft ceiling ≈ 20% of findings per project.** HW-4 is `info`/Medium (never fails CI by default) precisely because the "when is it actually built" answer is not statically knowable. | `--disable HW-4`, allowlist, or register boot-critical services eagerly |
-| HW-5 | 0 | none known | **0** — pointer-receiver/value-registration is a compile-time fact. | reasoned suppression |
-| HW-0 | 0 | none known | **0** — malformed directive is a syntactic fact; also fires orphaned (no matching finding) since v0.1.1. | write the reason |
-| HW-unresolved | 0 (off) | Interface-typed closure results are statically unknowable — reporting them as violations would be the FP. | **0 while off**; in `--strict` the finding is explicitly "unresolved", never a guessed rule. | keep `--strict` off, or resolve the concrete type |
+| Rule          | Findings (ecology) | FP class                                                                                                                                                              | Budget                                                                                                                                                                                                          | Mitigation when exceeded                                                |
+| ------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| HW-1          | 30                 | "Service can't meaningfully fail" disagreement                                                                                                                        | **0** — the finding is a type fact: Shutdowner without any Healthchecker renders an unconditional pass. Whether a check is _worth writing_ is the user's call, expressed via a reasoned suppression, not an FP. | allowlist entry or `//samber-linter:allow hw-1 <reason>`                |
+| HW-2          | 11                 | "This bare check never blocks"                                                                                                                                        | **0** — the sweep cannot cancel a bare check; the degradation is factual regardless of the check's current body.                                                                                                | reasoned suppression                                                    |
+| HW-3          | 1                  | none known                                                                                                                                                            | **0** — the transient healthcheck is an upstream TODO that always returns nil; a check on a transient _never executes_.                                                                                         | reasoned suppression                                                    |
+| HW-4          | 24                 | **Judgment calls only.** A lazily-built service that is in fact constructed during boot reports green "until first resolution" for microseconds; HW-4 still flags it. | **Soft ceiling ≈ 20% of findings per project.** HW-4 is `info`/Medium (never fails CI by default) precisely because the "when is it actually built" answer is not statically knowable.                          | `--disable HW-4`, allowlist, or register boot-critical services eagerly |
+| HW-5          | 0                  | none known                                                                                                                                                            | **0** — pointer-receiver/value-registration is a compile-time fact.                                                                                                                                             | reasoned suppression                                                    |
+| HW-0          | 0                  | none known                                                                                                                                                            | **0** — malformed directive is a syntactic fact; also fires orphaned (no matching finding) since v0.1.1.                                                                                                        | write the reason                                                        |
+| HW-unresolved | 0 (off)            | Interface-typed closure results are statically unknowable — reporting them as violations would be the FP.                                                             | **0 while off**; in `--strict` the finding is explicitly "unresolved", never a guessed rule.                                                                                                                    | keep `--strict` off, or resolve the concrete type                       |
 
 ## Known boundary cases (documented, not bugs)
 

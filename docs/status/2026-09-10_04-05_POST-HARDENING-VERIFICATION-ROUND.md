@@ -46,7 +46,7 @@ recovered from the auto-commit daemon's history with zero loss.
 7. **dprint** — the repo has dprint.json for md/json formatting; I hand-edited
    four markdown files and never ran the formatter.
 8. **Concurrent-session coordination** — a parallel crush session committed the
-   `--output` feature into this repo *during* my session. I fixed its P0 bug in
+   `--output` feature into this repo _during_ my session. I fixed its P0 bug in
    output.go but never checked whether that session was done editing the file.
    No clobbering occurred (verified), but it was luck, not process.
 9. **The 2 missing dirs** (FluffBall, KeyCountdown) — noted "MISSING_DIR" in the
@@ -101,35 +101,35 @@ recovered from the auto-commit daemon's history with zero loss.
 
 ## a) FULLY DONE
 
-| Item | Evidence |
-|------|----------|
-| P0: empty `--output` broke every plain invocation | `ParseOutputFormat` accepts zero value (internal/driver/output.go); `TestParseOutputFormat` empty-value subtest; plain run verified locally + on CV |
-| A68 `--check` advisory mode | driver `Options.Check`, main.go flag, `TestCheckAdvisoryMode`, verified on CV (forced exit 0) |
-| `--disable` CLI wiring | driver `Options.DisableRules` → analyzer flag, `TestDisableRules`, verified on CV (HW-4 muted) |
-| Load failure exits 2 | driver.go load branch, `TestLoadFailureExitsTwo` (broken go.mod fixture) |
-| Allowlist semantics (A61-adjacent) | empty `pathPattern` = project-wide; rule-less entries warn + inert; `TestAllowlistEmptyPathPatternCoversProject` |
-| Suppression inside multi-line calls | `siteReport.endLine`, span loop in `reportFindings`; `suppressspan` fixture in golden corpus |
-| Orphaned HW-0 | `reportOrphanedDirectives` with dedupe vs site-attached reports; `hw0orphan` fixture + `TestOrphanedDirectiveHW0` |
-| A74 edge fixtures | `testdata/src/edges`: duplicate registrations (2 sites, 1 coverage row) + nested closures (proved closure providers returning concrete types are themselves HW-1 sites) |
-| A75 go.work e2e | `TestGoWorkMultiModule`: workspace with app + do-stub modules, `all` pattern, HW-1 found |
-| A81 plugin proof | `plugin/plugin_integration_test.go`: in-process registration + settings pass-through + full `golangci-lint custom` build-and-fire; `.custom-gcl.yml` usage comment now documents the mandatory `linters.settings.custom` registration |
-| A96 FP budgets | `docs/FP-BUDGETS.md`: per-rule budgets, structural FP prevention, boundary cases, ecology evidence |
-| Ecology anomalies | Kernovia = go.work needs go ≥ 1.27; ast-state-analyzer = stale go.mod. Target-project breakage; analyzer reports cleanly. Documented in TODO_LIST |
-| Complexity refactors | driver `Run` (cyclop 20 → buildAnalyzer/analyzePackages/emitOutputs/applyGates), `reportCoverage` (21 → writeBaseline/enforceCoverageMin/enforceBaselineRatchet), `applyAllowlist` (15 → warn/usable/entryCovers), `evalSite` (gocognit 39 → resolveStoredType + typeFacts + reportTransientRules/reportSweepRules/addBareCheckRule); analyzer split: collectDirectives/reportFindings/reportOrphanedDirectives |
-| Lint burn-down | 231 → 141 findings; session-start baseline was 199; zero findings added by this round remain |
-| Docs sync | README (exit codes, new flags, workspace `all`, multi-line suppression), CHANGELOG 0.1.1 entry, FEATURES.md, TODO_LIST verification round |
-| Final verification | `go build`/`go vet` clean, `go test ./...` all green (incl. plugin integration), dogfood `--coverage-min 0.0 ./...` exit 0, `--check` self-run exit 0 |
+| Item                                              | Evidence                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P0: empty `--output` broke every plain invocation | `ParseOutputFormat` accepts zero value (internal/driver/output.go); `TestParseOutputFormat` empty-value subtest; plain run verified locally + on CV                                                                                                                                                                                                                                                             |
+| A68 `--check` advisory mode                       | driver `Options.Check`, main.go flag, `TestCheckAdvisoryMode`, verified on CV (forced exit 0)                                                                                                                                                                                                                                                                                                                   |
+| `--disable` CLI wiring                            | driver `Options.DisableRules` → analyzer flag, `TestDisableRules`, verified on CV (HW-4 muted)                                                                                                                                                                                                                                                                                                                  |
+| Load failure exits 2                              | driver.go load branch, `TestLoadFailureExitsTwo` (broken go.mod fixture)                                                                                                                                                                                                                                                                                                                                        |
+| Allowlist semantics (A61-adjacent)                | empty `pathPattern` = project-wide; rule-less entries warn + inert; `TestAllowlistEmptyPathPatternCoversProject`                                                                                                                                                                                                                                                                                                |
+| Suppression inside multi-line calls               | `siteReport.endLine`, span loop in `reportFindings`; `suppressspan` fixture in golden corpus                                                                                                                                                                                                                                                                                                                    |
+| Orphaned HW-0                                     | `reportOrphanedDirectives` with dedupe vs site-attached reports; `hw0orphan` fixture + `TestOrphanedDirectiveHW0`                                                                                                                                                                                                                                                                                               |
+| A74 edge fixtures                                 | `testdata/src/edges`: duplicate registrations (2 sites, 1 coverage row) + nested closures (proved closure providers returning concrete types are themselves HW-1 sites)                                                                                                                                                                                                                                         |
+| A75 go.work e2e                                   | `TestGoWorkMultiModule`: workspace with app + do-stub modules, `all` pattern, HW-1 found                                                                                                                                                                                                                                                                                                                        |
+| A81 plugin proof                                  | `plugin/plugin_integration_test.go`: in-process registration + settings pass-through + full `golangci-lint custom` build-and-fire; `.custom-gcl.yml` usage comment now documents the mandatory `linters.settings.custom` registration                                                                                                                                                                           |
+| A96 FP budgets                                    | `docs/FP-BUDGETS.md`: per-rule budgets, structural FP prevention, boundary cases, ecology evidence                                                                                                                                                                                                                                                                                                              |
+| Ecology anomalies                                 | Kernovia = go.work needs go ≥ 1.27; ast-state-analyzer = stale go.mod. Target-project breakage; analyzer reports cleanly. Documented in TODO_LIST                                                                                                                                                                                                                                                               |
+| Complexity refactors                              | driver `Run` (cyclop 20 → buildAnalyzer/analyzePackages/emitOutputs/applyGates), `reportCoverage` (21 → writeBaseline/enforceCoverageMin/enforceBaselineRatchet), `applyAllowlist` (15 → warn/usable/entryCovers), `evalSite` (gocognit 39 → resolveStoredType + typeFacts + reportTransientRules/reportSweepRules/addBareCheckRule); analyzer split: collectDirectives/reportFindings/reportOrphanedDirectives |
+| Lint burn-down                                    | 231 → 141 findings; session-start baseline was 199; zero findings added by this round remain                                                                                                                                                                                                                                                                                                                    |
+| Docs sync                                         | README (exit codes, new flags, workspace `all`, multi-line suppression), CHANGELOG 0.1.1 entry, FEATURES.md, TODO_LIST verification round                                                                                                                                                                                                                                                                       |
+| Final verification                                | `go build`/`go vet` clean, `go test ./...` all green (incl. plugin integration), dogfood `--coverage-min 0.0 ./...` exit 0, `--check` self-run exit 0                                                                                                                                                                                                                                                           |
 
 ## b) PARTIALLY DONE
 
-| Item | State |
-|------|-------|
-| Lint debt | 141 pre-existing findings remain (paralleltest on analysistest-based tests, varnamelen in legacy code, 2 gochecknoglobals tables, wrapcheck, drift_test gocognit/lll). CI lint job has NEVER been green. Tracked in TODO_LIST, deliberately not mixed into this round |
-| v0.1.1 release | CHANGELOG entry written; main.go still says 0.1.0; no git tag, no push of a release |
-| CV baseline ownership | CV's 9 findings were FIXED externally since the scan; committed 8% baseline now reads 10% and correctly prompts `--set-baseline`. Lock-in still pending (user decision) |
-| HW-0 completeness | Orphaned *malformed* directives now surface; *valid* orphaned directives (stale suppressions) are only documented as a future HW-7 candidate |
-| Ecology triage | Pseudonymous queue committed; CV cleaned itself; rank-1 (standard-bug-tracking-schema, 63 unprotected services) untouched |
-| Concurrent session | Its `--output` feature adopted + fixed + regression-tested; its README/AGENTS/flake edits observed and respected; no coordination channel exists |
+| Item                  | State                                                                                                                                                                                                                                                                 |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lint debt             | 141 pre-existing findings remain (paralleltest on analysistest-based tests, varnamelen in legacy code, 2 gochecknoglobals tables, wrapcheck, drift_test gocognit/lll). CI lint job has NEVER been green. Tracked in TODO_LIST, deliberately not mixed into this round |
+| v0.1.1 release        | CHANGELOG entry written; main.go still says 0.1.0; no git tag, no push of a release                                                                                                                                                                                   |
+| CV baseline ownership | CV's 9 findings were FIXED externally since the scan; committed 8% baseline now reads 10% and correctly prompts `--set-baseline`. Lock-in still pending (user decision)                                                                                               |
+| HW-0 completeness     | Orphaned _malformed_ directives now surface; _valid_ orphaned directives (stale suppressions) are only documented as a future HW-7 candidate                                                                                                                          |
+| Ecology triage        | Pseudonymous queue committed; CV cleaned itself; rank-1 (standard-bug-tracking-schema, 63 unprotected services) untouched                                                                                                                                             |
+| Concurrent session    | Its `--output` feature adopted + fixed + regression-tested; its README/AGENTS/flake edits observed and respected; no coordination channel exists                                                                                                                      |
 
 ## c) NOT STARTED
 
@@ -198,6 +198,7 @@ rewrite needs a dry-run print before write.
 ## f) UP TO 50 THINGS TO DO NEXT
 
 **Release & CI (1–6)**
+
 1. Bump main.go version to 0.1.1 and tag `v0.1.1` (CHANGELOG entry already written)
 2. Watch the next GitHub Actions run; fix anything red (first real CI validation)
 3. Run `nix flake check` on the committed tree; fix flake drift from the parallel session's edits

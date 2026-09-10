@@ -21,7 +21,7 @@ rewritten into the owner's first-person voice with real project links and the
 GLM-5.3-Flash-via-Crush disclaimer. Two quality incidents occurred in this segment:
 the filed repro contained three compile-level errors (fixed, now literally executed),
 and my first "verification" of that repro was vacuous (map-index gotcha) — exposed by
-a control experiment that ended up *strengthening* both issues.
+a control experiment that ended up _strengthening_ both issues.
 
 ---
 
@@ -89,28 +89,28 @@ a control experiment that ended up *strengthening* both issues.
 
 ## a) FULLY DONE
 
-| Item | Evidence |
-|------|----------|
-| verify-before-filing executed | skill loaded; source gates against module cache (service_transient.go:58-66, scope.go:733-735, service_lazy.go:128-134, root_scope.go:208, injector.go:51-52); duplicate search (open+closed, none found); Discussions-disabled check (`has_discussions: false` → Issue, not Discussion) |
-| samber/do#317 filed | https://github.com/samber/do/issues/317 — transient nil/pass + internal inconsistency + three fix directions + executable repro |
-| samber/do#318 filed | https://github.com/samber/do/issues/318 — outcome states (Passed/Failed/NotBuilt/Unsupported/Skipped), grounded in `service_lazy.go:132-134`, additive API sketch, prior art, references #317 |
-| Repro made literally executable | standalone module compiled and run: `map[main.check:<nil>]`; snippet in #317 updated to the full-map print with the missing-key warning |
-| Lifecycle runtime-verified (3 experiments) | transient → nil (never dispatched); lazy before invoke → nil (never built); lazy after invoke → `boom` (check dispatches). Full-map dumps, not projections |
-| Internal inconsistency documented | `isHealthchecker()==false` yet sweep lists the service as passed — added to #317 Evidence |
-| Humanized both issues | first person, owner's voice, real links (go-health, go-health-dashboard — verified: dashboard imports go-health v0.1.3), linter numbers (43 repos, 66 findings, 30/24/1 breakdown), stilted phrasings removed, offer-speak removed from #318, single clean PR offer on #317 |
-| GLM-5.3-Flash via Crush disclaimer | appended to both issues (small `<sub>` footer) |
-| Multi-error design answered | `Err error` stays plain `error`: `errors.Join` covers multi-failure (verified oops.Join delegates to stdlib; Unwrap linear); `#Errs []error` rejected; noted in #318 as inline comment |
-| Local records synced | `docs/upstream/ISSUE_DRAFT.md` marked FILED with both links + verification notes; TODO_LIST checked off; daemon-committed |
+| Item                                       | Evidence                                                                                                                                                                                                                                                                                 |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| verify-before-filing executed              | skill loaded; source gates against module cache (service_transient.go:58-66, scope.go:733-735, service_lazy.go:128-134, root_scope.go:208, injector.go:51-52); duplicate search (open+closed, none found); Discussions-disabled check (`has_discussions: false` → Issue, not Discussion) |
+| samber/do#317 filed                        | https://github.com/samber/do/issues/317 — transient nil/pass + internal inconsistency + three fix directions + executable repro                                                                                                                                                          |
+| samber/do#318 filed                        | https://github.com/samber/do/issues/318 — outcome states (Passed/Failed/NotBuilt/Unsupported/Skipped), grounded in `service_lazy.go:132-134`, additive API sketch, prior art, references #317                                                                                            |
+| Repro made literally executable            | standalone module compiled and run: `map[main.check:<nil>]`; snippet in #317 updated to the full-map print with the missing-key warning                                                                                                                                                  |
+| Lifecycle runtime-verified (3 experiments) | transient → nil (never dispatched); lazy before invoke → nil (never built); lazy after invoke → `boom` (check dispatches). Full-map dumps, not projections                                                                                                                               |
+| Internal inconsistency documented          | `isHealthchecker()==false` yet sweep lists the service as passed — added to #317 Evidence                                                                                                                                                                                                |
+| Humanized both issues                      | first person, owner's voice, real links (go-health, go-health-dashboard — verified: dashboard imports go-health v0.1.3), linter numbers (43 repos, 66 findings, 30/24/1 breakdown), stilted phrasings removed, offer-speak removed from #318, single clean PR offer on #317              |
+| GLM-5.3-Flash via Crush disclaimer         | appended to both issues (small `<sub>` footer)                                                                                                                                                                                                                                           |
+| Multi-error design answered                | `Err error` stays plain `error`: `errors.Join` covers multi-failure (verified oops.Join delegates to stdlib; Unwrap linear); `#Errs []error` rejected; noted in #318 as inline comment                                                                                                   |
+| Local records synced                       | `docs/upstream/ISSUE_DRAFT.md` marked FILED with both links + verification notes; TODO_LIST checked off; daemon-committed                                                                                                                                                                |
 
 ## b) PARTIALLY DONE
 
-| Item | State |
-|------|-------|
-| Upstream engagement | #317 and #318 filed, OPEN, 0 comments, no response yet; follow-up/PR unowned |
-| go-health integration idea | `unknown`/`skipped` statuses fed by healthaudit discussed in #318 context; no implementation in go-health or healthaudit |
-| oops lessons | researched (Join→stdlib, Unwrap linear, hint/public/owner audience split, duration as field) but the delivered answer was incomplete; not folded into #318 beyond the Join comment |
-| Lint debt | 141 findings unchanged this segment (untouched by design); CI lint still red |
-| Still-open user decisions | HW-4 posture; CV baseline lock-in (CV now reads 10% vs 8% baseline); GitHub `.crush` purge; v0.1.1 tag |
+| Item                       | State                                                                                                                                                                              |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Upstream engagement        | #317 and #318 filed, OPEN, 0 comments, no response yet; follow-up/PR unowned                                                                                                       |
+| go-health integration idea | `unknown`/`skipped` statuses fed by healthaudit discussed in #318 context; no implementation in go-health or healthaudit                                                           |
+| oops lessons               | researched (Join→stdlib, Unwrap linear, hint/public/owner audience split, duration as field) but the delivered answer was incomplete; not folded into #318 beyond the Join comment |
+| Lint debt                  | 141 findings unchanged this segment (untouched by design); CI lint still red                                                                                                       |
+| Still-open user decisions  | HW-4 posture; CV baseline lock-in (CV now reads 10% vs 8% baseline); GitHub `.crush` purge; v0.1.1 tag                                                                             |
 
 ## c) NOT STARTED
 
@@ -161,6 +161,7 @@ only). But two quality incidents, both public:
 ## f) UP TO 50 THINGS TO DO NEXT
 
 **Upstream (1–8)**
+
 1. Watch #317/#318; respond to maintainer questions within a day of activity
 2. Prepare the #317 option-1 PR branch in advance (sentinel `ErrHealthCheckSkipped`) so filing a PR is a 5-minute act if invited
 3. Add the #318 design notes only if a maintainer asks — do not dump unsolicited
@@ -224,7 +225,7 @@ only). But two quality incidents, both public:
 
 ## g) QUESTIONS (cannot self-answer)
 
-1. **HW-4 posture (still open from last report):** on-by-default `info`/Medium, or opt-in? The upstream #318 discussion makes "lazy = green until built" a *state* question rather than pure noise — does that change your answer?
+1. **HW-4 posture (still open from last report):** on-by-default `info`/Medium, or opt-in? The upstream #318 discussion makes "lazy = green until built" a _state_ question rather than pure noise — does that change your answer?
 2. **Upstream identity & follow-up:** #317/#318 are filed under your GitHub account. Do you want me to own responses (draft replies for your review within a day of activity), or do you want to handle maintainer dialogue personally?
 3. **`.config/metadata.yaml`** is modified in the working tree and this session did not touch it. Yours? Another session's? Should I leave it strictly alone?
 

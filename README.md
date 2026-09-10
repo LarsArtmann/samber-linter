@@ -204,7 +204,7 @@ always-green dashboards.
 
 ```
 internal/di/handlers.go:42:9: HW-1: *graphrag.Store implements do.Shutdowner
-    but no Healthchecker; it renders unconditional "pass" on health dashboards.
+    but no Healthchecker; it renders an unconditional "pass" on health dashboards.
     Implement HealthCheck(context.Context) error or suppress with a reason:
     //samber-linter:allow hw-1 <reason>
 ```
@@ -450,7 +450,8 @@ Upstream drift guard: pin the analyzed samber/do version in CI and re-run the
 mechanism assertions (§2) against new releases; a behavior change upstream
 should fail the build loudly rather than silently invalidate the rules. The
 matrix covers **v2.0.0 and v2.1.0** (both in the local module cache); the
-driver reads the target module's samber/do version and emits an info finding
+driver reads the target module's samber/do version and emits an informational
+stdout line
 when it falls outside the verified set.
 
 ## 12. Status, license, upstream

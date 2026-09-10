@@ -8,8 +8,8 @@ things" are brainstorm-grade input, not commitments).
 
 ## Theme 1 — The runtime health-outcome triangle
 
-The static analyzer says a check *cannot fail*; the runtime says what
-*actually happened*. samber/do#317 (transient checks never dispatched) and
+The static analyzer says a check _cannot fail_; the runtime says what
+_actually happened_. samber/do#317 (transient checks never dispatched) and
 #318 (explicit outcome states) are the upstream anchor.
 
 - healthaudit: typed `Status` enum (Registered/Invoked/Errored/Skipped) and
