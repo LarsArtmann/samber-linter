@@ -141,7 +141,7 @@ Nothing shipped is broken — the feature works and is verified. What _is_ fucke
 14. Relative-path option for Location (`--paths=rel` or trim module root)
 15. `--no-summary` (or output-aware summaries) so CSV/markdown are end-to-end parseable
 16. Decide direction: keep plain-text default vs cmdguard-style table default (see question 2)
-17. Document plugin/golangci path explicitly: `--output` is driver-only by design
+17. ~~Document plugin/golangci path explicitly: `--output` is driver-only by design~~ done (README §6 documents the machine-format ban and driver-only scope)
 18. README: rendered example block of `--output markdown`
 19. README: exit-code table (usage errors are 2 by flag convention; triage is also 2 — clarify)
 20. Long-message wrapping/width check for table renderer; consider Message column truncation
@@ -150,22 +150,22 @@ Nothing shipped is broken — the feature works and is verified. What _is_ fucke
 23. Consider `SAMBER_LINTER_OUTPUT` env for CI ergonomics (YAGNI candidate, keep last)
 
 **Docs & release**
-24. FEATURES.md: add `--output` (DONE)
-25. CHANGELOG.md: unreleased entry for the flag + escape pin
-26. TODO_LIST.md: harvest this report's actionable items (docs-health HARVEST)
+24. ~~FEATURES.md: add `--output` (DONE)~~ done (FEATURES.md lists `--output` under Driver CLI (2026-09-10 audit))
+25. ~~CHANGELOG.md: unreleased entry for the flag + escape pin~~ done (CHANGELOG [Unreleased] carries the flag + escape pin (2026-09-10))
+26. ~~TODO_LIST.md: harvest this report's actionable items (docs-health HARVEST)~~ done (docs-health pass 2026-09-10)
 27. Release: tag v0.1.1, `go run ...@latest` smoke (go-release flow)
 28. AGENTS.md: document "never `nix hash path vendor/` for vendorHash — use fakeHash loop"
-29. Annotate this report's claims when later revisited (docs-health ANNOTATE mode)
+29. ~~Annotate this report's claims when later revisited (docs-health ANNOTATE mode)~~ done (docs-health pass 2026-09-10)
 
 **Ecosystem / upstream**
 30. Verify + file go-output issue: markdown/markup@v0.38.0 mis-pin escape v0.37.0 (verify-before-filing)
 31. Verify + file/report the real HW-2 in cmdguard `scope.go:427` (user owns cmdguard)
 32. Watch go-output releases; bump when sibling tags realign; re-test matrix
 33. Propose go-output CI check that fails when sibling module pins drift from the release tag
-34. HW-* backport to branching-flow doanalyzerv2 (DO-9 family) — P3 per AGENTS.md
-35. Upstream samber/do conversation: transient HealthCheck returns nil (upstream TODO)
-36. Dogfood samber-linter on branching-flow; collect real-world finding quality data
-37. Verify `.custom-gcl.yml` plugin build against the new go.sum
+34. ~~HW-* backport to branching-flow doanalyzerv2 (DO-9 family) — P3 per AGENTS.md~~ done (shipped — branching-flow delegation DO-9a–e (`analyzer_healthwash.go`))
+35. ~~Upstream samber/do conversation: transient HealthCheck returns nil (upstream TODO)~~ done (filed samber/do#317 + #318 `ae77908`)
+36. ~~Dogfood samber-linter on branching-flow; collect real-world finding quality data~~ done (clean (verified in dogfood, docs/status/2026-09-10_01-17 §a.23))
+37. ~~Verify `.custom-gcl.yml` plugin build against the new go.sum~~ done (`plugin/plugin_integration_test.go` `836be4c`)
 38. Dep sweep: check go-finding / go-linter-sdk / go-atomic-write for newer versions (go-ecosystem-upgrade flow)
 39. Drift-matrix: prepare samber/do v2.2.x extension point for when it releases
 
@@ -186,7 +186,7 @@ Nothing shipped is broken — the feature works and is verified. What _is_ fucke
 
 1. **Lint-gate policy:** Should I fix all ~30 pre-existing lint hits (hours of mechanical churn: renames, globals restructuring, complexity splits) so `nix flake check` becomes a true green gate, or do we scope the gate (e.g. new-code-only / config exclusions) and leave legacy as-is? This decides whether the repo's quality gate is real today.
 2. **Default output direction:** Is plain `file:line:col` text the permanent default (CI-log compatibility), or is the endgame a cmdguard-style styled table default with text opt-out? This determines how much polish (colors, width handling, relative paths) `--output table` deserves.
-3. **Upstream & release appetite:** Should I (a) verify + file the cmdguard HW-2 finding upstream, (b) file the go-output escape-pin issue upstream, and (c) cut a v0.1.1 release so the README's `@latest` quick start serves the new flag — now, or after more bake time?
+3. ~~**Upstream & release appetite:** Should I (a) verify + file the cmdguard HW-2 finding upstream, (b) file the go-output escape-pin issue upstream, and (c) cut a v0.1.1 release so the README's `@latest` quick start serves the new flag — now, or after more bake time?~~ done (partially — #317/#318 filed `ae77908`; the v0.1.1 release call remains open (TODO_LIST))
 
 ---
 

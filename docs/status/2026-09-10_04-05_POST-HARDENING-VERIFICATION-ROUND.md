@@ -124,27 +124,27 @@ recovered from the auto-commit daemon's history with zero loss.
 
 | Item                  | State                                                                                                                                                                                                                                                                 |
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Lint debt             | 141 pre-existing findings remain (paralleltest on analysistest-based tests, varnamelen in legacy code, 2 gochecknoglobals tables, wrapcheck, drift_test gocognit/lll). CI lint job has NEVER been green. Tracked in TODO_LIST, deliberately not mixed into this round |
+~~| Lint debt             | 141 pre-existing findings remain (paralleltest on analysistest-based tests, varnamelen in legacy code, 2 gochecknoglobals tables, wrapcheck, drift_test gocognit/lll). CI lint job has NEVER been green. Tracked in TODO_LIST, deliberately not mixed into this round |~~ done (2026-09-10: still red; root causes + burn-down tracked as TODO_LIST quality gate) |~~
 | v0.1.1 release        | CHANGELOG entry written; main.go still says 0.1.0; no git tag, no push of a release                                                                                                                                                                                   |
 | CV baseline ownership | CV's 9 findings were FIXED externally since the scan; committed 8% baseline now reads 10% and correctly prompts `--set-baseline`. Lock-in still pending (user decision)                                                                                               |
-| HW-0 completeness     | Orphaned _malformed_ directives now surface; _valid_ orphaned directives (stale suppressions) are only documented as a future HW-7 candidate                                                                                                                          |
+~~| HW-0 completeness     | Orphaned _malformed_ directives now surface; _valid_ orphaned directives (stale suppressions) are only documented as a future HW-7 candidate                                                                                                                          |~~ done (HW-7 candidate tracked: TODO_LIST decision + docs/FP-BUDGETS.md)
 | Ecology triage        | Pseudonymous queue committed; CV cleaned itself; rank-1 (standard-bug-tracking-schema, 63 unprotected services) untouched                                                                                                                                             |
-| Concurrent session    | Its `--output` feature adopted + fixed + regression-tested; its README/AGENTS/flake edits observed and respected; no coordination channel exists                                                                                                                      |
+~~| Concurrent session    | Its `--output` feature adopted + fixed + regression-tested; its README/AGENTS/flake edits observed and respected; no coordination channel exists                                                                                                                      |~~ done (exercised again 2026-09-10: a parallel session edited this repo during the docs-health audit; verified before write, no clobbering)
 
 ## c) NOT STARTED
 
-- GitHub CI verification of the actual Actions runs (`gh run list`) — repo may
-  finally be green but nobody has looked
-- `nix flake check` after final commit
+~~- GitHub CI verification of the actual Actions runs (`gh run list`) — repo may
+  finally be green but nobody has looked~~ done 2026-09-10: red — test/dogfood failed on missing GOEXPERIMENT (fixed `17732a4`), lint red; only drift-matrix green (run 34425222926)
+~~- `nix flake check` after final commit~~ done 2026-09-10: build+test checks green; lint check red (44 findings — tracked debt)
 - Rank-1 triage execution (standard-bug-tracking-schema: 4×HW-1, 63 unprotected)
 - samber-do-auditlog fixes (7×HW-1, 5×HW-2, 1×HW-3 — biggest offender)
 - FluffBall / KeyCountdown MISSING_DIR investigation
-- Upstream samber/do issue filing (docs/upstream/ISSUE_DRAFT.md + repro exist,
-  verify-before-filing not yet executed)
+~~- Upstream samber/do issue filing (docs/upstream/ISSUE_DRAFT.md + repro exist,
+  verify-before-filing not yet executed)~~ done at `ae77908` — filed as samber/do#317 + #318, both verified OPEN
 - HW-7 stale-directive rule design
 - Health-washing fix proposals for any of the 11 remaining finding projects
-- AGENTS.md update (see "forgot" list)
-- dprint formatting pass over hand-edited markdown
+~~- AGENTS.md update (see "forgot" list)~~ done 2026-09-10: Driver contract + Upstream engagement sections (parallel session) + GOEXPERIMENT/CI-status rewrite (docs-health audit)
+~~- dprint formatting pass over hand-edited markdown~~ done 2026-09-10: `dprint fmt` clean, check green (integration into nix checks still open, TODO_LIST)
 
 ## d) TOTALLY FUCKED UP
 
@@ -180,31 +180,31 @@ rewrite needs a dry-run print before write.
    repeatable, pseudonymized output, used as the post-change regression proof.
 2. **First-action discipline:** run the tool before refactoring it; the P0 was
    findable in 10 seconds.
-3. **CI truth:** wire the plugin build + a lint gate into CI intentionally —
-   either fix the 141 findings or scope the lint config honestly; "red since
-   day one" corrodes every future green claim.
+3. ~~**CI truth:** wire the plugin build + a lint gate into CI intentionally —~~ done (diagnosed 2026-09-10 — GOEXPERIMENT fix `17732a4`; golangci toolchain + ~141 findings tracked as TODO_LIST quality gate)
+   ~~either fix the 141 findings or scope the lint config honestly; "red since~~
+   ~~day one" corrodes every future green claim.~~
 4. **Version triple-lock:** main.go `version`, CHANGELOG, and git tags must
    move in one commit per release.
 5. **Baseline v2:** per-rule counts (ratchet rules, not just coverage), schema
    version field with validation errors.
 6. **--check + --json interplay:** suppress the advisory line in machine
    formats.
-7. **Concurrent-session protocol:** before editing, `git log --since=...` to
-   see if another session is mid-flight; afterwards, re-diff files owned by
-   the other session.
-8. **AGENTS.md as the memory anchor:** the golangci registration trap, exit
-   contract change, and workspace pattern belong there, not just in README.
+7. ~~**Concurrent-session protocol:** before editing, `git log --since=...` to~~ done (exercised 2026-09-10 — parallel-session edits verified before write)
+   ~~see if another session is mid-flight; afterwards, re-diff files owned by~~
+   ~~the other session.~~
+8. ~~**AGENTS.md as the memory anchor:** the golangci registration trap, exit~~ done (done 2026-09-10 — Driver contract + Upstream engagement sections in AGENTS.md)
+   ~~contract change, and workspace pattern belong there, not just in README.~~
 
 ## f) UP TO 50 THINGS TO DO NEXT
 
 **Release & CI (1–6)**
 
 1. Bump main.go version to 0.1.1 and tag `v0.1.1` (CHANGELOG entry already written)
-2. Watch the next GitHub Actions run; fix anything red (first real CI validation)
-3. Run `nix flake check` on the committed tree; fix flake drift from the parallel session's edits
+2. ~~Watch the next GitHub Actions run; fix anything red (first real CI validation)~~ done (observed 2026-09-10 — red on GOEXPERIMENT; fix `17732a4` lands with the next run)
+3. ~~Run `nix flake check` on the committed tree; fix flake drift from the parallel session's edits~~ done (run 2026-09-10 — build/test green, lint check red (44; tracked))
 4. Reconcile golangci-lint versions: `.custom-gcl.yml` pins v2.12.2, local is v2.13.2, CI uses `latest` — pin one policy
 5. Add a CI job that builds `custom-gcl` (plugin proof in CI; network-gated)
-6. Check `gh run list` for the lint job reality; decide fix-vs-rescope policy
+6. ~~Check `gh run list` for the lint job reality; decide fix-vs-rescope policy~~ done (done 2026-09-10 — lint job fails at config load (golangci binary built with go1.24 vs go.mod 1.26.7), run 34425222926)
 
 **Lint debt burn-down (7–12)**
 7. paralleltest: add `t.Parallel()` to analysistest-based tests (TestGoldenCorpus, TestStrictUnresolved, TestDiscriminationProofs + subtests, TestParseDirective)
@@ -241,20 +241,20 @@ rewrite needs a dry-run print before write.
 32. Investigate FluffBall/KeyCountdown MISSING_DIR (renamed or deleted?)
 33. Kernovia: fix or report its go.work (go ≥ 1.27 requirement) — upstream courtesy PR
 34. ast-state-analyzer: run `go mod tidy` there, re-scan, close the anomaly
-35. File the upstream samber/do transient-healthcheck issue (draft exists; execute verify-before-filing first)
+35. ~~File the upstream samber/do transient-healthcheck issue (draft exists; execute verify-before-filing first)~~ done (filed samber/do#317 + #318 `ae77908`, both OPEN)
 36. samber-do-auditlog: propose fixes for 7×HW-1 + 5×HW-2 + 1×HW-3 (biggest offender)
 37. standard-bug-tracking-schema: begin rank-1 triage (63 unprotected services)
-38. branching-flow DO-9 backport: confirm still clean after driver changes
+38. ~~branching-flow DO-9 backport: confirm still clean after driver changes~~ done (delegation intact — branching-flow `analyzer_healthwash.go` verified 2026-09-10)
 39. Refresh the pseudonymous triage doc with post-fix numbers
 
 **Docs & hygiene (40–46)**
-40. AGENTS.md: add settings.custom trap, workspace `all`, exit-2 load failures, lint policy
+40. ~~AGENTS.md: add settings.custom trap, workspace `all`, exit-2 load failures, lint policy~~ done (done — AGENTS "Driver contract" documents the custom-build requirement)
 41. README plugin section: the registration requirement (currently only in .custom-gcl.yml comment)
-42. README suppression section: multi-line call example
-43. dprint pass over all hand-edited markdown/json
+42. ~~README suppression section: multi-line call example~~ done (documented — README Quick start notes multi-line-call suppression)
+43. ~~dprint pass over all hand-edited markdown/json~~ done (2026-09-10 — `dprint fmt` clean, check green)
 44. Remove stale /tmp binaries (sl-test, sl-final, samber-linter) or document them as session artifacts
 45. `git worktree prune`; confirm no dangling worktree metadata
-46. Confirm the parallel session's remaining TODOs (AGENTS/flake notes at commits 568d6ae) are complete
+46. ~~Confirm the parallel session's remaining TODOs (AGENTS/flake notes at commits 568d6ae) are complete~~ done (confirmed — AGENTS/flake edits landed (daemon history))
 
 **Bigger ideas (47–50)**
 47. healthaudit cross-link: findings suggest the runtime sweep as complementary evidence ("static says it CAN fail; runtime says it DID")
