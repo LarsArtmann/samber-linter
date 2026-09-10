@@ -4,7 +4,9 @@
 
 HW-1..HW-6, driver, golangci plugin, and runtime companion are implemented
 (`cmd/`, `internal/`, `pkg/`, `plugin/`), with CI in `.github/workflows/ci.yml`
-(test, drift-matrix, lint, dogfood). The phasing section below is historical.
+(test, drift-matrix, lint, dogfood). `--output` (go-output findings table:
+table/csv/tsv/markdown/html/xml/asciidoc) added 2026-09-10; `--json`/`--sarif`
+stay the only machine formats. The phasing section below is historical.
 
 **`README.md` is the contract.** Read it fully before writing any code. Its
 claims carry a verification ledger (§11) with file:line pins into
@@ -101,6 +103,19 @@ Non-obvious, easy to break:
 - **nixpkgs `go_1_26` is exactly 1.26.7 = go.mod floor** (verified 2026-09-10).
   Bumping the go.mod floor past nixpkgs' toolchain requires
   `goTarballVersion`/`goTarballHash` in go-standard.
+- **go-output v0.38.0 sibling tags are misaligned**: markdown/markup@v0.38.0
+  compile against `escape@v0.38.0` (`escape.MarkdownCell`) but their published
+  go.mod pins v0.37.0. go.mod must keep the explicit
+  `go-output/escape v0.38.0` require; `go mod tidy` alone re-breaks the build
+  with `undefined: escape.MarkdownCell`. cmdguard carries the same pin.
+- **go-output format registration is init()-based per submodule** — the root
+  module registers nothing. cmdguard imports only the root and still gets all
+  formats because samber-do-auditlog (its dep) imports the submodules
+  transitively. samber-linter has no such transit, so
+  `internal/driver/output.go` blank-imports table/delimited/markdown/markup;
+  adding a format = add the blank import + extend the SupportedOutputFormats
+  tests (json/yaml/toml/jsonl and diagram formats are deliberately banned
+  there — one shape per consumer, machine formats stay with --json/--sarif).
 - Formatting: treefmt (gofumpt + goimports + nixfmt) for go/nix, dprint for
   json/yaml/markdown — the two tools own disjoint file sets.
 

@@ -24,6 +24,9 @@ go run github.com/larsartmann/samber-linter/cmd/samber-linter@latest ./...
 samber-linter --json ./...     # go-finding JSON
 samber-linter --sarif ./...    # SARIF 2.1
 
+# Presentation formats (findings table)
+samber-linter --output markdown ./...   # also: table, csv, tsv, html, xml, asciidoc
+
 # Coverage ratchet (HW-6)
 samber-linter --set-baseline ./...       # lock current coverage as the floor
 samber-linter --coverage-min 0.6 ./...   # fail below 60%
@@ -309,9 +312,18 @@ runtime companion's job (§7).
 samber-linter ./...                     # analyze, text output
 samber-linter --json ./...              # go-finding JSON (rule, pos, type, service, confidence)
 samber-linter --sarif ./...             # SARIF 2.1 for code scanning
+samber-linter --output markdown ./...   # findings table via go-output (also: table, csv, tsv, html, xml, asciidoc)
 samber-linter --coverage-min 0.6 ./...  # HW-6 as a gate
 samber-linter --set-baseline ./...      # lock current coverage as the new floor (atomic write)
 ```
+
+`--output` renders the findings as a go-output table (Rule, Severity,
+Confidence, Location, Message); the coverage and summary lines stay plain
+text in every mode. JSON-family and diagram formats are deliberately not
+offered here: `--json` (go-finding report) and `--sarif` own the
+machine-readable contract, so there is exactly one shape per consumer.
+Passing e.g. `--output json` fails at flag validation with the supported
+list. An invalid `--output` value exits 2 (flag-parse convention).
 
 Exit codes follow the confidence ternary (`go-linter-sdk`'s
 `ExitCodeByConfidence`): `0` clean, `1` high-confidence findings, `2` needs
