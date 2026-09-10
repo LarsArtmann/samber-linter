@@ -36,21 +36,21 @@
 
 | # | Item                            | What exists                                                                                                                                                     | What's missing                                                                                                                                                                                                                    |
 | - | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1 | `GOEXPERIMENT=jsonv2` invariant | Kept, documented in flake + AGENTS.md; empirically verified that **no compiled file imports `encoding/json/v2`** (only vendor docs matched); CI runs without it | **Provenance never traced.** The claim "go-finding requires jsonv2" comes from the old flake's comment; I did not find where go-finding declares it. It may be vestigial                                                          |
+| ~~1~~ | ~~`GOEXPERIMENT=jsonv2` invariant~~ done — answered 2026-09-10 — go-finding v1.9.2 imports encoding/json/v2; requirement is real, CI now sets it (`17732a4`) | ~~Kept, documented in flake + AGENTS.md; empirically verified that **no compiled file imports `encoding/json/v2`** (only vendor docs matched); CI runs without it~~ | ~~**Provenance never traced.** The claim "go-finding requires jsonv2" comes from the old flake's comment; I did not find where go-finding declares it. It may be vestigial~~ |
 | 2 | AGENTS.md freshness             | Status header + build automation rewritten                                                                                                                      | "Testing discipline (required before shipping P0)" and "Phasing" sections still read as pre-ship requirements; I marked phasing historical in the header but didn't rewrite the sections                                          |
 | 3 | Lint story                      | Stock golangci-lint green in nix (config uses standard linters only)                                                                                            | `.custom-gcl.yml` plugin path (`golangci-lint custom` → healthwash plugin) is **not** exercised by any nix app/check; nix lint ≠ full lint story                                                                                  |
-| 4 | CI ↔ nix parity                 | CI green (4 jobs); nix flake check green                                                                                                                        | CI does not consume the flake; env drift exists (CI lints/tests **without** GOEXPERIMENT, nix **with** — currently zero-impact, but two sources of truth)                                                                         |
+| ~~4~~ | ~~CI ↔ nix parity~~ done — env parity fixed `17732a4`; CI-on-flake decision lives in ROADMAP Theme 2 | ~~CI green (4 jobs); nix flake check green~~ | ~~CI does not consume the flake; env drift exists (CI lints/tests **without** GOEXPERIMENT, nix **with** — currently zero-impact, but two sources of truth)~~ |
 | 5 | Version injection               | Module wires `-X main.version=<git-rev>`                                                                                                                        | **Never verified** the binary actually receives it (`internal/driver/version.go` is not package `main`; if `cmd/samber-linter` doesn't re-declare the var, ldflags is a silent no-op). I only smoke-tested `--help`               |
 | 6 | Formatter coverage matrix       | treefmt owns go/nix; dprint owns json/yaml/md/dockerfile                                                                                                        | Split-brain check done (dprint does NOT claim .nix ✓), but dprint is not integrated into any nix check — md/json formatting is unverified in `nix flake check`, and I never ran dprint against my own AGENTS.md/dprint.json edits |
 
 ## c) NOT STARTED (noticed, deliberately deferred)
 
-1. **HARVEST** of section (f) into `TODO_LIST.md` / `ROADMAP.md` (docs-health) — deferred per your "then wait" instruction
-2. `CHANGELOG.md` entry for the migration (vendor removal is a user-visible repo change)
+1. ~~**HARVEST** of section (f) into `TODO_LIST.md` / `ROADMAP.md` (docs-health) — deferred per your "then wait" instruction~~ done (docs-health pass 2026-09-10)
+2. ~~`CHANGELOG.md` entry for the migration (vendor removal is a user-visible repo change)~~ done (CHANGELOG [Unreleased] Changed covers the flake rewrite + vendor removal (2026-09-10))
 3. README install/usage via flake (`nix run github:LarsArtmann/samber-linter`) — README untouched
-4. CI migration to the flake (incl. SSH/deploy-key auth for the `git+ssh` go-nix-helpers input on Actions)
+4. ~~CI migration to the flake (incl. SSH/deploy-key auth for the `git+ssh` go-nix-helpers input on Actions)~~ done (docs-health pass 2026-09-10)
 5. Nix app for `golangci-lint custom` (custom-gcl plugin build)
-6. dprint integration into flake checks
+6. ~~dprint integration into flake checks~~ done (docs-health pass 2026-09-10)
 7. `nix flake check --all-systems` (darwin/aarch64 currently unexercised — check prints the omission warning)
 8. golangci-lint version pinning in CI (currently `version: latest` — three different lint versions across CI / nixpkgs / custom-gcl v2.12.2)
 9. `apps.dogfood` / `apps.drift` convenience apps (CI job parity inside the flake)
@@ -66,6 +66,8 @@ Nothing is broken — every verification is green on the final state. But two th
 3. _(minor, unresolved contradiction)_ The old flake's baseline build behaved contradictorily: with no root `main.go` and default `subPackages = ["."]`, `nix build` should have failed in seconds, yet the derivation ran until my 300s timeout killed it. I replaced the flake **without ever resolving whether the old flake worked at all**. Moot now (replacement is strictly better and fully verified), but I papered over contradictory evidence instead of resolving it.
 
 ## e) WHAT WE SHOULD IMPROVE (process, extracted from d) + b))
+> [2026-09-10 docs-health] Process lessons — absorbed into standing practice: exact-match edits only, full-dump verification, GOEXPERIMENT provenance now traced (go-finding v1.9.2; see AGENTS.md). Item 7's lint-matrix closure is tracked as ROADMAP Theme 2. Items below are standing discipline, not open tasks.
+
 
 1. **Order of operations for destructive migrations:** prove the replacement green _before_ removing the thing it replaces.
 2. **Resolve contradictory tool output before moving on** — a 300s mystery build was a signal; I shrugged.
@@ -82,25 +84,25 @@ _Per skill guidance: N > 25 is a brainstorm, not a commitment list. Impact-sorte
 
 **Docs & harvesting**
 
-1. ⭐ HARVEST this report → `TODO_LIST.md` / `ROADMAP.md` (docs-health)
-2. ⭐ CHANGELOG entry: flake migration + vendor removal
+1. ~~⭐ HARVEST this report → `TODO_LIST.md` / `ROADMAP.md` (docs-health)~~ done (docs-health pass 2026-09-10)
+2. ~~⭐ CHANGELOG entry: flake migration + vendor removal~~ done (landed in CHANGELOG [Unreleased] Changed (2026-09-10))
 3. README: nix-based install/run, dev quickstart, plugin build docs
-4. Annotate older `docs/status/*` reports pointing here (docs-health ANNOTATE)
-5. Finish AGENTS.md cleanup (Testing discipline / Phasing sections)
-6. `docs/DOMAIN_LANGUAGE.md` for healthwash terms (HW-*, ratchet, prepared source)
+4. ~~Annotate older `docs/status/*` reports pointing here (docs-health ANNOTATE)~~ done (docs-health pass 2026-09-10)
+5. ~~Finish AGENTS.md cleanup (Testing discipline / Phasing sections)~~ done (status header + GOEXPERIMENT bullet rewritten 2026-09-10; Testing discipline/Phasing remain, marked historical)
+6. ~~`docs/DOMAIN_LANGUAGE.md` for healthwash terms (HW-*, ratchet, prepared source)~~ done (docs-health pass 2026-09-10)
 7. README badges (CI, Go version)
 
 **CI / release integrity**
 8. ⭐ Decide + execute CI↔nix relationship (single `nix flake check` gate vs setup-go; needs deploy-key auth for `git+ssh` input if nix)
-9. ⭐ Trace GOEXPERIMENT=jsonv2 provenance; codify or drop (also closes CI/nix env drift)
+9. ~~⭐ Trace GOEXPERIMENT=jsonv2 provenance; codify or drop (also closes CI/nix env drift)~~ done (traced 2026-09-10 — go-finding v1.9.2 imports encoding/json/v2; codified in `ci.yml` (`17732a4`) + AGENTS.md)
 10. ⭐ Verify/fix `-X main.version` injection reaching the binary
 11. Pin golangci-lint version(s); adopt one policy across CI / nixpkgs / custom-gcl
 12. Nix derivation or app for `golangci-lint custom` plugin lint
 13. `apps.dogfood` + `apps.drift` (CI parity inside flake)
 14. HW-6 baseline: generate + commit `.samber-linter-baseline.json`; raise `--coverage-min` off 0.0
-15. Tag/release v0.1.0 (go-release skill; decide git-rev vs static semver)
+15. ~~Tag/release v0.1.0 (go-release skill; decide git-rev vs static semver)~~ done (v0.1.0 tagged and pushed; v0.1.1 pending (TODO_LIST release policy))
 16. GitHub Release automation
-17. CI plugin smoke test (custom-gcl compiles; `plugin/` currently has no tests)
+17. ~~CI plugin smoke test (custom-gcl compiles; `plugin/` currently has no tests)~~ done (plugin suite runs in the CI test job (`836be4c`); a dedicated custom-gcl CI build remains open)
 18. `nix flake check --all-systems` or explicit systems restriction
 19. Binary cache (cachix/attic) for CI speed
 20. Renovate/dependabot for go.mod + flake.lock
@@ -111,8 +113,8 @@ _Per skill guidance: N > 25 is a brainstorm, not a commitment list. Impact-sorte
 23. Extend drift-matrix across pinned samber/do v2.1.x releases
 24. Fuzz/property tests: generics, dot-imports, rename resilience
 25. Analyzer performance benchmark on corpus
-26. HW-* backport to branching-flow `doanalyzerv2` as DO-9 (P3)
-27. Follow through `docs/upstream/ISSUE_DRAFT.md` (upstream samber/do conversation)
+26. ~~HW-* backport to branching-flow `doanalyzerv2` as DO-9 (P3)~~ done (shipped — branching-flow `analyzer_healthwash.go` delegates DO-9a–e to this repo)
+27. ~~Follow through `docs/upstream/ISSUE_DRAFT.md` (upstream samber/do conversation)~~ done (filed samber/do#317 + #318 `ae77908` (both OPEN 2026-09-10))
 28. healthaudit companion example integration (auditlog wrapping pattern, P3)
 
 **Flake polish**
@@ -126,14 +128,14 @@ _Per skill guidance: N > 25 is a brainstorm, not a commitment list. Impact-sorte
 36. Vendor-in-git-history bloat: document as accepted debt (no rewrite, ever)
 
 **Housekeeping**
-37. `plugin/` package test coverage
+37. ~~`plugin/` package test coverage~~ done (`plugin/plugin_integration_test.go` `836be4c`)
 38. Decide `go.mod` toolchain-directive policy (floor 1.26.7 == nixpkgs go_1_26 today)
 39. Evaluate Go toolchain bump workflow (goTarballVersion) readiness notes
 40. Status-report index / rotation policy for `docs/status/`
 41. Review `.golangci.yml` linter set vs ecosystem defaults (revive rules etc.)
 42. `errcheck` exclude-functions list — revisit with go-error-modernization lens later
-43. Confirm `.samber-linter-baseline.json` gitignore/status coherence with HW-6 docs
-44. Consider `-count=1` vs caching policy note for drift test in CI
+43. ~~Confirm `.samber-linter-baseline.json` gitignore/status coherence with HW-6 docs~~ done (coherent — the baseline is meant to be committed (ratchet floor); not gitignored, by design)
+44. ~~Consider `-count=1` vs caching policy note for drift test in CI~~ done (drift job runs `-count=1` in CI (ci.yml))
 45. Add `nix flake show` sanity to verify battery (cosmetic)
 46. Local `result*` symlinks: confirm all gitignored (done: `result`, `result-*` ✓) — close
 47. shellcheck coverage: writeShellApplication apps get it free; raw `checkPhase` snippet doesn't — assess
@@ -144,7 +146,7 @@ _Per skill guidance: N > 25 is a brainstorm, not a commitment list. Impact-sorte
 ## g) Questions I can NOT figure out myself
 
 1. **CI↔nix policy:** should GitHub Actions become a thin `nix flake check` runner (single hermetic gate, but needs SSH/deploy-key auth for the `git+ssh://` go-nix-helpers input and nix on runners), or stay setup-go for non-nix OSS contributors? I can implement either; the contributor-tradeoff call is yours.
-2. **jsonv2 invariant ownership:** is `GOEXPERIMENT=jsonv2` a real cross-repo contract you intend to keep (go-finding ecosystem-wide), or vestigial? I verified nothing in this build imports `encoding/json/v2`; only you can say whether the invariant is a promise you want kept.
+2. ~~**jsonv2 invariant ownership:** is `GOEXPERIMENT=jsonv2` a real cross-repo contract you intend to keep (go-finding ecosystem-wide), or vestigial? I verified nothing in this build imports `encoding/json/v2`; only you can say whether the invariant is a promise you want kept.~~ done (answered by events 2026-09-10 — the invariant is a hard build requirement (go-finding v1.9.2); CI sets it)
 3. **Version semantics for release:** should `samber-linter` releases use the module's git-rev versioning as-is, or must `v0.1.0` be a static semver baked into the binary (affects whether I add a version override + release automation next)?
 
 ---

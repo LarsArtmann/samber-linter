@@ -77,3 +77,12 @@ Matching samber/do's wrapper per registration function (README §2.6):
   residual false-positive risk; a rule exceeding its budget is a bug.
 - **Golden fixture** — frozen CV-incident snapshot in `testdata/`; frozen on
   purpose, never a live reference.
+
+## Output vocabulary
+
+- **Presentation format** — human-rendered findings tables via `--output`
+  (table/csv/tsv/markdown/html/xml/asciidoc). One shape per consumer;
+  JSON-family and diagram formats are deliberately banned here.
+- **Machine format** — structured contracts: `--json` (go-finding report) and
+  `--sarif` (SARIF 2.1). Machine formats own the parseability guarantee;
+  presentation formats own readability.

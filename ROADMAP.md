@@ -78,6 +78,10 @@ Findings fixed in target projects are the strongest possible FP evidence.
 
 ## Open questions (user-owned)
 
+Default output direction: plain text forever (CI-log compatibility) vs
+styled table default with text opt-out — decides how much polish `--output
+table` deserves (03-00 §g.2).
+
 Recorded where the work is tracked: HW-4 posture, release policy, CV
 baseline, `.crush` purge, upstream watch ownership, HW-7 go-ahead — see
 `TODO_LIST.md` → "Open decisions". CI↔nix policy and jsonv2-invariant

@@ -44,6 +44,8 @@ execution plan is historical:
       samber-do-auditlog (7×HW-1 + 5×HW-2 + 1×HW-3 — its HW-3 is the live #317
       case), then rank-1 standard-bug-tracking-schema (63 unprotected services)
       (source: docs/status/2026-09-10_06-50 §f.27-28).
+- [ ] Dogfood `--output markdown` in the CI dogfood job (the flag can rot
+  silently otherwise; source: docs/status/2026-09-10_03-00 §c.3).
 - [ ] Integrate dprint (markdown/json/yaml) into a nix check — treefmt owns
       go/nix only, so hand-edited markdown is currently unverified by
       `nix flake check` (docs/status/2026-09-10_02-22 §b.6).
