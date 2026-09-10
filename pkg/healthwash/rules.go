@@ -24,7 +24,7 @@ func evalSite(
 	fnName string,
 	kind ServiceKind,
 	call *ast.CallExpr,
-	doIfaces ifaces,
+	lc ifaces,
 	strict bool,
 ) (ServiceRecord, []siteReport) {
 	if kind == KindAlias {
@@ -36,7 +36,35 @@ func evalSite(
 		return ServiceRecord{Kind: kind}, nil
 	}
 
-	serviceType, unresolved := resolveStoredType(pass, kind, call.Args[idx])
+	var (
+		serviceType types.Type
+		unresolved  bool
+	)
+
+	if kind == KindEager {
+		serviceType = pass.TypesInfo.TypeOf(call.Args[idx])
+		if serviceType == nil {
+			unresolved = true
+		}
+	} else {
+		pt := pass.TypesInfo.TypeOf(call.Args[idx])
+		if pt == nil {
+			unresolved = true
+		} else if sig, ok := pt.Underlying().(*types.Signature); ok &&
+			sig.Results() != nil && sig.Results().Len() >= 1 {
+			serviceType = sig.Results().At(0).Type()
+		} else {
+			unresolved = true
+		}
+	}
+
+	if serviceType != nil {
+		if _, isIface := serviceType.Underlying().(*types.Interface); isIface {
+			// Interface-typed closure result: the sweep asserts the stored
+			// concrete instance, which is statically unknowable here.
+			unresolved = true
+		}
+	}
 
 	rel := types.TypeString(serviceType, types.RelativeTo(pass.Pkg))
 	full := types.TypeString(serviceType, nil)
@@ -74,16 +102,13 @@ func evalSite(
 	valueReg := !isPointer(stored)
 	ptrToBase := types.NewPointer(stored) // for value regs this is *T
 
-	facts := typeFacts{
-		anyCheck:  doIfaces.typeImplementsAnyCheck(stored),
-		bareCheck: doIfaces.typeImplementsBareCheck(stored),
-		ctxCheck:  doIfaces.typeImplementsCtxCheck(stored),
-		anyCheckP: doIfaces.typeImplementsAnyCheck(ptrToBase),
-		shutdown:  doIfaces.typeImplementsAnyShutdown(stored),
-		valueReg:  valueReg,
-	}
+	anyCheckStored := lc.typeImplementsAnyCheck(stored)
+	bareCheckStored := lc.typeImplementsBareCheck(stored)
+	ctxCheckStored := lc.typeImplementsCtxCheck(stored)
+	anyCheckPtr := lc.typeImplementsAnyCheck(ptrToBase)
+	shutdownStored := lc.typeImplementsAnyShutdown(stored)
 
-	rec.ImplementsCheck = facts.anyCheck
+	rec.ImplementsCheck = anyCheckStored
 
 	var reps []siteReport
 
@@ -101,129 +126,63 @@ func evalSite(
 		// defensive: kept exhaustive for future ServiceKind values.
 
 	case KindTransient:
-		reportTransientRules(add, rel, fnName, facts)
-	case KindLazy, KindEager:
-		reportSweepRules(add, rel, fnName, kind, facts)
-
-		return rec, reps
-	}
-
-	return rec, reps
-}
-
-// resolveStoredType extracts the type the sweep will store for one
-// registration argument: the value itself for eager registrations, the
-// provider's first result otherwise. unresolved is true when that type is not
-// statically knowable (nil type, result-less provider, or an interface-typed
-// closure result whose concrete instance the analyzer cannot see).
-func resolveStoredType(
-	pass *analysis.Pass, kind ServiceKind, arg ast.Expr,
-) (serviceType types.Type, unresolved bool) {
-	if kind == KindEager {
-		serviceType = pass.TypesInfo.TypeOf(arg)
-		unresolved = serviceType == nil
-
-		return serviceType, unresolved
-	}
-
-	pt := pass.TypesInfo.TypeOf(arg)
-	if pt == nil {
-		return nil, true
-	}
-
-	sig, isSig := pt.Underlying().(*types.Signature)
-	if !isSig || sig.Results() == nil || sig.Results().Len() < 1 {
-		return nil, true
-	}
-
-	serviceType = sig.Results().At(0).Type()
-	if _, isIface := serviceType.Underlying().(*types.Interface); isIface {
-		// Interface-typed closure result: the sweep asserts the stored
-		// concrete instance, which is statically unknowable here.
-		return nil, true
-	}
-
-	return serviceType, false
-}
-
-// typeFacts is what the sweep can see about the stored instance. All fields
-// derive from interface satisfaction of the stored type (and its pointer for
-// value registrations).
-type typeFacts struct {
-	anyCheck  bool // any Healthchecker variant on the stored type
-	bareCheck bool // bare HealthCheck() on the stored type
-	ctxCheck  bool // HealthCheck(context.Context) on the stored type
-	anyCheckP bool // any Healthchecker variant on *T (value registrations)
-	shutdown  bool // any Shutdowner variant on the stored type
-	valueReg  bool // registered as a value, not a pointer
-}
-
-// reportTransientRules fires for transient registrations: the upstream
-// transient healthcheck is a TODO that always returns nil, so a stored check
-// can never execute (HW-3); a bare check would degrade the sweep if the
-// upstream ever dispatches (HW-2).
-func reportTransientRules(add func(rule, msg string), rel, fnName string, facts typeFacts) {
-	if facts.anyCheck {
-		add(RuleHW3, fmt.Sprintf(
-			"%s implements a Healthchecker variant but is registered transiently (%s); the transient healthcheck is an upstream TODO and always returns nil, so the check can never execute. Register as a singleton or drop the dead implementation. Suppress with //samber-linter:allow %s <reason>",
-			rel,
-			fnName,
-			RuleCodeHW3,
-		))
-	}
-
-	if facts.bareCheck && !facts.ctxCheck {
-		addBareCheckRule(add, rel)
-	}
-}
-
-// reportSweepRules fires for lazy and eager registrations in precedence
-// order. HW-5 short-circuits: it and HW-1 share the single remedy (register
-// the pointer), so reporting both would double-count one fixable cause.
-func reportSweepRules(add func(rule, msg string), rel, fnName string, kind ServiceKind, facts typeFacts) {
-	if facts.valueReg && facts.anyCheckP && !facts.anyCheck {
-		add(RuleHW5, fmt.Sprintf(
-			"%s declares its health check on receiver *T but is registered as value %s; the sweep type-asserts the stored value, so the implementation exists and never runs. Register the pointer or move the receiver to T. Suppress with //samber-linter:allow %s <reason>",
-			rel,
-			rel,
-			RuleCodeHW5,
-		))
-
-		return
-	}
-
-	if facts.shutdown && !facts.anyCheck {
-		add(RuleHW1, fmt.Sprintf(
-			"%s implements do.Shutdowner but no Healthchecker; it renders an unconditional %q on health dashboards. Implement HealthCheck(context.Context) error or suppress with a reason: //samber-linter:allow %s <reason>",
-			rel,
-			"pass",
-			RuleCodeHW1,
-		))
-	}
-
-	if facts.anyCheck {
-		if kind == KindLazy {
-			add(RuleHW4, fmt.Sprintf(
-				"%s implements a Healthchecker variant but is registered lazily (%s); until first resolution it reports green without ever having been constructed. Register eagerly when boot-critical or suppress with a reason: //samber-linter:allow %s <reason>",
+		if anyCheckStored {
+			add(RuleHW3, fmt.Sprintf(
+				"%s implements a Healthchecker variant but is registered transiently (%s); the transient healthcheck is an upstream TODO and always returns nil, so the check can never execute. Register as a singleton or drop the dead implementation. Suppress with //samber-linter:allow %s <reason>",
 				rel,
 				fnName,
-				RuleCodeHW4,
+				RuleCodeHW3,
 			))
 		}
 
-		if facts.bareCheck && !facts.ctxCheck {
-			addBareCheckRule(add, rel)
+		if bareCheckStored && !ctxCheckStored {
+			add(RuleHW2, fmt.Sprintf(
+				"%s implements HealthCheck() without a context variant; a hung bare check cannot be cancelled and degrades the whole sweep. Prefer HealthCheck(context.Context) error. Suppress with //samber-linter:allow %s <reason>",
+				rel,
+				RuleCodeHW2,
+			))
+		}
+	case KindLazy, KindEager:
+		if valueReg && anyCheckPtr && !anyCheckStored {
+			add(RuleHW5, fmt.Sprintf(
+				"%s declares its health check on receiver *T but is registered as value %s; the sweep type-asserts the stored value, so the implementation exists and never runs. Register the pointer or move the receiver to T. Suppress with //samber-linter:allow %s <reason>",
+				rel,
+				rel,
+				RuleCodeHW5,
+			))
+
+			return rec, reps
+		}
+
+		if shutdownStored && !anyCheckStored {
+			add(RuleHW1, fmt.Sprintf(
+				"%s implements do.Shutdowner but no Healthchecker; it renders an unconditional \"pass\" on health dashboards. Implement HealthCheck(context.Context) error or suppress with a reason: //samber-linter:allow %s <reason>",
+				rel,
+				RuleCodeHW1,
+			))
+		}
+
+		if anyCheckStored {
+			if kind == KindLazy {
+				add(RuleHW4, fmt.Sprintf(
+					"%s implements a Healthchecker variant but is registered lazily (%s); until first resolution it reports green without ever having been constructed. Register eagerly when boot-critical or suppress with a reason: //samber-linter:allow %s <reason>",
+					rel,
+					fnName,
+					RuleCodeHW4,
+				))
+			}
+
+			if bareCheckStored && !ctxCheckStored {
+				add(RuleHW2, fmt.Sprintf(
+					"%s implements HealthCheck() without a context variant; a hung bare check cannot be cancelled and degrades the whole sweep. Prefer HealthCheck(context.Context) error. Suppress with //samber-linter:allow %s <reason>",
+					rel,
+					RuleCodeHW2,
+				))
+			}
 		}
 	}
-}
 
-// addBareCheckRule is the shared HW-2 message for bare checks.
-func addBareCheckRule(add func(rule, msg string), rel string) {
-	add(RuleHW2, fmt.Sprintf(
-		"%s implements HealthCheck() without a context variant; a hung bare check cannot be cancelled and degrades the whole sweep. Prefer HealthCheck(context.Context) error. Suppress with //samber-linter:allow %s <reason>",
-		rel,
-		RuleCodeHW2,
-	))
+	return rec, reps
 }
 
 // evalAlias records As/AsNamed rows for HW-6. Aliases delegate their

@@ -109,7 +109,7 @@ type siteReport struct {
 func run(pass *analysis.Pass) (any, error) {
 	doPkg := findDoPackage(pass)
 	if doPkg == nil {
-		return nil, nil // target does not use samber/do v2
+		return nil, nil //nolint:nilnil // analyzers signal "nothing found" via nil, nil
 	}
 
 	ifaces := loadInterfaces(doPkg)
@@ -170,7 +170,7 @@ func inspectRegistration(
 ) (ServiceRecord, []siteReport, bool) {
 	call, isCall := n.(*ast.CallExpr)
 	if !isCall {
-		return ServiceRecord{}, nil, false
+		return ServiceRecord{}, nil, false //nolint:nilnil // "not a registration" is signaled by ok=false
 	}
 
 	sel, isSel := call.Fun.(*ast.SelectorExpr)

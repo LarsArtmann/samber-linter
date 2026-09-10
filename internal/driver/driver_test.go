@@ -300,6 +300,8 @@ func lastJSONLine(s string) string {
 // TestCheckAdvisoryMode: --check reports findings but always exits 0, so CI
 // annotation pipelines can parse output without failing the build.
 func TestCheckAdvisoryMode(t *testing.T) {
+	t.Parallel()
+
 	app := e2eModule(t)
 
 	var out, errOut bytes.Buffer
@@ -326,6 +328,8 @@ func TestCheckAdvisoryMode(t *testing.T) {
 // TestDisableRules: the CLI --disable flag mutes rules the way the analyzer
 // flag does (the golangci plugin path was already covered by wiring).
 func TestDisableRules(t *testing.T) {
+	t.Parallel()
+
 	app := e2eModule(t)
 
 	var out, errOut bytes.Buffer
@@ -349,6 +353,8 @@ func TestDisableRules(t *testing.T) {
 // the project-wide form, not a silent no-op; a rule-less entry warns and
 // stays inert.
 func TestAllowlistEmptyPathPatternCoversProject(t *testing.T) {
+	t.Parallel()
+
 	app := e2eModule(t)
 	cfg := filepath.Join(app, "allow.json")
 
@@ -397,6 +403,8 @@ func TestAllowlistEmptyPathPatternCoversProject(t *testing.T) {
 // TestLoadFailureExitsTwo: exit 1 is reserved for findings; a run that cannot
 // load anything has none and must say 2.
 func TestLoadFailureExitsTwo(t *testing.T) {
+	t.Parallel()
+
 	broken := t.TempDir()
 	must(t, os.WriteFile(filepath.Join(broken, "go.mod"),
 		[]byte("mod ule example.com/broken\n"), 0o644))
@@ -423,6 +431,8 @@ func TestLoadFailureExitsTwo(t *testing.T) {
 // local samber/do stub module (the shape real consumers like go.work-based
 // monorepos present) must load and analyze across module boundaries.
 func TestGoWorkMultiModule(t *testing.T) {
+	t.Parallel()
+
 	dir := t.TempDir()
 
 	stub := filepath.Join(dir, "dostub")
