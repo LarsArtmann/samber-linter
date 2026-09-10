@@ -82,6 +82,8 @@ func must(t *testing.T, err error) {
 }
 
 func TestRunEndToEnd(t *testing.T) {
+	t.Parallel()
+
 	app := e2eModule(t)
 
 	var out, errOut bytes.Buffer
@@ -100,19 +102,21 @@ func TestRunEndToEnd(t *testing.T) {
 		t.Fatalf("exit = %d, want 1 (high-confidence HW-1); stderr: %s", code, errOut.String())
 	}
 
-	o := out.String()
-	if !strings.Contains(o, "HW-1") {
-		t.Errorf("output missing HW-1 finding:\n%s", o)
+	output := out.String()
+	if !strings.Contains(output, "HW-1") {
+		t.Errorf("output missing HW-1 finding:\n%s", output)
 	}
 
-	if !strings.Contains(o, "health-coverage: 1/3 = 33%") {
-		t.Errorf("output missing coverage line 1/3:\n%s", o)
+	if !strings.Contains(output, "health-coverage: 1/3 = 33%") {
+		t.Errorf("output missing coverage line 1/3:\n%s", output)
 	}
 }
 
 // TestSetBaselineAndRatchet: --set-baseline writes the floor atomically; a
 // committed higher floor fails on regression.
 func TestSetBaselineAndRatchet(t *testing.T) {
+	t.Parallel()
+
 	app := e2eModule(t)
 	baselinePath := filepath.Join(app, DefaultBaselinePath)
 
@@ -174,6 +178,8 @@ func TestSetBaselineAndRatchet(t *testing.T) {
 
 // TestCoverageMinGate: --coverage-min fails below threshold.
 func TestCoverageMinGate(t *testing.T) {
+	t.Parallel()
+
 	app := e2eModule(t)
 
 	var out, errOut bytes.Buffer
@@ -193,6 +199,8 @@ func TestCoverageMinGate(t *testing.T) {
 
 // TestJSONAndSARIF: machine outputs are produced on demand.
 func TestJSONAndSARIF(t *testing.T) {
+	t.Parallel()
+
 	app := e2eModule(t)
 
 	var out, errOut bytes.Buffer
@@ -231,6 +239,8 @@ func TestJSONAndSARIF(t *testing.T) {
 
 // TestCleanModuleExitsZero: an honest module exits 0 with no findings.
 func TestCleanModuleExitsZero(t *testing.T) {
+	t.Parallel()
+
 	dir := t.TempDir()
 	stub := filepath.Join(dir, "dostub")
 	must(t, os.MkdirAll(stub, 0o755))
@@ -245,7 +255,9 @@ func TestCleanModuleExitsZero(t *testing.T) {
 	must(t, os.WriteFile(
 		filepath.Join(app, "go.mod"),
 		[]byte(
-			"module example.com/clean\n\ngo 1.26\n\nrequire github.com/samber/do/v2 v2.1.0\n\nreplace github.com/samber/do/v2 => ../dostub\n",
+			"module example.com/clean\n\ngo 1.26\n\n" +
+				"require github.com/samber/do/v2 v2.1.0\n\n" +
+				"replace github.com/samber/do/v2 => ../dostub\n",
 		),
 		0o644,
 	))
@@ -286,15 +298,15 @@ func main() {
 	}
 }
 
-func lastJSONLine(s string) string {
-	lines := strings.Split(s, "\n")
+func lastJSONLine(text string) string {
+	lines := strings.Split(text, "\n")
 	for _, line := range slices.Backward(lines) {
 		if strings.HasPrefix(line, "{") {
 			return line
 		}
 	}
 
-	return s
+	return text
 }
 
 // TestCheckAdvisoryMode: --check reports findings but always exits 0, so CI

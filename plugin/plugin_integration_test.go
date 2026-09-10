@@ -155,7 +155,9 @@ func TestCustomGCLIntegration(t *testing.T) {
 	if err := os.WriteFile(
 		filepath.Join(target, "go.mod"),
 		[]byte(
-			"module example.com/target\n\ngo 1.26\n\nrequire github.com/samber/do/v2 v2.1.0\n\nreplace github.com/samber/do/v2 => ../dostub\n",
+			"module example.com/target\n\ngo 1.26\n\n" +
+				"require github.com/samber/do/v2 v2.1.0\n\n" +
+				"replace github.com/samber/do/v2 => ../dostub\n",
 		),
 		0o644,
 	); err != nil {

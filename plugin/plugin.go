@@ -29,6 +29,8 @@ package plugin
 import (
 	"strings"
 
+	"fmt"
+
 	"github.com/golangci/plugin-module-register/register"
 	"github.com/larsartmann/samber-linter/pkg/healthwash"
 	"golang.org/x/tools/go/analysis"
@@ -67,13 +69,13 @@ func (p *healthwashPlugin) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 	a := healthwash.New()
 	if strings.EqualFold(strings.TrimSpace(p.settings.Strict), "true") {
 		if err := a.Flags.Set("strict", "true"); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("set strict flag: %w", err)
 		}
 	}
 
 	if d := strings.TrimSpace(p.settings.Disable); d != "" {
 		if err := a.Flags.Set("disable", d); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("set disable flag: %w", err)
 		}
 	}
 

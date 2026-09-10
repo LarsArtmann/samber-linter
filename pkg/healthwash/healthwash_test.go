@@ -14,6 +14,8 @@ import (
 // Every fixture must type-check (compile gate) and every `// want` comment
 // must be matched exactly — unexpected diagnostics fail the run.
 func TestGoldenCorpus(t *testing.T) {
+	t.Parallel()
+
 	analysistest.Run(t, testdataDir(), New(),
 		"golden", "hw5value", "hw3transient", "hw4lazy", "hw2bare",
 		"suppress", "suppressspan", "edges", "overr", "unresolvable",
@@ -22,6 +24,8 @@ func TestGoldenCorpus(t *testing.T) {
 
 // TestStrictUnresolved verifies the --strict mode placeholder.
 func TestStrictUnresolved(t *testing.T) {
+	t.Parallel()
+
 	a := New()
 	if err := a.Flags.Set("strict", "true"); err != nil {
 		t.Fatal(err)
@@ -69,6 +73,8 @@ func newDisabled(rules ...string) *analysis.Analyzer {
 // disappears. A rule that cannot be broken by mutation is a rule whose tests
 // test nothing.
 func TestDiscriminationProofs(t *testing.T) {
+	t.Parallel()
+
 	// HW-0 is deliberately absent from the proof table: it is the meta-rule
 	// that audits suppressions, so it is intentionally not disable-able —
 	// muting the auditor would mute the audit. See the disable-flag handling
@@ -87,6 +93,8 @@ func TestDiscriminationProofs(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.rule, func(t *testing.T) {
+			t.Parallel()
+
 			healthy := collectRules(t, New(), tc.pkg)
 			if !containsRule(healthy, tc.rule) {
 				t.Fatalf("healthy analyzer produced no %s on %s; fixture or rule is broken", tc.rule, tc.pkg)
@@ -172,7 +180,9 @@ func TestParseDirective(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			d, ok := ParseDirective(tc.line)
+			t.Parallel()
+
+			parsed, ok := ParseDirective(tc.line)
 			if ok != tc.wantOK {
 				t.Fatalf("ok = %v, want %v", ok, tc.wantOK)
 			}
@@ -181,25 +191,25 @@ func TestParseDirective(t *testing.T) {
 				return
 			}
 
-			if d.Rule != tc.wantRule {
-				t.Errorf("rule = %q, want %q", d.Rule, tc.wantRule)
+			if parsed.Rule != tc.wantRule {
+				t.Errorf("rule = %q, want %q", parsed.Rule, tc.wantRule)
 			}
 
-			if d.Reason != tc.wantReason {
-				t.Errorf("reason = %q, want %q", d.Reason, tc.wantReason)
+			if parsed.Reason != tc.wantReason {
+				t.Errorf("reason = %q, want %q", parsed.Reason, tc.wantReason)
 			}
 
 			gotExpiry := ""
-			if d.Expires != nil {
-				gotExpiry = d.Expires.Format("2006-01-02")
+			if parsed.Expires != nil {
+				gotExpiry = parsed.Expires.Format("2006-01-02")
 			}
 
 			if gotExpiry != tc.wantExpiry {
 				t.Errorf("expiry = %q, want %q", gotExpiry, tc.wantExpiry)
 			}
 
-			if d.Expired(now) != tc.wantExpired {
-				t.Errorf("expired = %v, want %v", d.Expired(now), tc.wantExpired)
+			if parsed.Expired(now) != tc.wantExpired {
+				t.Errorf("expired = %v, want %v", parsed.Expired(now), tc.wantExpired)
 			}
 		})
 	}

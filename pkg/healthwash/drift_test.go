@@ -46,7 +46,7 @@ func parseSrc(t *testing.T, dir, name string) (*token.FileSet, *ast.File, string
 	path := filepath.Join(dir, name)
 	fset := token.NewFileSet()
 
-	f, err := parser.ParseFile(fset, path, nil, parser.ParseComments)
+	file, err := parser.ParseFile(fset, path, nil, parser.ParseComments)
 	if err != nil {
 		if os.IsNotExist(err) {
 			t.Skipf("%s missing in %s", name, dir)
@@ -60,24 +60,24 @@ func parseSrc(t *testing.T, dir, name string) (*token.FileSet, *ast.File, string
 		t.Fatalf("read %s: %v", path, err)
 	}
 
-	return fset, f, string(src)
+	return fset, file, string(src)
 }
 
 // funcSource returns the raw source text of the named function or method.
-func funcSource(t *testing.T, fset *token.FileSet, f *ast.File, src, name string) string {
+func funcSource(t *testing.T, f *ast.File, src, name string) string {
 	t.Helper()
 
 	for _, decl := range f.Decls {
-		fd, ok := decl.(*ast.FuncDecl)
-		if !ok || fd.Name.Name != name {
+		funcDecl, ok := decl.(*ast.FuncDecl)
+		if !ok || funcDecl.Name.Name != name {
 			continue
 		}
 
-		if fd.Body == nil {
+		if funcDecl.Body == nil {
 			return ""
 		}
 
-		return src[fd.Body.Pos()-1 : fd.Body.End()-1]
+		return src[funcDecl.Body.Pos()-1 : funcDecl.Body.End()-1]
 	}
 
 	t.Fatalf("function %s not found", name)
@@ -98,10 +98,14 @@ func fileHasComment(f *ast.File, needle string) bool {
 }
 
 func TestDriftV210(t *testing.T) {
+	t.Parallel()
+
 	assertMechanism(t, doSourceDir(t, "v2.1.0"))
 }
 
 func TestDriftV200(t *testing.T) {
+	t.Parallel()
+
 	assertMechanism(t, doSourceDir(t, "v2.0.0"))
 }
 
@@ -111,23 +115,8 @@ func assertMechanism(t *testing.T, dir string) {
 	t.Helper()
 
 	// §2.5 lifecycle interfaces: all six exist, with the exact method names.
-	_, fLc, lcSrc := parseSrc(t, dir, "di_lifecycle.go")
-	ifaces := map[string]bool{}
-
-	for _, decl := range fLc.Decls {
-		gd, ok := decl.(*ast.GenDecl)
-		if !ok || gd.Tok != token.TYPE {
-			continue
-		}
-
-		for _, spec := range gd.Specs {
-			if ts, ok := spec.(*ast.TypeSpec); ok {
-				if _, isIface := ts.Type.(*ast.InterfaceType); isIface {
-					ifaces[ts.Name.Name] = true
-				}
-			}
-		}
-	}
+	_, _, lcSrc := parseSrc(t, dir, "di_lifecycle.go")
+	ifaces := collectIfaces(t, "di_lifecycle.go", lcSrc)
 
 	for _, name := range []string{
 		"Healthchecker", "HealthcheckerWithContext",
@@ -149,9 +138,9 @@ func assertMechanism(t *testing.T, dir string) {
 
 	// §2.4 transient healthcheck: upstream TODO, unconditional nil; and
 	// isHealthchecker() unconditional false.
-	fsetTr, fTr, trSrc := parseSrc(t, dir, "service_transient.go")
+	_, fTr, trSrc := parseSrc(t, dir, "service_transient.go")
 
-	hc := funcSource(t, fsetTr, fTr, trSrc, "healthcheck")
+	hc := funcSource(t, fTr, trSrc, "healthcheck")
 	if !strings.Contains(hc, "return nil") {
 		t.Errorf("transient healthcheck no longer unconditionally returns nil — HW-3's rationale is void: %s", hc)
 	}
@@ -160,20 +149,21 @@ func assertMechanism(t *testing.T, dir string) {
 		t.Errorf("transient healthcheck TODO comment gone — upstream may have implemented checks; revisit HW-3")
 	}
 
-	isHc := funcSource(t, fsetTr, fTr, trSrc, "isHealthchecker")
+	isHc := funcSource(t, fTr, trSrc, "isHealthchecker")
 	if !strings.Contains(isHc, "return false") {
 		t.Errorf("transient isHealthchecker no longer unconditional false — §7 runtime metrics spec is void: %s", isHc)
 	}
 
 	// §2.2 eager wrapper: dispatches on HealthcheckerWithContext then
 	// Healthchecker over the stored instance, with a fallthrough nil.
-	fsetEager, fEager, eagerSrc := parseSrc(t, dir, "service_eager.go")
+	_, fEager, eagerSrc := parseSrc(t, dir, "service_eager.go")
 
-	eager := funcSource(t, fsetEager, fEager, eagerSrc, "healthcheck")
+	eager := funcSource(t, fEager, eagerSrc, "healthcheck")
 	if !strings.Contains(eager, "HealthcheckerWithContext") ||
 		!strings.Contains(eager, "Healthchecker)") {
 		t.Errorf(
-			"eager healthcheck no longer dispatches on HealthcheckerWithContext then Healthchecker — HW-1/HW-5 method-set logic is void: %s",
+			"eager healthcheck no longer dispatches on HealthcheckerWithContext "+
+				"then Healthchecker — HW-1/HW-5 method-set logic is void: %s",
 			eager,
 		)
 	}
@@ -183,22 +173,16 @@ func assertMechanism(t *testing.T, dir string) {
 	}
 
 	// §2.3 lazy wrapper: !s.built → nil before any dispatch.
-	fsetLazy, fLazy, lazySrc := parseSrc(t, dir, "service_lazy.go")
+	_, fLazy, lazySrc := parseSrc(t, dir, "service_lazy.go")
 
-	lazy := funcSource(t, fsetLazy, fLazy, lazySrc, "healthcheck")
+	lazy := funcSource(t, fLazy, lazySrc, "healthcheck")
 	if !strings.Contains(lazy, "!s.built") || !strings.Contains(lazy, "return nil") {
 		t.Errorf("lazy unbuilt fast-path changed — HW-4's rationale is void: %s", lazy)
 	}
 
 	// §2.6 registration surface: six Provide* + six Override* + As/AsNamed.
-	_, fDi, _ := parseSrc(t, dir, "di.go")
-	fns := map[string]bool{}
-
-	for _, decl := range fDi.Decls {
-		if fd, ok := decl.(*ast.FuncDecl); ok {
-			fns[fd.Name.Name] = true
-		}
-	}
+	_, _, diSrc := parseSrc(t, dir, "di.go")
+	fns := collectFuncNames(t, "di.go", diSrc)
 
 	for _, fn := range []string{
 		"Provide", "ProvideNamed", "ProvideValue", "ProvideNamedValue",
@@ -213,15 +197,68 @@ func assertMechanism(t *testing.T, dir string) {
 	}
 
 	// Alias rows delegate their healthcheck to the target wrapper.
-	fsetAlias, fAlias, aliasSrc := parseSrc(t, dir, "service_alias.go")
+	_, fAlias, aliasSrc := parseSrc(t, dir, "service_alias.go")
 
-	aliasHc := funcSource(t, fsetAlias, fAlias, aliasSrc, "healthcheck")
+	aliasHc := funcSource(t, fAlias, aliasSrc, "healthcheck")
 	if !strings.Contains(aliasHc, "targetName") && !strings.Contains(aliasHc, "serviceGetRec") {
 		t.Errorf(
 			"alias healthcheck no longer delegates to its target — HW-6 alias dedupe must be revisited: %s",
 			aliasHc,
 		)
 	}
+}
+
+// collectIfaces returns the names of the interface types declared in src.
+func collectIfaces(t *testing.T, name, src string) map[string]bool {
+	t.Helper()
+
+	fset := token.NewFileSet()
+
+	f, err := parser.ParseFile(fset, name, src, parser.SkipObjectResolution)
+	if err != nil {
+		t.Fatalf("parse %s: %v", name, err)
+	}
+
+	ifaces := map[string]bool{}
+
+	for _, decl := range f.Decls {
+		gd, ok := decl.(*ast.GenDecl)
+		if !ok || gd.Tok != token.TYPE {
+			continue
+		}
+
+		for _, spec := range gd.Specs {
+			if ts, ok := spec.(*ast.TypeSpec); ok {
+				if _, isIface := ts.Type.(*ast.InterfaceType); isIface {
+					ifaces[ts.Name.Name] = true
+				}
+			}
+		}
+	}
+
+	return ifaces
+}
+
+// collectFuncNames returns the names of the functions declared in src.
+func collectFuncNames(t *testing.T, name, src string) map[string]bool {
+	t.Helper()
+
+	fset := token.NewFileSet()
+
+	f, err := parser.ParseFile(fset, name, src, parser.SkipObjectResolution)
+	if err != nil {
+		t.Fatalf("parse %s: %v", name, err)
+	}
+
+	fns := map[string]bool{}
+
+	for _, decl := range f.Decls {
+		if fDecl, ok := decl.(*ast.FuncDecl); ok {
+			fns[fDecl.Name.Name] = true
+		}
+	}
+
+	return fns
 }
 
 func sourceOfInterface(t *testing.T, src, name string) string {

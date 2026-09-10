@@ -306,17 +306,17 @@ func matchesRule(token, rule string) bool {
 func collectDirectives(fset *token.FileSet, files []*ast.File) map[dirKey][]foundDirective {
 	out := map[dirKey][]foundDirective{}
 
-	for _, f := range files {
-		for _, cg := range f.Comments {
-			for _, c := range cg.List {
-				d, ok := parseDirectiveComment(c.Text)
+	for _, file := range files {
+		for _, cg := range file.Comments {
+			for _, comment := range cg.List {
+				directive, ok := parseDirectiveComment(comment.Text)
 				if !ok {
 					continue
 				}
 
-				pos := fset.Position(c.Pos())
+				pos := fset.Position(comment.Pos())
 				k := dirKey{pos.Filename, pos.Line}
-				out[k] = append(out[k], foundDirective{directive: d, pos: c.Pos()})
+				out[k] = append(out[k], foundDirective{directive: directive, pos: comment.Pos()})
 			}
 		}
 	}
@@ -329,17 +329,17 @@ func parseDirectiveComment(text string) (directive, bool) {
 		return directive{}, false
 	}
 
-	d, ok := ParseDirective(text)
+	parsed, ok := ParseDirective(text)
 	if !ok {
 		return directive{}, false
 	}
 
-	res := directive{rule: d.Rule, reason: d.Reason}
-	if d.Rule == "" || d.Reason == "" {
+	res := directive{rule: parsed.Rule, reason: parsed.Reason}
+	if parsed.Rule == "" || parsed.Reason == "" {
 		res.invalid = true
 	}
 
-	if d.Expires != nil && d.Expired(time.Now()) {
+	if parsed.Expires != nil && parsed.Expired(time.Now()) {
 		res.expired = true
 	}
 
