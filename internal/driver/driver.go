@@ -158,7 +158,7 @@ func Run(opts Options) int {
 		return 1
 	}
 
-	code := applyGates(out, errw, report, records, pkgs, opts)
+	code := applyGates(out, report, records, pkgs, opts)
 	if opts.Check {
 		fmt.Fprintln(out, "--check: advisory run; exit code forced to 0")
 
@@ -252,7 +252,7 @@ func emitOutputs(
 // applyGates computes the HW-6 ratchet output, warns about the samber/do
 // version, and maps the outcome to the confidence exit contract.
 func applyGates(
-	out, errw io.Writer, report *finding.Report, records []healthwash.ServiceRecord,
+	out io.Writer, report *finding.Report, records []healthwash.ServiceRecord,
 	pkgs []*packages.Package, opts Options,
 ) int {
 	gateFailed := false
@@ -408,17 +408,17 @@ func applyAllowlist(
 // warnMalformedAllowlist explains why an entry is ignored: unexplained
 // suppressions rot, and silent no-ops are worse than errors.
 func warnMalformedAllowlist(entries []allowEntry, errw io.Writer) {
-	for _, e := range entries {
-		if e.Reason == "" {
+	for _, entry := range entries {
+		if entry.Reason == "" {
 			fmt.Fprintf(
 				errw,
 				"%s: config allowlist entry for %s lacks a reason; ignoring entry (unexplained suppressions rot)\n",
 				ToolName,
-				e.Rule,
+				entry.Rule,
 			)
 		}
 
-		if strings.TrimSpace(e.Rule) == "" {
+		if strings.TrimSpace(entry.Rule) == "" {
 			fmt.Fprintf(
 				errw,
 				"%s: config allowlist entry lacks a rule; ignoring entry (name the rule, or \"all\")\n",
@@ -433,9 +433,9 @@ func warnMalformedAllowlist(entries []allowEntry, errw io.Writer) {
 func usableAllowEntries(entries []allowEntry) []allowEntry {
 	usable := make([]allowEntry, 0, len(entries))
 
-	for _, e := range entries {
-		if e.Reason != "" && strings.TrimSpace(e.Rule) != "" {
-			usable = append(usable, e)
+	for _, entry := range entries {
+		if entry.Reason != "" && strings.TrimSpace(entry.Rule) != "" {
+			usable = append(usable, entry)
 		}
 	}
 
@@ -445,16 +445,16 @@ func usableAllowEntries(entries []allowEntry) []allowEntry {
 // entryCovers reports whether one allowlist entry suppresses one finding. An
 // empty pathPattern means the entry covers every file: it is the project-wide
 // form, not a silent no-op.
-func entryCovers(e allowEntry, f finding.Finding) bool {
-	if !allowMatches(e.Rule, string(f.Rule)) {
+func entryCovers(entry allowEntry, fnd finding.Finding) bool {
+	if !allowMatches(entry.Rule, string(fnd.Rule)) {
 		return false
 	}
 
-	if e.PathPattern == "" {
+	if entry.PathPattern == "" {
 		return true
 	}
 
-	matched, _ := path.Match(e.PathPattern, string(f.Position.File))
+	matched, _ := path.Match(entry.PathPattern, string(fnd.Position.File))
 
 	return matched
 }
@@ -542,14 +542,14 @@ func writeBaseline(out, errw io.Writer, path string, b baseline, gateFailed *boo
 
 // enforceCoverageMin applies the absolute --coverage-min gate.
 func enforceCoverageMin(
-	out, errw io.Writer, checked, registered int, coverage, min float64, gateFailed *bool,
+	out, errw io.Writer, checked, registered int, coverage, minCoverage float64, gateFailed *bool,
 ) {
 	fmt.Fprintf(out, "health-coverage: %d/%d = %.0f%% (threshold: %.0f%%)\n",
-		checked, registered, coverage*100, min*100)
+		checked, registered, coverage*100, minCoverage*100)
 
-	if registered > 0 && coverage < min {
+	if registered > 0 && coverage < minCoverage {
 		fmt.Fprintf(errw, "%s: coverage %.0f%% is below the required minimum %.0f%%\n",
-			ToolName, coverage*100, min*100)
+			ToolName, coverage*100, minCoverage*100)
 
 		*gateFailed = true
 	}
@@ -568,7 +568,8 @@ func enforceBaselineRatchet(
 			if coverage < b.Coverage {
 				fmt.Fprintf(
 					errw,
-					"%s: coverage %.0f%% regressed below the committed baseline %.0f%%; fix the regressions or explicitly re-baseline with --set-baseline\n",
+					"%s: coverage %.0f%% regressed below the committed baseline %.0f%%; "+
+						"fix the regressions or explicitly re-baseline with --set-baseline\n",
 					ToolName,
 					coverage*100,
 					b.Coverage*100,

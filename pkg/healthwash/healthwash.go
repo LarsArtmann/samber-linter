@@ -166,7 +166,7 @@ func parseDisabledRules(pass *analysis.Pass) map[string]bool {
 // inspectRegistration classifies one AST node; isReg is true only when the
 // node is a samber/do registration call.
 func inspectRegistration(
-	pass *analysis.Pass, n ast.Node, lc ifaces, strict bool,
+	pass *analysis.Pass, n ast.Node, doIfaces ifaces, strict bool,
 ) (ServiceRecord, []siteReport, bool) {
 	call, isCall := n.(*ast.CallExpr)
 	if !isCall {
@@ -188,7 +188,7 @@ func inspectRegistration(
 		return ServiceRecord{}, nil, false
 	}
 
-	rec, reps := evalSite(pass, fn.Name(), kind, call, lc, strict)
+	rec, reps := evalSite(pass, fn.Name(), kind, call, doIfaces, strict)
 
 	return rec, reps, true
 }
@@ -217,8 +217,8 @@ func reportFindings(
 		suppressed := false
 
 		for line := pos.Line - 1; line <= site.endLine; line++ {
-			for _, fd := range directives[dirKey{pos.Filename, line}] {
-				if fd.invalid {
+			for _, directive := range directives[dirKey{pos.Filename, line}] {
+				if directive.invalid {
 					// A suppression without a reason is itself a finding,
 					// attributed to the suppressible site (where the fix
 					// lands). It never suppresses — and it stays reported
@@ -226,14 +226,14 @@ func reportFindings(
 					// orphan scan in reportOrphanedDirectives).
 					if !reportedSites[site.pos] {
 						reportedSites[site.pos] = true
-						reportedDirectives[fd.pos] = true
+						reportedDirectives[directive.pos] = true
 						reportHW0(site.pos)
 					}
 
 					continue
 				}
 
-				if !fd.expired && matchesRule(fd.rule, site.rule) {
+				if !directive.expired && matchesRule(directive.rule, site.rule) {
 					suppressed = true
 				}
 			}
@@ -259,11 +259,11 @@ func reportFindings(
 func reportOrphanedDirectives(
 	pass *analysis.Pass, directives map[dirKey][]foundDirective, alreadyReported map[token.Pos]bool,
 ) {
-	for _, fds := range directives {
-		for _, fd := range fds {
-			if fd.invalid && !alreadyReported[fd.pos] {
+	for _, found := range directives {
+		for _, directive := range found {
+			if directive.invalid && !alreadyReported[directive.pos] {
 				pass.Report(analysis.Diagnostic{
-					Pos:      fd.pos,
+					Pos:      directive.pos,
 					Category: RuleHW0,
 					Message:  fmt.Sprintf("%s: %s", RuleHW0, RuleMessageHW0),
 				})
