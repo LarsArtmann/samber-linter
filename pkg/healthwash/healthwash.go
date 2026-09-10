@@ -109,24 +109,92 @@ func run(pass *analysis.Pass) (any, error) {
 		pass.Analyzer.Flags.Lookup("strict").Value.String() == "true"
 
 	directives := collectDirectives(pass.Fset, pass.Files)
-	disabled := map[string]bool{}
-
-	if f := pass.Analyzer.Flags.Lookup("disable"); f != nil {
-		for r := range strings.SplitSeq(f.Value.String(), ",") {
-			r = strings.ToUpper(strings.TrimSpace(r))
-			if r != "" {
-				disabled[r] = true
-			}
-		}
-	}
+	disabled := parseDisabledRules(pass)
 
 	var (
 		records []ServiceRecord
 		reports []siteReport
 	)
 
-	hw0SiteReported := map[token.Pos]bool{}
-	hw0DirectiveSeen := map[token.Pos]bool{}
+	for _, file := range pass.Files {
+		ast.Inspect(file, func(n ast.Node) bool {
+			rec, reps, isReg := inspectRegistration(pass, n, ifaces, strict)
+			if isReg {
+				records = append(records, rec)
+				reports = append(reports, reps...)
+			}
+
+			return true
+		})
+	}
+
+	reportedDirectives := reportFindings(pass, reports, directives, disabled)
+	reportOrphanedDirectives(pass, directives, reportedDirectives)
+
+	pass.ExportPackageFact(&PackageFacts{Records: records})
+
+	return nil, nil
+}
+
+// parseDisabledRules reads the analyzer's disable flag into a lookup set.
+func parseDisabledRules(pass *analysis.Pass) map[string]bool {
+	disabled := map[string]bool{}
+
+	f := pass.Analyzer.Flags.Lookup("disable")
+	if f == nil {
+		return disabled
+	}
+
+	for r := range strings.SplitSeq(f.Value.String(), ",") {
+		r = strings.ToUpper(strings.TrimSpace(r))
+		if r != "" {
+			disabled[r] = true
+		}
+	}
+
+	return disabled
+}
+
+// inspectRegistration classifies one AST node; isReg is true only when the
+// node is a samber/do registration call.
+func inspectRegistration(
+	pass *analysis.Pass, n ast.Node, lc ifaces, strict bool,
+) (rec ServiceRecord, reps []siteReport, isReg bool) {
+	call, isCall := n.(*ast.CallExpr)
+	if !isCall {
+		return ServiceRecord{}, nil, false
+	}
+
+	sel, isSel := call.Fun.(*ast.SelectorExpr)
+	if !isSel {
+		return ServiceRecord{}, nil, false
+	}
+
+	fn, isFn := pass.TypesInfo.Uses[sel.Sel].(*types.Func)
+	if !isFn || fn.Pkg() == nil || fn.Pkg().Path() != DoPath {
+		return ServiceRecord{}, nil, false
+	}
+
+	kind, known := regKindOf(fn.Name())
+	if !known {
+		return ServiceRecord{}, nil, false
+	}
+
+	rec, reps = evalSite(pass, fn.Name(), kind, call, lc, strict)
+
+	return rec, reps, true
+}
+
+// reportFindings applies suppression directives (honored anywhere in the
+// site's line span, or on the line above) and the disable list, then reports
+// the survivors. It returns the set of directive positions it already
+// reported as HW-0 so the orphan scan does not double-report them.
+func reportFindings(
+	pass *analysis.Pass, reports []siteReport,
+	directives map[dirKey][]foundDirective, disabled map[string]bool,
+) map[token.Pos]bool {
+	reportedSites := map[token.Pos]bool{}
+	reportedDirectives := map[token.Pos]bool{}
 
 	reportHW0 := func(pos token.Pos) {
 		pass.Report(analysis.Diagnostic{
@@ -136,92 +204,64 @@ func run(pass *analysis.Pass) (any, error) {
 		})
 	}
 
-	for _, file := range pass.Files {
-		ast.Inspect(file, func(n ast.Node) bool {
-			call, ok := n.(*ast.CallExpr)
-			if !ok {
-				return true
-			}
-
-			sel, ok := call.Fun.(*ast.SelectorExpr)
-			if !ok {
-				return true
-			}
-
-			obj := pass.TypesInfo.Uses[sel.Sel]
-
-			fn, ok := obj.(*types.Func)
-			if !ok || fn.Pkg() == nil || fn.Pkg().Path() != DoPath {
-				return true
-			}
-
-			kind, known := regKindOf(fn.Name())
-			if !known {
-				return true
-			}
-
-			rec, reps := evalSite(pass, fn.Name(), kind, call, ifaces, strict)
-			records = append(records, rec)
-			reports = append(reports, reps...)
-
-			return true
-		})
-	}
-
-	for _, d := range reports {
-		pos := pass.Fset.Position(d.pos)
+	for _, site := range reports {
+		pos := pass.Fset.Position(site.pos)
 		suppressed := false
 
-		for line := pos.Line - 1; line <= d.endLine; line++ {
+		for line := pos.Line - 1; line <= site.endLine; line++ {
 			for _, fd := range directives[dirKey{pos.Filename, line}] {
 				if fd.invalid {
 					// A suppression without a reason is itself a finding,
 					// attributed to the suppressible site (where the fix
 					// lands). It never suppresses — and it stays reported
 					// even once the underlying violation is gone (the
-					// orphan scan below).
-					if !hw0SiteReported[d.pos] {
-						hw0SiteReported[d.pos] = true
-						hw0DirectiveSeen[fd.pos] = true
-						reportHW0(d.pos)
+					// orphan scan in reportOrphanedDirectives).
+					if !reportedSites[site.pos] {
+						reportedSites[site.pos] = true
+						reportedDirectives[fd.pos] = true
+						reportHW0(site.pos)
 					}
 
 					continue
 				}
 
-				if !fd.expired && matchesRule(fd.rule, d.rule) {
+				if !fd.expired && matchesRule(fd.rule, site.rule) {
 					suppressed = true
 				}
 			}
 		}
 
-		if suppressed || disabled[strings.ToUpper(d.rule)] {
+		if suppressed || disabled[strings.ToUpper(site.rule)] {
 			continue
 		}
 
 		pass.Report(analysis.Diagnostic{
-			Pos:      d.pos,
-			Category: d.rule,
-			Message:  d.message,
+			Pos:      site.pos,
+			Category: site.rule,
+			Message:  site.message,
 		})
 	}
 
-	// Orphan scan: an invalid directive with no finding to attach to must
-	// still surface — "unexplained suppressions rot into permanent darkness"
-	// holds regardless of whether the site currently violates a rule. Each
-	// malformed directive is reported once, at its own comment.
+	return reportedDirectives
+}
+
+// reportOrphanedDirectives surfaces malformed directives that no finding
+// referenced, at the comment itself: unexplained suppressions rot into
+// permanent darkness even after the underlying violation is fixed.
+func reportOrphanedDirectives(
+	pass *analysis.Pass, directives map[dirKey][]foundDirective, alreadyReported map[token.Pos]bool,
+) {
 	for _, fds := range directives {
 		for _, fd := range fds {
-			if fd.invalid && !hw0DirectiveSeen[fd.pos] {
-				hw0DirectiveSeen[fd.pos] = true
-				reportHW0(fd.pos)
+			if fd.invalid && !alreadyReported[fd.pos] {
+				pass.Report(analysis.Diagnostic{
+					Pos:      fd.pos,
+					Category: RuleHW0,
+					Message:  fmt.Sprintf("%s: %s", RuleHW0, RuleMessageHW0),
+				})
 			}
 		}
 	}
-
-	pass.ExportPackageFact(&PackageFacts{Records: records})
-
-	return nil, nil
 }
 
 type dirKey struct {

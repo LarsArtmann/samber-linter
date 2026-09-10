@@ -310,7 +310,34 @@ func applyAllowlist(findings []finding.Finding, configPath string, errw io.Write
 		return findings
 	}
 
-	for _, e := range cfg.Allow {
+	warnMalformedAllowlist(cfg.Allow, errw)
+
+	usable := usableAllowEntries(cfg.Allow)
+
+	kept := findings[:0]
+	for _, f := range findings {
+		suppressed := false
+
+		for _, e := range usable {
+			if entryCovers(e, f) {
+				suppressed = true
+
+				break
+			}
+		}
+
+		if !suppressed {
+			kept = append(kept, f)
+		}
+	}
+
+	return kept
+}
+
+// warnMalformedAllowlist explains why an entry is ignored: unexplained
+// suppressions rot, and silent no-ops are worse than errors.
+func warnMalformedAllowlist(entries []allowEntry, errw io.Writer) {
+	for _, e := range entries {
 		if e.Reason == "" {
 			fmt.Fprintf(
 				errw,
@@ -324,41 +351,37 @@ func applyAllowlist(findings []finding.Finding, configPath string, errw io.Write
 			fmt.Fprintf(errw, "%s: config allowlist entry lacks a rule; ignoring entry (name the rule, or \"all\")\n", ToolName)
 		}
 	}
+}
 
-	kept := findings[:0]
-	for _, f := range findings {
-		suppressed := false
+// usableAllowEntries keeps only entries that can ever match: reason present,
+// rule named.
+func usableAllowEntries(entries []allowEntry) []allowEntry {
+	usable := make([]allowEntry, 0, len(entries))
 
-		for _, e := range cfg.Allow {
-			if e.Reason == "" || strings.TrimSpace(e.Rule) == "" {
-				continue
-			}
-
-			if !allowMatches(e.Rule, string(f.Rule)) {
-				continue
-			}
-
-			// An empty pathPattern means the entry covers every file: it is
-			// the project-wide form, not a silent no-op.
-			if e.PathPattern == "" {
-				suppressed = true
-
-				break
-			}
-
-			if ok, _ := path.Match(e.PathPattern, string(f.Position.File)); ok {
-				suppressed = true
-
-				break
-			}
-		}
-
-		if !suppressed {
-			kept = append(kept, f)
+	for _, e := range entries {
+		if e.Reason != "" && strings.TrimSpace(e.Rule) != "" {
+			usable = append(usable, e)
 		}
 	}
 
-	return kept
+	return usable
+}
+
+// entryCovers reports whether one allowlist entry suppresses one finding. An
+// empty pathPattern means the entry covers every file: it is the project-wide
+// form, not a silent no-op.
+func entryCovers(e allowEntry, f finding.Finding) bool {
+	if !allowMatches(e.Rule, string(f.Rule)) {
+		return false
+	}
+
+	if e.PathPattern == "" {
+		return true
+	}
+
+	matched, _ := path.Match(e.PathPattern, string(f.Position.File))
+
+	return matched
 }
 
 // allowMatches reports whether an allowlist entry covers a rule. "all"

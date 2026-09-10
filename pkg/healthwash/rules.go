@@ -116,7 +116,12 @@ func evalSite(
 		reps = append(reps, siteReport{rule: rule, message: rule + ": " + msg, pos: call.Pos(), endLine: endLine})
 	}
 
+	// KindAlias never reaches the switch body: evalSite handles it before
+	// provider-argument resolution, and alias rows carry no rule findings.
 	switch kind {
+	case KindAlias:
+		// defensive: kept exhaustive for future ServiceKind values.
+
 	case KindTransient:
 		if anyCheckStored {
 			add(RuleHW3, fmt.Sprintf(
