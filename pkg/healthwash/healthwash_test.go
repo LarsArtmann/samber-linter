@@ -103,12 +103,12 @@ func TestParseDirective(t *testing.T) {
 	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
 
 	cases := []struct {
-		name      string
-		line      string
-		wantOK    bool
-		wantRule  string
-		wantReason string
-		wantExpiry string
+		name        string
+		line        string
+		wantOK      bool
+		wantRule    string
+		wantReason  string
+		wantExpiry  string
 		wantExpired bool
 	}{
 		{"not a directive", "// normal comment", false, "", "", "", false},

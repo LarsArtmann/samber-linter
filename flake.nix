@@ -32,12 +32,25 @@
 
         # go-finding declares GOEXPERIMENT=jsonv2 as an ecosystem invariant
         # (documented loudly while required). No compiled file imports
-        # encoding/json/v2 today; the tests below verify it stays compatible.
-        extraBuildAttrs.env = {
-          GOEXPERIMENT = "jsonv2";
-          CGO_ENABLED = "0";
+        # encoding/json/v2 today; the test suite below verifies it stays
+        # compatible.
+        extraBuildAttrs = {
+          env = {
+            GOEXPERIMENT = "jsonv2";
+            CGO_ENABLED = "0";
+          };
+          # buildGoModule's default checkPhase tests only the built
+          # subPackages (cmd/samber-linter has no test files). Test the whole
+          # module so the golden corpus actually gates every nix build.
+          checkPhase = ''
+            runHook preCheck
+            go test -count=1 ./...
+            runHook postCheck
+          '';
         };
-        shellExtraEnv = { GOEXPERIMENT = "jsonv2"; };
+        shellExtraEnv = {
+          GOEXPERIMENT = "jsonv2";
+        };
 
         # Hermetic golangci-lint under `nix flake check`, matching CI.
         lintAsCheck = true;
@@ -46,18 +59,20 @@
       # Module default (`go test -race`) needs a C compiler and no
       # GOEXPERIMENT; run the CI-equivalent suite instead.
       perSystem =
-        { pkgs, ... }:
+        { pkgs, lib, ... }:
         {
           apps.test = {
             type = "app";
-            program = pkgs.lib.getExe (
-              pkgs.writeShellApplication {
-                name = "run-test";
-                runtimeInputs = [ pkgs.go_1_26 ];
-                text = ''
-                  GOEXPERIMENT=jsonv2 CGO_ENABLED=0 go test -count=1 ./...
-                '';
-              }
+            program = lib.mkForce (
+              lib.getExe (
+                pkgs.writeShellApplication {
+                  name = "run-test";
+                  runtimeInputs = [ pkgs.go_1_26 ];
+                  text = ''
+                    GOEXPERIMENT=jsonv2 CGO_ENABLED=0 go test -count=1 ./...
+                  '';
+                }
+              )
             );
           };
         };

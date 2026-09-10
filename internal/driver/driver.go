@@ -16,7 +16,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/larsartmann/go-atomic-write"
+	atomicwrite "github.com/larsartmann/go-atomic-write"
 	"github.com/larsartmann/go-finding"
 	linter "github.com/larsartmann/go-linter-sdk"
 	"github.com/larsartmann/samber-linter/pkg/healthwash"
@@ -88,10 +88,10 @@ type allowEntry struct {
 
 // baseline is the committed ratchet floor.
 type baseline struct {
-	Version   int     `json:"version"`
-	Checked   int     `json:"checked"`
-	Registered int    `json:"registered"`
-	Coverage  float64 `json:"coverage"`
+	Version    int     `json:"version"`
+	Checked    int     `json:"checked"`
+	Registered int     `json:"registered"`
+	Coverage   float64 `json:"coverage"`
 }
 
 // Run executes one analysis pass and returns the process exit code.
@@ -194,22 +194,22 @@ func runAnalyzer(analyzer *analysis.Analyzer, pkg *packages.Package) (
 	[]analysis.Diagnostic, []healthwash.ServiceRecord,
 ) {
 	pass := &analysis.Pass{
-		Analyzer:    analyzer,
-		Fset:        pkg.Fset,
-		Files:       pkg.Syntax,
-		OtherFiles:  pkg.OtherFiles,
-		IgnoredFiles: pkg.IgnoredFiles,
-		Pkg:         pkg.Types,
-		TypesInfo:   pkg.TypesInfo,
-		TypesSizes:  types.SizesFor("gc", runtime.GOARCH),
-		Report:      func(analysis.Diagnostic) {},
-		ImportObjectFact: func(obj types.Object, fact analysis.Fact) bool { return false },
-		ExportObjectFact: func(obj types.Object, fact analysis.Fact) {},
+		Analyzer:          analyzer,
+		Fset:              pkg.Fset,
+		Files:             pkg.Syntax,
+		OtherFiles:        pkg.OtherFiles,
+		IgnoredFiles:      pkg.IgnoredFiles,
+		Pkg:               pkg.Types,
+		TypesInfo:         pkg.TypesInfo,
+		TypesSizes:        types.SizesFor("gc", runtime.GOARCH),
+		Report:            func(analysis.Diagnostic) {},
+		ImportObjectFact:  func(obj types.Object, fact analysis.Fact) bool { return false },
+		ExportObjectFact:  func(obj types.Object, fact analysis.Fact) {},
 		ImportPackageFact: func(p *types.Package, fact analysis.Fact) bool { return false },
 		ExportPackageFact: func(fact analysis.Fact) {},
-		AllObjectFacts:   func() []analysis.ObjectFact { return nil },
-		AllPackageFacts:  func() []analysis.PackageFact { return nil },
-		ResultOf:         map[*analysis.Analyzer]interface{}{},
+		AllObjectFacts:    func() []analysis.ObjectFact { return nil },
+		AllPackageFacts:   func() []analysis.PackageFact { return nil },
+		ResultOf:          map[*analysis.Analyzer]interface{}{},
 	}
 
 	var diags []analysis.Diagnostic

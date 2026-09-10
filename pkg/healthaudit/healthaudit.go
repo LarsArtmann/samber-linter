@@ -37,11 +37,11 @@ import (
 
 // Audit records per-scope service activity via samber/do's injector hooks.
 type Audit struct {
-	mu        sync.Mutex
-	order     []string
+	mu         sync.Mutex
+	order      []string
 	registered map[string]bool
-	invoked   map[string]bool
-	errored   map[string]bool
+	invoked    map[string]bool
+	errored    map[string]bool
 }
 
 // New creates an empty Audit.

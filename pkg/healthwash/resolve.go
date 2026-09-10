@@ -12,12 +12,12 @@ import (
 // the method name `Shutdown`, differing only in parameters/returns, so
 // interface satisfaction (not method names) is the only sound test.
 type ifaces struct {
-	healthchecker      *types.Interface
-	healthcheckerCtx   *types.Interface
-	shutdowner         *types.Interface
-	shutdownerErr      *types.Interface
-	shutdownerCtx      *types.Interface
-	shutdownerCtxErr   *types.Interface
+	healthchecker    *types.Interface
+	healthcheckerCtx *types.Interface
+	shutdowner       *types.Interface
+	shutdownerErr    *types.Interface
+	shutdownerCtx    *types.Interface
+	shutdownerCtxErr *types.Interface
 }
 
 func findDoPackage(pass *analysis.Pass) *types.Package {

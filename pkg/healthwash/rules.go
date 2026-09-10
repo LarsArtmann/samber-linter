@@ -76,7 +76,7 @@ func evalSite(
 		var reps []siteReport
 		if strict {
 			reps = append(reps, siteReport{
-				rule:    RuleUnresolved,
+				rule: RuleUnresolved,
 				message: fmt.Sprintf("%s: %s at %s; analyze the concrete type or suppress with //samber-linter:allow %s <reason>",
 					RuleUnresolved, MessageUnresolv, orDash(rel), RuleCodeUnres),
 				pos: call.Pos(),

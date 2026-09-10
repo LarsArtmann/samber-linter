@@ -17,7 +17,8 @@ import (
 func runOnFixture(t interface {
 	Helper()
 	Fatalf(format string, args ...interface{})
-}, a *analysis.Analyzer, pkgPattern string) []analysis.Diagnostic {
+}, a *analysis.Analyzer, pkgPattern string,
+) []analysis.Diagnostic {
 	t.Helper()
 
 	abs, err := filepath.Abs("../../testdata")
@@ -29,8 +30,8 @@ func runOnFixture(t interface {
 		Mode: packages.NeedName | packages.NeedFiles | packages.NeedCompiledGoFiles |
 			packages.NeedSyntax | packages.NeedTypes | packages.NeedTypesInfo |
 			packages.NeedTypesSizes | packages.NeedDeps | packages.NeedImports,
-		Dir:  filepath.Join(abs, "src", pkgPattern),
-		Env:  append(os.Environ(), "GOPATH="+abs, "GO111MODULE=off", "GOFLAGS=-mod=mod"),
+		Dir: filepath.Join(abs, "src", pkgPattern),
+		Env: append(os.Environ(), "GOPATH="+abs, "GO111MODULE=off", "GOFLAGS=-mod=mod"),
 	}
 	pkgs, err := packages.Load(cfg, pkgPattern)
 	if err != nil {
@@ -45,15 +46,15 @@ func runOnFixture(t interface {
 	}
 
 	pass := &analysis.Pass{
-		Analyzer:     a,
-		Fset:         pkg.Fset,
-		Files:        pkg.Syntax,
-		OtherFiles:   pkg.OtherFiles,
-		IgnoredFiles: pkg.IgnoredFiles,
-		Pkg:          pkg.Types,
-		TypesInfo:    pkg.TypesInfo,
-		TypesSizes:   types.SizesFor("gc", runtime.GOARCH),
-		Report:       func(analysis.Diagnostic) {},
+		Analyzer:          a,
+		Fset:              pkg.Fset,
+		Files:             pkg.Syntax,
+		OtherFiles:        pkg.OtherFiles,
+		IgnoredFiles:      pkg.IgnoredFiles,
+		Pkg:               pkg.Types,
+		TypesInfo:         pkg.TypesInfo,
+		TypesSizes:        types.SizesFor("gc", runtime.GOARCH),
+		Report:            func(analysis.Diagnostic) {},
 		ImportObjectFact:  func(obj types.Object, fact analysis.Fact) bool { return false },
 		ExportObjectFact:  func(obj types.Object, fact analysis.Fact) {},
 		ImportPackageFact: func(p *types.Package, fact analysis.Fact) bool { return false },
