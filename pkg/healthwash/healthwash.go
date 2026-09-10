@@ -91,6 +91,11 @@ type siteReport struct {
 	rule    string // "HW-1" …
 	message string
 	pos     token.Pos
+	// endLine is the last source line of the registration call. Suppression
+	// directives may sit anywhere in that span: the common style puts the
+	// directive on the line above the call, but long provider closures often
+	// carry it inside the argument list.
+	endLine int
 }
 
 func run(pass *analysis.Pass) (any, error) {
@@ -120,7 +125,16 @@ func run(pass *analysis.Pass) (any, error) {
 		reports []siteReport
 	)
 
-	hw0Reported := map[token.Pos]bool{}
+	hw0SiteReported := map[token.Pos]bool{}
+	hw0DirectiveSeen := map[token.Pos]bool{}
+
+	reportHW0 := func(pos token.Pos) {
+		pass.Report(analysis.Diagnostic{
+			Pos:      pos,
+			Category: RuleHW0,
+			Message:  fmt.Sprintf("%s: %s", RuleHW0, RuleMessageHW0),
+		})
+	}
 
 	for _, file := range pass.Files {
 		ast.Inspect(file, func(n ast.Node) bool {
@@ -158,19 +172,18 @@ func run(pass *analysis.Pass) (any, error) {
 		pos := pass.Fset.Position(d.pos)
 		suppressed := false
 
-		for _, line := range []int{pos.Line - 1, pos.Line} {
+		for line := pos.Line - 1; line <= d.endLine; line++ {
 			for _, fd := range directives[dirKey{pos.Filename, line}] {
 				if fd.invalid {
 					// A suppression without a reason is itself a finding,
 					// attributed to the suppressible site (where the fix
-					// lands). It never suppresses.
-					if !hw0Reported[d.pos] {
-						hw0Reported[d.pos] = true
-						pass.Report(analysis.Diagnostic{
-							Pos:      d.pos,
-							Category: RuleHW0,
-							Message:  fmt.Sprintf("%s: %s", RuleHW0, RuleMessageHW0),
-						})
+					// lands). It never suppresses — and it stays reported
+					// even once the underlying violation is gone (the
+					// orphan scan below).
+					if !hw0SiteReported[d.pos] {
+						hw0SiteReported[d.pos] = true
+						hw0DirectiveSeen[fd.pos] = true
+						reportHW0(d.pos)
 					}
 
 					continue
@@ -191,6 +204,19 @@ func run(pass *analysis.Pass) (any, error) {
 			Category: d.rule,
 			Message:  d.message,
 		})
+	}
+
+	// Orphan scan: an invalid directive with no finding to attach to must
+	// still surface — "unexplained suppressions rot into permanent darkness"
+	// holds regardless of whether the site currently violates a rule. Each
+	// malformed directive is reported once, at its own comment.
+	for _, fds := range directives {
+		for _, fd := range fds {
+			if fd.invalid && !hw0DirectiveSeen[fd.pos] {
+				hw0DirectiveSeen[fd.pos] = true
+				reportHW0(fd.pos)
+			}
+		}
 	}
 
 	pass.ExportPackageFact(&PackageFacts{Records: records})

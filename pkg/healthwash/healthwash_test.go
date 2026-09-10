@@ -16,7 +16,7 @@ import (
 func TestGoldenCorpus(t *testing.T) {
 	analysistest.Run(t, testdataDir(), New(),
 		"golden", "hw5value", "hw3transient", "hw4lazy", "hw2bare",
-		"suppress", "overr", "unresolvable",
+		"suppress", "suppressspan", "overr", "unresolvable",
 	)
 }
 

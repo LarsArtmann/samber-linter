@@ -68,6 +68,7 @@ func evalSite(
 
 	rel := types.TypeString(serviceType, types.RelativeTo(pass.Pkg))
 	full := types.TypeString(serviceType, nil)
+	endLine := pass.Fset.Position(call.End()).Line
 	rec := ServiceRecord{
 		Name: full,
 		Type: rel,
@@ -89,7 +90,8 @@ func evalSite(
 					orDash(rel),
 					RuleCodeUnres,
 				),
-				pos: call.Pos(),
+				pos:     call.Pos(),
+				endLine: endLine,
 			})
 		}
 
@@ -111,7 +113,7 @@ func evalSite(
 	var reps []siteReport
 
 	add := func(rule, msg string) {
-		reps = append(reps, siteReport{rule: rule, message: rule + ": " + msg, pos: call.Pos()})
+		reps = append(reps, siteReport{rule: rule, message: rule + ": " + msg, pos: call.Pos(), endLine: endLine})
 	}
 
 	switch kind {
