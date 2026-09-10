@@ -18,16 +18,16 @@ without runtime proof** and **CI-on-GitHub left unverified**.
 
 ## a) FULLY DONE — WITH THE VERIFICATION THAT PROVES IT
 
-| Item | Proof |
-|---|---|
-| Lint burn-down 44 → 0 | `golangci-lint run` exit 0; hermetic nix lint identical; full suite + `-race` green; plugin custom-gcl test green at end-state |
-| `nix flake check` | "all checks passed" (build + full tests + hermetic lint + treefmt) |
-| v0.1.1 release | main.go `0.1.1`; tag `v0.1.1` annotated; remote verified via `gh api` (tags list); master synced 0/0 after push |
-| #317 PR branch | Remote commit verified via `gh api`: 5 files, parent `9bae325` (upstream master), sentinel tests + new sweep-level test pass; base = pristine upstream (rebased, daemon pollution excluded) |
-| Snapshot gate | `scripts/check-upstream-snippets.sh` compiles AND runs the draft repro verbatim (`map[main.check:<nil>]`, exit-0 bug-reproduced path); negative path proven (broken snippet → exit 1); CI job added |
-| Ecology (all zero findings) | `samber-linter ./...` on each target: auditlog "no health-washing found" (coverage 25%→60%); standard-bug-tracking "no health-washing found"; CV "no health-washing found" + baseline file rewritten (8%→10%) and committed |
-| Docs/tracking | README §2.4 upstream links; AGENTS.md Driver-contract + Upstream-engagement sections; TODO_LIST updated (release, PR branch, ecology marked done; stale "141" figure corrected); status report for the round written and committed |
-| Hygiene | /tmp artifacts trashed, `git worktree prune`; `.config/metadata.yaml` explained (tool churn, daemon-committed) |
+| Item                        | Proof                                                                                                                                                                                                                              |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lint burn-down 44 → 0       | `golangci-lint run` exit 0; hermetic nix lint identical; full suite + `-race` green; plugin custom-gcl test green at end-state                                                                                                     |
+| `nix flake check`           | "all checks passed" (build + full tests + hermetic lint + treefmt)                                                                                                                                                                 |
+| v0.1.1 release              | main.go `0.1.1`; tag `v0.1.1` annotated; remote verified via `gh api` (tags list); master synced 0/0 after push                                                                                                                    |
+| #317 PR branch              | Remote commit verified via `gh api`: 5 files, parent `9bae325` (upstream master), sentinel tests + new sweep-level test pass; base = pristine upstream (rebased, daemon pollution excluded)                                        |
+| Snapshot gate               | `scripts/check-upstream-snippets.sh` compiles AND runs the draft repro verbatim (`map[main.check:<nil>]`, exit-0 bug-reproduced path); negative path proven (broken snippet → exit 1); CI job added                                |
+| Ecology (all zero findings) | `samber-linter ./...` on each target: auditlog "no health-washing found" (coverage 25%→60%); standard-bug-tracking "no health-washing found"; CV "no health-washing found" + baseline file rewritten (8%→10%) and committed        |
+| Docs/tracking               | README §2.4 upstream links; AGENTS.md Driver-contract + Upstream-engagement sections; TODO_LIST updated (release, PR branch, ecology marked done; stale "141" figure corrected); status report for the round written and committed |
+| Hygiene                     | /tmp artifacts trashed, `git worktree prune`; `.config/metadata.yaml` explained (tool churn, daemon-committed)                                                                                                                     |
 
 ## b) PARTIALLY DONE
 
@@ -81,7 +81,7 @@ without runtime proof** and **CI-on-GitHub left unverified**.
    is what corrupted the change tracking. I should have either checked for
    the daemon first or cloned outside `~/projects` from second one.
 2. **I buried a scoping bug inside a "fix".** While adding sweep
-   suppressions to standard-bug-tracking-schema I deleted two *unflagged*
+   suppressions to standard-bug-tracking-schema I deleted two _unflagged_
    config providers (`OTELConfigProvider`, `TelemetryConfigProvider`) that
    the flagged providers depend on — restored within a minute after the
    dependency break surfaced, build re-verified. Sloppy: the edits were
@@ -125,6 +125,7 @@ without runtime proof** and **CI-on-GitHub left unverified**.
 ## f) 50 THINGS WE SHOULD GET DONE NEXT
 
 **Verify what was claimed (1–5)**
+
 1. Watch the v0.1.1-tag CI run on GitHub to completion; confirm lint
    workflow green (the one gate not yet observed)
 2. Runtime-prove the standard-bug-tracking hw-4 suppression reasons, or
@@ -140,29 +141,31 @@ without runtime proof** and **CI-on-GitHub left unverified**.
 **Upstream (6–12)**
 6. Watch #317/#318; respond within a day of maintainer activity
 7. Open the prepared PR (`transient-healthcheck-sentinel` in
-   `LarsArtmann/do`) the moment the maintainer invites
+`LarsArtmann/do`) the moment the maintainer invites
 8. Optionally prepare the #317 option-2 variant (exclude transients from
-   results) while waiting — same test harness flips in minutes
+results) while waiting — same test harness flips in minutes
 9. Add the timeout-interplay note to the PR/issue: `raceWithTimeout` wraps
-   with `%w`, so `errors.Is(err, ErrHealthCheckSkipped)` holds on both
-   paths — no code change needed, one comment suffices
+with `%w`, so `errors.Is(err, ErrHealthCheckSkipped)` holds on both
+paths — no code change needed, one comment suffices
 10. Keep the fork clone outside `~/projects` (now at `~/upstream-work/do-fork`)
 11. Link #317/#318 from the samber-linter README §2.4 (done) — extend to the
-    go-health README once the status-model discussion starts
+go-health README once the status-model discussion starts
 12. If #317 stalls: decide go-health fork/patch pin
 
 **Tool/hygiene (13–22)**
 13. Wire dprint into `nix flake check` (hand-edited markdown is currently
-    unverified)
+unverified)
 14. `--check` silent under `--json`/`--sarif`
 15. Dogfood `--output markdown` in the CI dogfood job
 16. Snippet gate over `docs/status/**` Go blocks too (currently only
-    `docs/upstream`)
+`docs/upstream`)
 17. Run the 43-project ecology re-sweep with the released v0.1.1 binary;
-    store as a repo script; refresh the pseudonymous triage doc
+store as a repo script; refresh the pseudonymous triage doc
 18. FluffBall / KeyCountdown MISSING_DIR investigation
 19. Kernovia go.work go≥1.27 courtesy note; ast-state-analyzer `go mod tidy`
-    + re-scan
+
+- re-scan
+
 20. SARIF coverage as automation metric property
 21. Suppression-expiry report (`--suppressions`); HW-7 "stale directive" rule
     candidate
@@ -171,64 +174,64 @@ without runtime proof** and **CI-on-GitHub left unverified**.
 
 **Ecology (23–30)**
 23. Commit coverage baselines into samber-do-auditlog (60%) and
-    standard-bug-tracking-schema (3%) and wire `--coverage-min` into their
-    CI so the fixed state can't silently regress
+standard-bug-tracking-schema (3%) and wire `--coverage-min` into their
+CI so the fixed state can't silently regress
 24. Re-run the auditlog + standard-bug scans post-v0.1.1 in CI (dogfood the
-    released binary, not HEAD)
+released binary, not HEAD)
 25. Investigate `.config/metadata.yaml` churn in samber-do-auditlog (same
-    tool-owned class, flagged but unexamined this session)
+tool-owned class, flagged but unexamined this session)
 26. go-health `Check.Status` extension (unknown/skipped) fed by healthaudit,
-    once the #318 direction is set
+once the #318 direction is set
 27. healthaudit typed `Status` enum (Registered/Invoked/Errored/Skipped)
-    as a warm-up design even before #318 moves
+as a warm-up design even before #318 moves
 28. Refresh pseudonymous triage doc with post-fix numbers
 29. CV: nothing left (0 findings, 10% baseline) — leave; re-scan only on
-    dependency churn
+dependency churn
 30. Add samber-linter to auditlog + standard-bug CI as a lint step
 
 **Release/docs (31–40)**
 31. Verify `go install github.com/larsartmann/samber-linter@latest`
-    resolves v0.1.1 (`--version` prints 0.1.1) — the one consumer-facing
-    release check not yet done
+resolves v0.1.1 (`--version` prints 0.1.1) — the one consumer-facing
+release check not yet done
 32. Decide HW-4 posture (info-on-by-default vs opt-in) with FP-budget data
-    in hand
+in hand
 33. CHANGELOG: add the 0.1.1 release-hardening details (snippet gate, PR
-    branch, ecology fixes) — the section exists but is thinner than the
-    work
+branch, ecology fixes) — the section exists but is thinner than the
+work
 34. FEATURES.md: mark the snippet gate + `--output` + `--disable` as shipped
 35. AGENTS.md: add the "upstream forks live in ~/upstream-work" + "clean
-    buildcache >90%" lessons
+buildcache >90%" lessons
 36. dprint pass over the two new status reports + ISSUE_DRAFT (done for the
-    go files; markdown formatting re-checked)
+go files; markdown formatting re-checked)
 37. TODO_LIST: mark the dogfood-markdown + `--check`-silent items with
-    owners, not just open
+owners, not just open
 38. Consider gating `nix flake check` in CI on tags (currently tags trigger
-    the same workflows — verify the v* trigger actually ran the lint job)
+the same workflows — verify the v* trigger actually ran the lint job)
 39. README quickstart: note v0.1.1 as the minimum for `--output` (remove the
-    "run from source" note — done, verify no other stale pointers)
+"run from source" note — done, verify no other stale pointers)
 40. Add the `snippet-skip` contract to CONTRIBUTING/docs conventions for
-    anyone editing ISSUE_DRAFT.md
+anyone editing ISSUE_DRAFT.md
 
 **Bigger ideas (41–50)**
 41. `samber-linter explain HW-N` subcommand (rule docs from code
-    single-source)
+single-source)
 42. Baseline v2: per-rule counts + schema version
 43. Config auto-merge precedence (allowlist file vs inline suppressions)
 44. `--set-baseline` dry-run mode (show the delta, write nothing) for CI
-    pull-request workflows
+pull-request workflows
 45. HW-3 runtime analogue note: sentinel vs sweep-timeout semantics bridge
-    (design note, no code)
+(design note, no code)
 46. Bench: analyzer on the 63-service target, publish load-time budget in
-    README
+README
 47. Fuzz target for the directive parser in CI (seed corpus from the
-    fixtures)
+fixtures)
 48. `--json` findings schema documentation page (fields consumed by
-    dashboards)
+dashboards)
 49. Watch samber/do master for the transient TODO's fate — if upstream
-    implements checks, HW-3/HW-4 budgets change (drift matrix will catch
-    it; plan the response)
+implements checks, HW-3/HW-4 budgets change (drift matrix will catch
+it; plan the response)
 50. When #317 resolves: fold the outcome into THIS repo's README §2.4 and
-    FP-BUDGETS (the "always nil" pins become version-gated history)
+FP-BUDGETS (the "always nil" pins become version-gated history)
 
 ## g) QUESTIONS (cannot self-answer)
 
