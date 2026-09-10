@@ -418,3 +418,64 @@ func TestLoadFailureExitsTwo(t *testing.T) {
 		t.Errorf("load failure must explain itself; stderr: %s", errOut.String())
 	}
 }
+
+// TestGoWorkMultiModule: a go.work workspace spanning an app module and a
+// local samber/do stub module (the shape real consumers like go.work-based
+// monorepos present) must load and analyze across module boundaries.
+func TestGoWorkMultiModule(t *testing.T) {
+	dir := t.TempDir()
+
+	stub := filepath.Join(dir, "dostub")
+	must(t, os.MkdirAll(stub, 0o755))
+	must(t, os.WriteFile(filepath.Join(stub, "go.mod"),
+		[]byte("module github.com/samber/do/v2\n\ngo 1.26\n"), 0o644))
+	src, err := os.ReadFile(filepath.Join("..", "..", "testdata", "src", "github.com", "samber", "do", "v2", "do.go"))
+	must(t, err)
+	must(t, os.WriteFile(filepath.Join(stub, "do.go"), src, 0o644))
+
+	app := filepath.Join(dir, "app")
+	must(t, os.MkdirAll(app, 0o755))
+	must(t, os.WriteFile(filepath.Join(app, "go.mod"),
+		[]byte("module example.com/app\n\ngo 1.26\n\nrequire github.com/samber/do/v2 v2.1.0\n"), 0o644))
+	must(t, os.WriteFile(filepath.Join(app, "main.go"), []byte(`package main
+
+import (
+	"context"
+
+	do "github.com/samber/do/v2"
+)
+
+type Store struct{}
+
+func (s *Store) Shutdown(context.Context) {}
+
+func NewStore(i do.Injector) (*Store, error) { return &Store{}, nil }
+
+func main() {
+	do.Provide(nil, NewStore)
+}
+`), 0o644))
+
+	must(t, os.WriteFile(filepath.Join(dir, "go.work"),
+		[]byte("go 1.26\n\nuse (\n\t./app\n\t./dostub\n)\n"), 0o644))
+
+	var out, errOut bytes.Buffer
+
+	code := Run(Options{
+		// In workspace mode `all` means every module listed in go.work;
+		// `./...` from the workspace root errors because the root itself is
+		// not a module. README documents `all` as the workspace pattern.
+		Patterns: []string{"all"}, Dir: dir, Version: "test",
+		// Workspace mode forbids -mod=mod; every module is local via use,
+		// so readonly loading resolves everything.
+		Stdout: &out, Stderr: &errOut,
+	})
+	if code != 1 {
+		t.Fatalf("go.work exit = %d, want 1 (HW-1 in app module); out: %s err: %s",
+			code, out.String(), errOut.String())
+	}
+
+	if !strings.Contains(out.String(), "HW-1") {
+		t.Errorf("go.work analysis lost the HW-1 finding; out:\n%s err:\n%s", out.String(), errOut.String())
+	}
+}
