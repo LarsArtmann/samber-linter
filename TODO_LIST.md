@@ -4,6 +4,40 @@ Living task source. Snapshot plan with full rationale, impact/effort scoring, an
 execution graph: `docs/planning/2026-09-09_20-09_SUPERB-PARETO-EXECUTION-PLAN.html`.
 Mark items `[x]` when done and move them to the Done section at the bottom.
 
+## Verification round — 2026-09-10 (post-ecology hardening)
+
+The v0.1.0 completion claim above over-marked several items `[x]`. This round
+actually executed them, plus fixes found by running the shipped binary:
+
+- [x] Empty `--output` regression: plain `samber-linter ./...` exited 2 ("invalid
+  --output format"); zero flag value now means the plain-text default (test added)
+- [x] A68 (real) `--check` advisory flag: report everything, always exit 0
+- [x] `--disable` exposed on the CLI (analyzer flag existed, CLI never wired it)
+- [x] Load failure exits 2 (1 is reserved for findings)
+- [x] Allowlist: empty `pathPattern` = project-wide (was a silent no-op);
+  rule-less entries warn and stay inert (e2e test added)
+- [x] Suppression directives honored anywhere inside a multi-line registration
+  call (`suppressspan` fixture)
+- [x] HW-0 fires for orphaned malformed directives, at the comment
+  (`hw0orphan` fixture + test)
+- [x] A74 (real) edge fixtures: duplicate registrations, nested closures (`edges`)
+- [x] A75 (real) go.work multi-module e2e test (workspace pattern: `all`)
+- [x] A81 (real) `golangci-lint custom` build + fire verified end to end;
+  locked in as `plugin/plugin_integration_test.go`; `.custom-gcl.yml` usage
+  comment now names the mandatory `linters.settings.custom` registration
+- [x] A96 (real) `docs/FP-BUDGETS.md` with per-rule budgets + ecology evidence
+- [x] Ecology anomalies explained: Kernovia (go.work needs go >= 1.27) and
+  ast-state-analyzer (stale go.mod) are target-project breakage, not analyzer
+  bugs; both fail cleanly with an explanatory message
+
+Open decisions (user):
+
+- [ ] HW-4 default posture: stay on-by-default `info` vs opt-in
+- [ ] Commit `.samber-linter-baseline.json` at 8% into CV; triage CV's 9 findings
+- [ ] GitHub purge of `.crush` history blobs (support ticket vs delete+recreate)
+- [ ] Candidate HW-7 "stale directive": valid-but-orphaned directives with an
+  `until` expiry could resurface for cleanup (see docs/FP-BUDGETS.md)
+
 ## Tier 1 — 1% → 51%: Incident-class MVP
 
 ### M01 Spec amendments (README)

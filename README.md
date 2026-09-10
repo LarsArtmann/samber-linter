@@ -33,13 +33,15 @@ samber-linter --coverage-min 0.6 ./...   # fail below 60%
 ```
 
 Exit codes: `0` clean, `1` high-confidence findings (or a coverage gate
-failure), `2` findings that need triage only.
+failure), `2` findings that need triage only — or a load failure (a run that
+cannot load anything has no findings to report).
 
 Rules: **HW-1** Shutdowner-without-Healthchecker (the headline), **HW-2**
 contextless check, **HW-3** transient health-washing, **HW-4** lazy
 never-built pass, **HW-5** pointer-receiver-value registration, **HW-0**
 suppression without a reason. Suppress with
-`//samber-linter:allow hw-1 <reason>` directly above the registration.
+`//samber-linter:allow hw-1 <reason>` directly above the registration (or
+anywhere inside a multi-line registration call).
 
 As a golangci-lint v2 plugin, see `plugin/` and `.custom-gcl.yml`.
 
@@ -315,6 +317,9 @@ samber-linter --sarif ./...             # SARIF 2.1 for code scanning
 samber-linter --output markdown ./...   # findings table via go-output (also: table, csv, tsv, html, xml, asciidoc)
 samber-linter --coverage-min 0.6 ./...  # HW-6 as a gate
 samber-linter --set-baseline ./...      # lock current coverage as the new floor (atomic write)
+samber-linter --disable HW-4 ./...      # mute rules (migration/testing aid)
+samber-linter --check ./...             # advisory: report everything, always exit 0
+samber-linter all                       # in a go.work workspace use `all`; ./... from the workspace root errors
 ```
 
 `--output` renders the findings as a go-output table (Rule, Severity,

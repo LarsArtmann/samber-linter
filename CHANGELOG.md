@@ -3,6 +3,44 @@
 All notable changes to this project are documented here. Format based on
 Keep a Changelog; versioning: SemVer.
 
+## [0.1.1] - 2026-09-10
+
+Hardening round after the first ecology scan (43 samber/do v2 consumers, 66
+findings, 0 confirmed false positives).
+
+### Fixed
+
+- **Empty `--output` broke every plain invocation.** `samber-linter ./...`
+  failed at flag validation with "invalid --output format" and exit 2. The
+  zero value now means the documented plain-text default; regression test
+  added.
+- **Allowlist entries without `pathPattern` were silent no-ops.** An empty
+  pattern now covers the whole project (the natural reading); entries without
+  a rule warn on stderr and stay inert, matching the existing
+  reason-mandatory warning.
+- **Load failures exited 1**, the code reserved for findings. A run that
+  cannot load any package has none and now exits 2.
+- **Reasonless suppressions vanished once their finding was fixed.** HW-0 now
+  also fires for orphaned malformed directives, at the comment itself —
+  "unexplained suppressions rot" no longer depends on a live violation.
+
+### Added
+
+- `--check` advisory mode: report everything, always exit 0 (for CI
+  annotation pipelines that parse output and set statuses themselves).
+- `--disable HW-1,HW-4` on the CLI: the analyzer's rule mute, previously
+  reachable only through the golangci plugin settings.
+- Suppression directives are honored anywhere inside a multi-line
+  registration call, not only on the line above (long provider closures
+  commonly carry the directive in the argument list).
+- Edge fixtures: duplicate registrations (both sites reported, one coverage
+  row), registrations nested inside closures, orphaned malformed directives.
+- `go.work` multi-module end-to-end test (workspace pattern is `all`).
+- Plugin integration tests: in-process registration + settings pass-through
+  proofs, and a `golangci-lint custom` build-and-fire proof gated on network.
+- `docs/FP-BUDGETS.md`: per-rule false-positive budgets with the ecology
+  evidence.
+
 ## [0.1.0] - 2026-09-09
 
 Initial release: the healthwash analyzer with all five detection rules, the
