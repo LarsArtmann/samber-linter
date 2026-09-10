@@ -121,7 +121,11 @@ Every claim below was read from `samber/do v2.1.0` source (module cache,
 
   An upstream TODO. A transient service that **does** implement
   `Healthchecker` still reports `pass` forever. Implementing the interface on
-  a transient registration is dead code plus false confidence.
+  a transient registration is dead code plus false confidence. Filed upstream
+  as [samber/do#317](https://github.com/samber/do/issues/317) (verified
+  runtime repro); the broader proposal for explicit checked / not-built /
+  unsupported sweep states is
+  [samber/do#318](https://github.com/samber/do/issues/318).
 
 ### 2.5 The lifecycle interfaces (di_lifecycle.go)
 

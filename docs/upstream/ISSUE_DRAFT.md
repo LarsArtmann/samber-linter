@@ -20,7 +20,7 @@ regardless of the concrete type.
 
 - `service_transient.go:62-66`:
 
-  ```go
+  ```go snippet-skip
   func (s *serviceTransient[T]) healthcheck(ctx context.Context) error {
       // @TODO: implement healthcheck ?
       // It requires to store each instance of service, which is not good because of memory leaks.
@@ -39,20 +39,49 @@ regardless of the concrete type.
 
 ## Reproduction
 
+Full program; compiles and runs verbatim (gated by
+`scripts/check-upstream-snippets.sh`). It exits 0 while the bug exists and
+fails once samber/do changes the behavior, so a fix upstream surfaces as a
+snippet-check failure here.
+
 ```go
-type perRequestCheck struct{}
+// Command repro demonstrates that a transient service with a real health
+// check still reports nil ("pass") from Scope.HealthCheckWithContext.
+package main
 
-func (perRequestCheck) HealthCheck(context.Context) error {
-    return errors.New("transient service down")
+import (
+	"context"
+	"errors"
+	"fmt"
+	"os"
+
+	"github.com/samber/do/v2"
+)
+
+type check struct{}
+
+func (check) HealthCheck(context.Context) error { return errors.New("boom") }
+
+func main() {
+	i := do.New(func(i do.Injector) {
+		do.ProvideTransient(i, func(do.Injector) (check, error) { return check{}, nil })
+	})
+
+	res := i.HealthCheckWithContext(context.Background())
+	fmt.Println(res)
+
+	err, present := res["main.check"]
+	switch {
+	case !present:
+		fmt.Println("map shape changed: main.check missing entirely")
+		os.Exit(1)
+	case err == nil:
+		fmt.Println("bug reproduced: HealthCheck never ran, sweep reported pass")
+	default:
+		fmt.Printf("behavior changed: sweep reported %v\n", err)
+		os.Exit(1)
+	}
 }
-
-injector := do.New(func(i do.Injector) {
-    do.ProvideTransient(i, func(i do.Injector) (perRequestCheck, error) {
-        return perRequestCheck{}, nil
-    })
-})
-results := injector.HealthCheckWithContext(ctx)
-// results["pkg.perRequestCheck"] == nil, expected errTransientDown
 ```
 
 ## Proposed directions (for discussion)
