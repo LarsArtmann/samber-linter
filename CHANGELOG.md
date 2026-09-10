@@ -3,13 +3,19 @@
 All notable changes to this project are documented here. Format based on
 Keep a Changelog; versioning: SemVer.
 
-## [0.1.1] - 2026-09-10
+## [Unreleased]
 
 Hardening round after the first ecology scan (43 samber/do v2 consumers, 66
-findings, 0 confirmed false positives).
+findings, 0 confirmed false positives). Not yet tagged: `@latest` still
+serves v0.1.0.
 
 ### Fixed
 
+- **Every CI run on 2026-09-10 was red:** go-finding v1.9.2 imports
+  `encoding/json/v2`, and the workflow ran without `GOEXPERIMENT=jsonv2`, so
+  the toolchain excluded those files and `test`/`dogfood` failed at build
+  (run 34425222926). The workflow now sets `GOEXPERIMENT: jsonv2` — matching
+  the flake and the verified-local suite.
 - **Empty `--output` broke every plain invocation.** `samber-linter ./...`
   failed at flag validation with "invalid --output format" and exit 2. The
   zero value now means the documented plain-text default; regression test
@@ -40,6 +46,17 @@ findings, 0 confirmed false positives).
   proofs, and a `golangci-lint custom` build-and-fire proof gated on network.
 - `docs/FP-BUDGETS.md`: per-rule false-positive budgets with the ecology
   evidence.
+- Upstream snippet gate: `scripts/check-upstream-snippets.sh` compiles and
+  runs every Go block in `docs/upstream/*.md` verbatim (CI job
+  `upstream-snippets`; blocks quoting upstream source are marked
+  ` ```go snippet-skip `).
+- README links to the filed upstream issues samber/do#317/#318.
+
+### Changed
+
+- `flake.nix` rewritten on the `go-standard` module (go-nix-helpers) and the
+  committed `vendor/` (659 files) removed — builds fetch via proxy.golang.org
+  with a pinned `vendorHash`; the full test suite gates every `nix build`.
 
 ## [0.1.0] - 2026-09-09
 

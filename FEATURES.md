@@ -1,6 +1,6 @@
 # FEATURES — samber-linter
 
-Honest inventory by status. Last updated: 2026-09-09.
+Honest inventory by status. Last updated: 2026-09-10.
 
 ## DONE
 
@@ -44,8 +44,19 @@ Honest inventory by status. Last updated: 2026-09-09.
 - **Runtime companion** `pkg/healthaudit`: registration/invocation hooks +
   sweep audit; `errored` = only runtime proof a check can fail.
 - **Dogfooded**: run on `~/projects/CV` (9 findings: 7× HW-1, 2× HW-4;
-  coverage 5/61 = 8% — matching the incident) and `~/projects/branching-flow`
-  (clean).
+  coverage 5/61 = 8% — matching the incident; CV fixed its findings after the
+  scan, so the committed 8% baseline now reads 10%) and
+  `~/projects/branching-flow` (clean).
+- **Ecology-proven**: 43 samber/do v2 consumers scanned 2026-09-10 (66
+  findings, 0 confirmed false positives; see docs/FP-BUDGETS.md).
+- **Upstream engagement**: samber/do#317 (transient checks never dispatched)
+  and #318 (explicit sweep outcome states) filed 2026-09-10, runtime-verified
+  before filing; linked from README §2.4; every Go snippet in docs/upstream
+  is compile-and-run gated (`scripts/check-upstream-snippets.sh`, CI job
+  `upstream-snippets`).
+- **DO-9 backport shipped**: `branching-flow/pkg/doanalyzerv2` delegates
+  DO-9a–e to samber-linter's healthwash rules (analyzer_healthwash.go;
+  compile-gated fixture, suite green).
 
 ## PARTIALLY DONE
 
@@ -55,15 +66,12 @@ Honest inventory by status. Last updated: 2026-09-09.
 
 ## PLANNED
 
-- **DO-9 backport** into `branching-flow/pkg/doanalyzerv2` (HW rules as
-  DO-9 family).
-- **Upstream filing** of `docs/upstream/ISSUE_DRAFT.md` (transient health
-  checks + "checked vs skipped" sweep marker), after re-verification against
-  the then-current samber/do release.
 - **Suppression staleness report**: periodic `until` deadline report.
 
 ## WORTH CONSIDERING
 
+- **HW-7 "stale directive"**: valid-but-orphaned directives with an `until`
+  expiry resurface for cleanup (design notes in docs/FP-BUDGETS.md).
 - `--fix` for HW-5 (rewrite `Provide(i, T{})` → `Provide(i, &T{})`) —
   mechanical; everything else must stay report-only (a generated
   `HealthCheck` stub would itself be health-washing).

@@ -9,6 +9,12 @@ on:
 permissions:
   contents: write
 
+# go-finding v1.9.2 imports encoding/json/v2; without this experiment the
+# toolchain excludes those files and every build fails (all CI runs of
+# 2026-09-10 were red for exactly this reason).
+env:
+  GOEXPERIMENT: jsonv2
+
 jobs:
   test:
     runs-on: ubuntu-latest

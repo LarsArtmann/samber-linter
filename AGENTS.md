@@ -45,6 +45,42 @@ These come straight from the spec; violating any of them invalidates the analyze
   file; `--set-baseline` locks gains. Modeled on CV's `any-count` ratchet.
 - **samber/do v1 is out of scope** (README §10 non-goals).
 
+## Driver contract (v0.1.1)
+
+- Exit codes: `0` clean, `1` findings/gate failure, `2` load failure or
+  triage-only (`--check` advisory forces `0` in every case).
+- Empty `--output` value means plain-text default — `ParseOutputFormat` must
+  accept the zero value (regression: a parallel session's `--output` flag
+  broke every plain invocation; guarded by `output_test.go`).
+- Allowlist entries with an empty `pathPattern` apply project-wide (not a
+  silent no-op); entries with no rules warn once and stay inert.
+- Suppression directives are honored anywhere inside a multi-line
+  registration call; orphaned malformed directives surface as `HW-0`.
+- go.work consumers are analyzed with the pattern `all`, not `./...` —
+  `./...` silently skips workspace roots' sibling modules.
+- golangci-lint integration requires the custom build
+  (`.custom-gcl.yml` + `plugin/plugin_integration_test.go` locks registration
+  and settings pass-through); a stock golangci-lint cannot load the plugin.
+
+## Upstream engagement
+
+- [samber/do#317](https://github.com/samber/do/issues/317) (transient
+  healthcheck never dispatched, sentinel option) and
+  [#318](https://github.com/samber/do/issues/318) (explicit sweep outcome
+  states) filed 2026-09-10 under the user's account; watch for responses,
+  do not dump unsolicited design notes.
+- Upstream text rules: first person, concise, concrete numbers, real links,
+  no offer-speak ("do not suggest. Just explain the problem!"), AI
+  disclaimer in a small `<sub>` footer (`GLM-5.3-Flash via Crush`).
+- Snippet gate: every Go block in `docs/upstream/*.md` is compiled and run
+  verbatim by `scripts/check-upstream-snippets.sh` (CI job
+  `upstream-snippets`). Blocks quoting upstream source must be marked
+  ` ```go snippet-skip `; unclassified blocks fail the check.
+- Verification lessons (encoded after two incidents): execute snippets
+  verbatim before filing; print whole structures, never map-index lookups
+  (a missing key and a nil value print identically — `res["x"] == nil`
+  cannot distinguish missing from present).
+
 ## Mechanism facts are version-pinned
 
 Every behavioral claim about samber/do (non-implementers return nil; lazy
