@@ -40,11 +40,18 @@ func SupportedOutputFormatNames() []string {
 	return formatNames(SupportedOutputFormats())
 }
 
-// ParseOutputFormat validates a --output flag value. Any parseable format
-// outside SupportedOutputFormats is rejected with a hint toward --json and
-// --sarif so the failure names the right tool instead of listing enum values
-// that exist but cannot render findings.
+// ParseOutputFormat validates a --output flag value. The empty value means
+// the plain-text default (what printText emits) and is accepted here so the
+// zero value of the flag never fails: callers pass it through unchanged and
+// the driver falls back to plain text. Any parseable format outside
+// SupportedOutputFormats is rejected with a hint toward --json and --sarif so
+// the failure names the right tool instead of listing enum values that exist
+// but cannot render findings.
 func ParseOutputFormat(value string) (output.Format, error) {
+	if strings.TrimSpace(value) == "" {
+		return "", nil
+	}
+
 	format, err := output.ParseFormat(value)
 	if err != nil {
 		return "", fmt.Errorf("invalid --output format: %w", err)

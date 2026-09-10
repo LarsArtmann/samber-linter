@@ -47,6 +47,21 @@ func TestSupportedOutputFormats(t *testing.T) {
 func TestParseOutputFormat(t *testing.T) {
 	t.Parallel()
 
+	t.Run("accepts the empty value as the plain-text default", func(t *testing.T) {
+		t.Parallel()
+
+		for _, empty := range []string{"", "  ", "\t"} {
+			got, err := ParseOutputFormat(empty)
+			if err != nil {
+				t.Fatalf("ParseOutputFormat(%q) = %v, want nil: the zero flag value must not break plain invocations", empty, err)
+			}
+
+			if got != "" {
+				t.Errorf("ParseOutputFormat(%q) = %q, want empty (driver falls back to plain text)", empty, got)
+			}
+		}
+	})
+
 	t.Run("accepts a supported format", func(t *testing.T) {
 		t.Parallel()
 
