@@ -155,13 +155,13 @@ func TestRunWithOutputFormatEndToEnd(t *testing.T) {
 		t.Fatalf("exit = %d, want 1 (high-confidence HW-1); stderr: %s", code, errOut.String())
 	}
 
-	o := out.String()
-	if !strings.Contains(o, "HW-1") {
-		t.Errorf("markdown output missing HW-1 finding:\n%s", o)
+	reported := out.String()
+	if !strings.Contains(reported, "HW-1") {
+		t.Errorf("markdown output missing HW-1 finding:\n%s", reported)
 	}
 
-	if !strings.Contains(o, "health-coverage: 1/3 = 33%") {
-		t.Errorf("coverage line must stay plain text in presentation formats:\n%s", o)
+	if !strings.Contains(reported, "health-coverage: 1/3 = 33%") {
+		t.Errorf("coverage line must stay plain text in presentation formats:\n%s", reported)
 	}
 }
 

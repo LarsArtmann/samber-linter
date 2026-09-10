@@ -44,8 +44,8 @@ func SupportedOutputFormatNames() []string {
 // outside SupportedOutputFormats is rejected with a hint toward --json and
 // --sarif so the failure names the right tool instead of listing enum values
 // that exist but cannot render findings.
-func ParseOutputFormat(s string) (output.Format, error) {
-	format, err := output.ParseFormat(s)
+func ParseOutputFormat(value string) (output.Format, error) {
+	format, err := output.ParseFormat(value)
 	if err != nil {
 		return "", fmt.Errorf("invalid --output format: %w", err)
 	}
@@ -54,7 +54,7 @@ func ParseOutputFormat(s string) (output.Format, error) {
 		return "", fmt.Errorf(
 			"%w: %q cannot render findings; supported formats: %s (machine-readable output: --json, --sarif)",
 			ErrUnsupportedOutputFormat,
-			s,
+			value,
 			strings.Join(SupportedOutputFormatNames(), ", "),
 		)
 	}
@@ -82,13 +82,13 @@ func renderFindings(out io.Writer, findings []finding.Finding, format output.For
 func findingsTable(findings []finding.Finding) (*output.Table, error) {
 	tbl := output.NewTable([]string{"Rule", "Severity", "Confidence", "Location", "Message"})
 
-	for _, f := range findings {
+	for _, record := range findings {
 		row := []string{
-			string(f.Rule),
-			f.Severity.String(),
-			f.Confidence.String(),
-			fmt.Sprintf("%s:%d:%d", f.Position.File, f.Position.Line, f.Position.Column),
-			f.Message,
+			string(record.Rule),
+			record.Severity.String(),
+			record.Confidence.String(),
+			fmt.Sprintf("%s:%d:%d", record.Position.File, record.Position.Line, record.Position.Column),
+			record.Message,
 		}
 
 		if err := tbl.AddRowChecked(row); err != nil {
