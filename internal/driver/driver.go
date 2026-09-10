@@ -6,7 +6,8 @@
 package driver
 
 import (
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"fmt"
 	"go/token"
 	"go/types"
@@ -20,9 +21,8 @@ import (
 	"github.com/larsartmann/go-finding"
 	linter "github.com/larsartmann/go-linter-sdk"
 	"github.com/larsartmann/samber-linter/pkg/healthwash"
-	"golang.org/x/tools/go/packages"
-
 	"golang.org/x/tools/go/analysis"
+	"golang.org/x/tools/go/packages"
 )
 
 // ToolName is the short namespace users write in suppressions and configs.
@@ -100,12 +100,15 @@ func Run(opts Options) int {
 	if out == nil {
 		out = os.Stdout
 	}
+
 	if errw == nil {
 		errw = os.Stderr
 	}
+
 	if opts.MinConfidence == 0 {
 		opts.MinConfidence = finding.ConfidenceHigh
 	}
+
 	if opts.BaselinePath == "" {
 		opts.BaselinePath = DefaultBaselinePath
 	}
@@ -113,6 +116,7 @@ func Run(opts Options) int {
 	pkgs, err := load(opts)
 	if err != nil {
 		fmt.Fprintf(errw, "%s: load failed: %v\n", ToolName, err)
+
 		return 1
 	}
 
@@ -121,16 +125,21 @@ func Run(opts Options) int {
 		_ = analyzer.Flags.Set("strict", "true")
 	}
 
-	var records []healthwash.ServiceRecord
-	var findings []finding.Finding
-	var loadErrs int
+	var (
+		records  []healthwash.ServiceRecord
+		findings []finding.Finding
+		loadErrs int
+	)
 
 	for _, pkg := range pkgs {
 		for _, e := range pkg.Errors {
 			fmt.Fprintf(errw, "%s: %s\n", ToolName, e)
+
 			loadErrs++
 		}
+
 		diags, recs := runAnalyzer(analyzer, pkg)
+
 		records = append(records, recs...)
 		for _, d := range diags {
 			findings = append(findings, toFinding(analyzer, d, pkg.Fset, opts.Version))
@@ -143,10 +152,12 @@ func Run(opts Options) int {
 		finding.ToolInfo{Name: ToolName, Version: opts.Version}, findings)
 
 	printText(out, findings)
+
 	if opts.JSON {
 		s, _ := report.JSON()
 		fmt.Fprintln(out, s)
 	}
+
 	if opts.SARIF {
 		b, err := report.ToSARIF()
 		if err != nil {
@@ -169,7 +180,9 @@ func Run(opts Options) int {
 	if gateFailed && code == 0 {
 		code = 1
 	}
+
 	_ = coverage
+
 	return code
 }
 
@@ -183,6 +196,7 @@ func load(opts Options) ([]*packages.Package, error) {
 		Env:   append(os.Environ(), opts.Env...),
 		Tests: false, // composition roots are what dashboards see; DO-3 keeps Override* in tests
 	}
+
 	return packages.Load(cfg, opts.Patterns...)
 }
 
@@ -209,11 +223,14 @@ func runAnalyzer(analyzer *analysis.Analyzer, pkg *packages.Package) (
 		ExportPackageFact: func(fact analysis.Fact) {},
 		AllObjectFacts:    func() []analysis.ObjectFact { return nil },
 		AllPackageFacts:   func() []analysis.PackageFact { return nil },
-		ResultOf:          map[*analysis.Analyzer]interface{}{},
+		ResultOf:          map[*analysis.Analyzer]any{},
 	}
 
-	var diags []analysis.Diagnostic
-	var records []healthwash.ServiceRecord
+	var (
+		diags   []analysis.Diagnostic
+		records []healthwash.ServiceRecord
+	)
+
 	pass.Report = func(d analysis.Diagnostic) { diags = append(diags, d) }
 	pass.ExportPackageFact = func(fact analysis.Fact) {
 		if pf, ok := fact.(*healthwash.PackageFacts); ok {
@@ -222,6 +239,7 @@ func runAnalyzer(analyzer *analysis.Analyzer, pkg *packages.Package) (
 	}
 
 	_, _ = analyzer.Run(pass)
+
 	return diags, records
 }
 
@@ -230,11 +248,14 @@ func toFinding(analyzer *analysis.Analyzer, d analysis.Diagnostic, fset *token.F
 	if rule == "" {
 		rule = analyzer.Name
 	}
+
 	meta, ok := ruleMetaByRule[rule]
 	if !ok {
 		meta = ruleMeta{severity: finding.SeverityWarning, confidence: finding.ConfidenceMedium}
 	}
+
 	pos := fset.Position(d.Pos)
+
 	return finding.NewBuilder(
 		finding.RuleName(rule),
 		finding.ToolName(ToolName),
@@ -248,41 +269,57 @@ func applyAllowlist(findings []finding.Finding, configPath string, errw io.Write
 	if configPath == "" {
 		return findings
 	}
+
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		fmt.Fprintf(errw, "%s: config: %v\n", ToolName, err)
+
 		return findings
 	}
+
 	var cfg allowlistConfig
 	if err := json.Unmarshal(data, &cfg); err != nil {
 		fmt.Fprintf(errw, "%s: config parse: %v\n", ToolName, err)
+
 		return findings
 	}
+
 	for _, e := range cfg.Allow {
 		if e.Reason == "" {
-			fmt.Fprintf(errw, "%s: config allowlist entry for %s lacks a reason; ignoring entry (unexplained suppressions rot)\n",
-				ToolName, e.Rule)
+			fmt.Fprintf(
+				errw,
+				"%s: config allowlist entry for %s lacks a reason; ignoring entry (unexplained suppressions rot)\n",
+				ToolName,
+				e.Rule,
+			)
 		}
 	}
+
 	kept := findings[:0]
 	for _, f := range findings {
 		suppressed := false
+
 		for _, e := range cfg.Allow {
 			if e.Reason == "" {
 				continue
 			}
+
 			if !allowMatches(e.Rule, string(f.Rule)) {
 				continue
 			}
+
 			if ok, _ := path.Match(e.PathPattern, string(f.Position.File)); ok {
 				suppressed = true
+
 				break
 			}
 		}
+
 		if !suppressed {
 			kept = append(kept, f)
 		}
 	}
+
 	return kept
 }
 
@@ -293,21 +330,27 @@ func allowMatches(entry, rule string) bool {
 	if e == "all" {
 		return true
 	}
+
 	return e == strings.ToLower(rule)
 }
 
 func reportCoverage(out io.Writer, records []healthwash.ServiceRecord, opts Options, gateFailed *bool) float64 {
 	uniq := map[string]healthwash.ServiceRecord{}
+
 	for _, r := range records {
 		if !r.AffectsHW6() {
 			continue // alias rows delegate to their target; never counted
 		}
-		if prev, ok := uniq[r.Name]; !ok || (r.Kind != healthwash.KindTransient && prev.ImplementsCheck != r.ImplementsCheck) {
+
+		if prev, ok := uniq[r.Name]; !ok ||
+			(r.Kind != healthwash.KindTransient && prev.ImplementsCheck != r.ImplementsCheck) {
 			uniq[r.Name] = r
 		}
 	}
+
 	registered := len(uniq)
 	checked := 0
+
 	for _, r := range uniq {
 		// Transients are skipped, never checked — the sweep never dispatches
 		// to them even when the type implements a check (README §2.4, §7).
@@ -315,6 +358,7 @@ func reportCoverage(out io.Writer, records []healthwash.ServiceRecord, opts Opti
 			checked++
 		}
 	}
+
 	coverage := 0.0
 	if registered > 0 {
 		coverage = float64(checked) / float64(registered)
@@ -323,25 +367,31 @@ func reportCoverage(out io.Writer, records []healthwash.ServiceRecord, opts Opti
 	baselinePath := opts.BaselinePath
 	if opts.SetBaseline {
 		b := baseline{Version: 1, Checked: checked, Registered: registered, Coverage: coverage}
-		data, _ := json.MarshalIndent(b, "", "  ")
+
+		data, _ := json.Marshal(b, jsontext.WithIndentPrefix(""), jsontext.WithIndent("  "))
 		if _, err := atomicwrite.WriteIfChanged(baselinePath, append(data, '\n')); err != nil {
 			fmt.Fprintf(opts.Stderr, "%s: baseline write failed: %v\n", ToolName, err)
+
 			*gateFailed = true
 		} else {
 			fmt.Fprintf(out, "baseline written: %s (coverage %d/%d = %.0f%%)\n",
 				baselinePath, checked, registered, coverage*100)
 		}
+
 		return coverage
 	}
 
 	if opts.CoverageMin > 0 {
 		fmt.Fprintf(out, "health-coverage: %d/%d = %.0f%% (threshold: %.0f%%)\n",
 			checked, registered, coverage*100, opts.CoverageMin*100)
+
 		if registered > 0 && coverage < opts.CoverageMin {
 			fmt.Fprintf(opts.Stderr, "%s: coverage %.0f%% is below the required minimum %.0f%%\n",
 				ToolName, coverage*100, opts.CoverageMin*100)
+
 			*gateFailed = true
 		}
+
 		return coverage
 	}
 
@@ -350,13 +400,21 @@ func reportCoverage(out io.Writer, records []healthwash.ServiceRecord, opts Opti
 		if json.Unmarshal(data, &b) == nil && b.Registered > 0 {
 			fmt.Fprintf(out, "health-coverage: %d/%d = %.0f%% (baseline: %.0f%%)\n",
 				checked, registered, coverage*100, b.Coverage*100)
+
 			if coverage < b.Coverage {
-				fmt.Fprintf(opts.Stderr, "%s: coverage %.0f%% regressed below the committed baseline %.0f%%; fix the regressions or explicitly re-baseline with --set-baseline\n",
-					ToolName, coverage*100, b.Coverage*100)
+				fmt.Fprintf(
+					opts.Stderr,
+					"%s: coverage %.0f%% regressed below the committed baseline %.0f%%; fix the regressions or explicitly re-baseline with --set-baseline\n",
+					ToolName,
+					coverage*100,
+					b.Coverage*100,
+				)
+
 				*gateFailed = true
 			} else if coverage > b.Coverage {
 				fmt.Fprintf(out, "coverage improved; lock in the gain with --set-baseline\n")
 			}
+
 			return coverage
 		}
 	}
@@ -365,6 +423,7 @@ func reportCoverage(out io.Writer, records []healthwash.ServiceRecord, opts Opti
 		fmt.Fprintf(out, "health-coverage: %d/%d = %.0f%% (no baseline; use --set-baseline to start the ratchet)\n",
 			checked, registered, coverage*100)
 	}
+
 	return coverage
 }
 
@@ -373,6 +432,7 @@ func printText(out io.Writer, findings []finding.Finding) {
 		fmt.Fprintf(out, "%s:%d:%d: %s\n",
 			f.Position.File, f.Position.Line, f.Position.Column, f.Message)
 	}
+
 	if len(findings) == 0 {
 		fmt.Fprintln(out, "no health-washing found")
 	}

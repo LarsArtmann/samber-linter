@@ -58,22 +58,25 @@ func newPlugin(settings any) (register.LinterPlugin, error) { //nolint:ireturn /
 	if err != nil {
 		return nil, err
 	}
+
 	return &healthwashPlugin{settings: s}, nil
 }
 
 // BuildAnalyzers returns the healthwash analyzer configured from settings.
-func (p *healthwashPlugin) BuildAnalyzers() ([]*analysis.Analyzer, error) { //nolint:ireturn // required by the plugin API
+func (p *healthwashPlugin) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 	a := healthwash.New()
 	if strings.EqualFold(strings.TrimSpace(p.settings.Strict), "true") {
 		if err := a.Flags.Set("strict", "true"); err != nil {
 			return nil, err
 		}
 	}
+
 	if d := strings.TrimSpace(p.settings.Disable); d != "" {
 		if err := a.Flags.Set("disable", d); err != nil {
 			return nil, err
 		}
 	}
+
 	return []*analysis.Analyzer{a}, nil
 }
 

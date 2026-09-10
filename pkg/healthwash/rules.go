@@ -36,8 +36,11 @@ func evalSite(
 		return ServiceRecord{Kind: kind}, nil
 	}
 
-	var serviceType types.Type
-	var unresolved bool
+	var (
+		serviceType types.Type
+		unresolved  bool
+	)
+
 	if kind == KindEager {
 		serviceType = pass.TypesInfo.TypeOf(call.Args[idx])
 		if serviceType == nil {
@@ -54,6 +57,7 @@ func evalSite(
 			unresolved = true
 		}
 	}
+
 	if serviceType != nil {
 		if _, isIface := serviceType.Underlying().(*types.Interface); isIface {
 			// Interface-typed closure result: the sweep asserts the stored
@@ -73,15 +77,22 @@ func evalSite(
 	if unresolved || serviceType == nil {
 		rec.Unresolved = true
 		rec.Name = rec.Type
+
 		var reps []siteReport
 		if strict {
 			reps = append(reps, siteReport{
 				rule: RuleUnresolved,
-				message: fmt.Sprintf("%s: %s at %s; analyze the concrete type or suppress with //samber-linter:allow %s <reason>",
-					RuleUnresolved, MessageUnresolv, orDash(rel), RuleCodeUnres),
+				message: fmt.Sprintf(
+					"%s: %s at %s; analyze the concrete type or suppress with //samber-linter:allow %s <reason>",
+					RuleUnresolved,
+					MessageUnresolv,
+					orDash(rel),
+					RuleCodeUnres,
+				),
 				pos: call.Pos(),
 			})
 		}
+
 		return rec, reps
 	}
 
@@ -98,6 +109,7 @@ func evalSite(
 	rec.ImplementsCheck = anyCheckStored
 
 	var reps []siteReport
+
 	add := func(rule, msg string) {
 		reps = append(reps, siteReport{rule: rule, message: rule + ": " + msg, pos: call.Pos()})
 	}
@@ -107,35 +119,55 @@ func evalSite(
 		if anyCheckStored {
 			add(RuleHW3, fmt.Sprintf(
 				"%s implements a Healthchecker variant but is registered transiently (%s); the transient healthcheck is an upstream TODO and always returns nil, so the check can never execute. Register as a singleton or drop the dead implementation. Suppress with //samber-linter:allow %s <reason>",
-				rel, fnName, RuleCodeHW3))
+				rel,
+				fnName,
+				RuleCodeHW3,
+			))
 		}
+
 		if bareCheckStored && !ctxCheckStored {
 			add(RuleHW2, fmt.Sprintf(
 				"%s implements HealthCheck() without a context variant; a hung bare check cannot be cancelled and degrades the whole sweep. Prefer HealthCheck(context.Context) error. Suppress with //samber-linter:allow %s <reason>",
-				rel, RuleCodeHW2))
+				rel,
+				RuleCodeHW2,
+			))
 		}
 	case KindLazy, KindEager:
 		if valueReg && anyCheckPtr && !anyCheckStored {
 			add(RuleHW5, fmt.Sprintf(
 				"%s declares its health check on receiver *T but is registered as value %s; the sweep type-asserts the stored value, so the implementation exists and never runs. Register the pointer or move the receiver to T. Suppress with //samber-linter:allow %s <reason>",
-				rel, rel, RuleCodeHW5))
+				rel,
+				rel,
+				RuleCodeHW5,
+			))
+
 			return rec, reps
 		}
+
 		if shutdownStored && !anyCheckStored {
 			add(RuleHW1, fmt.Sprintf(
 				"%s implements do.Shutdowner but no Healthchecker; it renders an unconditional \"pass\" on health dashboards. Implement HealthCheck(context.Context) error or suppress with a reason: //samber-linter:allow %s <reason>",
-				rel, RuleCodeHW1))
+				rel,
+				RuleCodeHW1,
+			))
 		}
+
 		if anyCheckStored {
 			if kind == KindLazy {
 				add(RuleHW4, fmt.Sprintf(
 					"%s implements a Healthchecker variant but is registered lazily (%s); until first resolution it reports green without ever having been constructed. Register eagerly when boot-critical or suppress with a reason: //samber-linter:allow %s <reason>",
-					rel, fnName, RuleCodeHW4))
+					rel,
+					fnName,
+					RuleCodeHW4,
+				))
 			}
+
 			if bareCheckStored && !ctxCheckStored {
 				add(RuleHW2, fmt.Sprintf(
 					"%s implements HealthCheck() without a context variant; a hung bare check cannot be cancelled and degrades the whole sweep. Prefer HealthCheck(context.Context) error. Suppress with //samber-linter:allow %s <reason>",
-					rel, RuleCodeHW2))
+					rel,
+					RuleCodeHW2,
+				))
 			}
 		}
 	}
@@ -148,16 +180,19 @@ func evalSite(
 // never attributed and never counted in the ratchet denominator.
 func evalAlias(pass *analysis.Pass, call *ast.CallExpr) ServiceRecord {
 	name := ""
+
 	if sel, ok := call.Fun.(*ast.SelectorExpr); ok {
 		if inst, ok2 := pass.TypesInfo.Instances[sel.Sel]; ok2 && inst.TypeArgs != nil && inst.TypeArgs.Len() >= 2 {
 			name = types.TypeString(inst.TypeArgs.At(1), nil)
 		}
 	}
+
 	return ServiceRecord{Name: name, Type: name, Kind: KindAlias}
 }
 
 func isPointer(t types.Type) bool {
 	_, ok := t.(*types.Pointer)
+
 	return ok
 }
 
@@ -165,5 +200,6 @@ func orDash(s string) string {
 	if s == "" {
 		return "<unknown>"
 	}
+
 	return s
 }

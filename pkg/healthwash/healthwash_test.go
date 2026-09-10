@@ -26,6 +26,7 @@ func TestStrictUnresolved(t *testing.T) {
 	if err := a.Flags.Set("strict", "true"); err != nil {
 		t.Fatal(err)
 	}
+
 	analysistest.Run(t, testdataDir(), a, "unresolvedstrict")
 }
 
@@ -37,6 +38,7 @@ func newDisabled(rules ...string) *analysis.Analyzer {
 	if err := a.Flags.Set("disable", strings.Join(rules, ",")); err != nil {
 		panic(err)
 	}
+
 	return a
 }
 
@@ -67,9 +69,15 @@ func TestDiscriminationProofs(t *testing.T) {
 			if !containsRule(healthy, tc.rule) {
 				t.Fatalf("healthy analyzer produced no %s on %s; fixture or rule is broken", tc.rule, tc.pkg)
 			}
+
 			mutant := collectRules(t, newDisabled(tc.mutant), tc.pkg)
 			if containsRule(mutant, tc.rule) {
-				t.Fatalf("mutant analyzer (disabled %s) still reports %s on %s; the corpus does not discriminate", tc.mutant, tc.rule, tc.pkg)
+				t.Fatalf(
+					"mutant analyzer (disabled %s) still reports %s on %s; the corpus does not discriminate",
+					tc.mutant,
+					tc.rule,
+					tc.pkg,
+				)
 			}
 		})
 	}
@@ -80,10 +88,12 @@ func TestDiscriminationProofs(t *testing.T) {
 func collectRules(t *testing.T, a *analysis.Analyzer, pkg string) map[string]bool {
 	t.Helper()
 	diags := runOnFixture(t, a, pkg)
+
 	rules := map[string]bool{}
 	for _, d := range diags {
 		rules[d.Category] = true
 	}
+
 	return rules
 }
 
@@ -95,11 +105,13 @@ func testdataDir() string {
 	if err != nil {
 		panic(err)
 	}
+
 	return abs
 }
 
 func TestParseDirective(t *testing.T) {
 	t.Parallel()
+
 	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
 
 	cases := []struct {
@@ -116,8 +128,24 @@ func TestParseDirective(t *testing.T) {
 		{"spaced prefix", "// samber-linter:allow hw-4 boot-critical", true, "hw-4", "boot-critical", "", false},
 		{"all token", "//samber-linter:allow all accepted wholesale", true, "all", "accepted wholesale", "", false},
 		{"no reason is still parsed (HW-0 material)", "//samber-linter:allow hw-1", true, "hw-1", "", "", false},
-		{"until future", "//samber-linter:allow hw-2 legacy until 2027-01-01", true, "hw-2", "legacy", "2027-01-01", false},
-		{"until past", "//samber-linter:allow hw-2 legacy until 2020-01-01", true, "hw-2", "legacy", "2020-01-01", true},
+		{
+			"until future",
+			"//samber-linter:allow hw-2 legacy until 2027-01-01",
+			true,
+			"hw-2",
+			"legacy",
+			"2027-01-01",
+			false,
+		},
+		{
+			"until past",
+			"//samber-linter:allow hw-2 legacy until 2020-01-01",
+			true,
+			"hw-2",
+			"legacy",
+			"2020-01-01",
+			true,
+		},
 	}
 
 	for _, tc := range cases {
@@ -126,22 +154,28 @@ func TestParseDirective(t *testing.T) {
 			if ok != tc.wantOK {
 				t.Fatalf("ok = %v, want %v", ok, tc.wantOK)
 			}
+
 			if !ok {
 				return
 			}
+
 			if d.Rule != tc.wantRule {
 				t.Errorf("rule = %q, want %q", d.Rule, tc.wantRule)
 			}
+
 			if d.Reason != tc.wantReason {
 				t.Errorf("reason = %q, want %q", d.Reason, tc.wantReason)
 			}
+
 			gotExpiry := ""
 			if d.Expires != nil {
 				gotExpiry = d.Expires.Format("2006-01-02")
 			}
+
 			if gotExpiry != tc.wantExpiry {
 				t.Errorf("expiry = %q, want %q", gotExpiry, tc.wantExpiry)
 			}
+
 			if d.Expired(now) != tc.wantExpired {
 				t.Errorf("expired = %v, want %v", d.Expired(now), tc.wantExpired)
 			}

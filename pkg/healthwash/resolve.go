@@ -24,11 +24,13 @@ func findDoPackage(pass *analysis.Pass) *types.Package {
 	if pass.Pkg.Path() == DoPath {
 		return pass.Pkg
 	}
+
 	for _, imp := range pass.Pkg.Imports() {
 		if imp.Path() == DoPath {
 			return imp
 		}
 	}
+
 	return nil
 }
 
@@ -40,6 +42,7 @@ func loadInterfaces(doPkg *types.Package) ifaces {
 	i.shutdownerErr = lookupInterface(doPkg, "ShutdownerWithError")
 	i.shutdownerCtx = lookupInterface(doPkg, "ShutdownerWithContext")
 	i.shutdownerCtxErr = lookupInterface(doPkg, "ShutdownerWithContextAndError")
+
 	return i
 }
 
@@ -48,10 +51,12 @@ func lookupInterface(pkg *types.Package, name string) *types.Interface {
 	if obj == nil {
 		return nil
 	}
+
 	tn, ok := obj.Type().Underlying().(*types.Interface)
 	if !ok {
 		return nil
 	}
+
 	return tn
 }
 
@@ -63,6 +68,7 @@ func implements(t types.Type, iface *types.Interface) bool {
 	if iface == nil || t == nil {
 		return false
 	}
+
 	switch u := t.(type) {
 	case *types.Named:
 		return types.Implements(u, iface)
@@ -71,6 +77,7 @@ func implements(t types.Type, iface *types.Interface) bool {
 			return types.Implements(u, iface)
 		}
 	}
+
 	return false
 }
 

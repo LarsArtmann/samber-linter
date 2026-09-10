@@ -2,9 +2,11 @@ package driver
 
 import (
 	"bytes"
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -28,10 +30,12 @@ func e2eModule(t *testing.T) string {
 
 	app := filepath.Join(dir, "app")
 	must(t, os.MkdirAll(app, 0o755))
+
 	goMod := "module example.com/app\n\ngo 1.26\n\n" +
 		"require github.com/samber/do/v2 v2.1.0\n\n" +
 		"replace github.com/samber/do/v2 => ../dostub\n"
 	must(t, os.WriteFile(filepath.Join(app, "go.mod"), []byte(goMod), 0o644))
+
 	mainGo := `package main
 
 import (
@@ -65,11 +69,13 @@ func main() {
 }
 `
 	must(t, os.WriteFile(filepath.Join(app, "main.go"), []byte(mainGo), 0o644))
+
 	return app
 }
 
 func must(t *testing.T, err error) {
 	t.Helper()
+
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +83,9 @@ func must(t *testing.T, err error) {
 
 func TestRunEndToEnd(t *testing.T) {
 	app := e2eModule(t)
+
 	var out, errOut bytes.Buffer
+
 	code := Run(Options{
 		Patterns:      []string{"./..."},
 		Dir:           app,
@@ -91,10 +99,12 @@ func TestRunEndToEnd(t *testing.T) {
 	if code != 1 {
 		t.Fatalf("exit = %d, want 1 (high-confidence HW-1); stderr: %s", code, errOut.String())
 	}
+
 	o := out.String()
 	if !strings.Contains(o, "HW-1") {
 		t.Errorf("output missing HW-1 finding:\n%s", o)
 	}
+
 	if !strings.Contains(o, "health-coverage: 1/3 = 33%") {
 		t.Errorf("output missing coverage line 1/3:\n%s", o)
 	}
@@ -107,6 +117,7 @@ func TestSetBaselineAndRatchet(t *testing.T) {
 	baselinePath := filepath.Join(app, DefaultBaselinePath)
 
 	var out, errOut bytes.Buffer
+
 	code := Run(Options{
 		Patterns:     []string{"./..."},
 		Dir:          app,
@@ -120,25 +131,29 @@ func TestSetBaselineAndRatchet(t *testing.T) {
 	if code != 1 {
 		t.Fatalf("set-baseline run exit = %d, want 1 (HW-1 finding still gates); stderr: %s", code, errOut.String())
 	}
+
 	data, err := os.ReadFile(baselinePath)
 	if err != nil {
 		t.Fatalf("baseline not written: %v", err)
 	}
+
 	var b baseline
 	if err := json.Unmarshal(data, &b); err != nil {
 		t.Fatalf("baseline parse: %v", err)
 	}
+
 	if b.Coverage <= 0 || b.Coverage >= 1 {
 		t.Errorf("baseline coverage = %v, want in (0,1)", b.Coverage)
 	}
 
 	// Committed higher floor -> regression gate fails (exit 1).
 	b.Coverage = 0.9
-	higher, _ := json.MarshalIndent(b, "", "  ")
+	higher, _ := json.Marshal(b, jsontext.WithIndentPrefix(""), jsontext.WithIndent("  "))
 	must(t, os.WriteFile(baselinePath, append(higher, '\n'), 0o644))
 
 	out.Reset()
 	errOut.Reset()
+
 	code = Run(Options{
 		Patterns:     []string{"./..."},
 		Dir:          app,
@@ -151,6 +166,7 @@ func TestSetBaselineAndRatchet(t *testing.T) {
 	if code != 1 {
 		t.Fatalf("regressed coverage exit = %d, want 1; out: %s err: %s", code, out.String(), errOut.String())
 	}
+
 	if !strings.Contains(errOut.String(), "below the committed baseline") {
 		t.Errorf("stderr missing regression message: %s", errOut.String())
 	}
@@ -159,7 +175,9 @@ func TestSetBaselineAndRatchet(t *testing.T) {
 // TestCoverageMinGate: --coverage-min fails below threshold.
 func TestCoverageMinGate(t *testing.T) {
 	app := e2eModule(t)
+
 	var out, errOut bytes.Buffer
+
 	code := Run(Options{
 		Patterns:    []string{"./..."},
 		Dir:         app,
@@ -176,7 +194,9 @@ func TestCoverageMinGate(t *testing.T) {
 // TestJSONAndSARIF: machine outputs are produced on demand.
 func TestJSONAndSARIF(t *testing.T) {
 	app := e2eModule(t)
+
 	var out, errOut bytes.Buffer
+
 	code := Run(Options{
 		Patterns: []string{"./..."}, Dir: app, Version: "test",
 		Env:    []string{"GOFLAGS=-mod=mod"},
@@ -186,12 +206,14 @@ func TestJSONAndSARIF(t *testing.T) {
 	if code != 1 {
 		t.Fatalf("exit = %d, want 1", code)
 	}
-	var parsed map[string]interface{}
+
+	var parsed map[string]any
 	if err := json.Unmarshal([]byte(strings.TrimSpace(lastJSONLine(out.String()))), &parsed); err != nil {
 		t.Fatalf("json output invalid: %v\n%s", err, out.String())
 	}
 
 	out.Reset()
+
 	code = Run(Options{
 		Patterns: []string{"./..."}, Dir: app, Version: "test",
 		Env:    []string{"GOFLAGS=-mod=mod"},
@@ -201,6 +223,7 @@ func TestJSONAndSARIF(t *testing.T) {
 	if code != 1 {
 		t.Fatalf("sarif exit = %d, want 1", code)
 	}
+
 	if !strings.Contains(out.String(), "sarif") {
 		t.Errorf("sarif output unexpected")
 	}
@@ -219,8 +242,13 @@ func TestCleanModuleExitsZero(t *testing.T) {
 
 	app := filepath.Join(dir, "app")
 	must(t, os.MkdirAll(app, 0o755))
-	must(t, os.WriteFile(filepath.Join(app, "go.mod"),
-		[]byte("module example.com/clean\n\ngo 1.26\n\nrequire github.com/samber/do/v2 v2.1.0\n\nreplace github.com/samber/do/v2 => ../dostub\n"), 0o644))
+	must(t, os.WriteFile(
+		filepath.Join(app, "go.mod"),
+		[]byte(
+			"module example.com/clean\n\ngo 1.26\n\nrequire github.com/samber/do/v2 v2.1.0\n\nreplace github.com/samber/do/v2 => ../dostub\n",
+		),
+		0o644,
+	))
 	must(t, os.WriteFile(filepath.Join(app, "main.go"), []byte(`package main
 
 import (
@@ -243,6 +271,7 @@ func main() {
 `), 0o644))
 
 	var out, errOut bytes.Buffer
+
 	code := Run(Options{
 		Patterns: []string{"./..."}, Dir: app, Version: "test",
 		Env:    []string{"GOFLAGS=-mod=mod"},
@@ -251,6 +280,7 @@ func main() {
 	if code != 0 {
 		t.Fatalf("clean module exit = %d, want 0; out: %s err: %s", code, out.String(), errOut.String())
 	}
+
 	if !strings.Contains(out.String(), "no health-washing found") {
 		t.Errorf("expected clean summary; out:\n%s", out.String())
 	}
@@ -258,10 +288,11 @@ func main() {
 
 func lastJSONLine(s string) string {
 	lines := strings.Split(s, "\n")
-	for i := len(lines) - 1; i >= 0; i-- {
-		if strings.HasPrefix(lines[i], "{") {
-			return lines[i]
+	for _, line := range slices.Backward(lines) {
+		if strings.HasPrefix(line, "{") {
+			return line
 		}
 	}
+
 	return s
 }

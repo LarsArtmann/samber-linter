@@ -14,7 +14,7 @@ require (
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/gofrs/flock v0.13.0 // indirect
+	github.com/gofrs/flock v0.13.1 // indirect
 	github.com/larsartmann/go-error-family v0.10.0 // indirect
 	github.com/samber/go-type-to-string v1.8.0 // indirect
 	golang.org/x/sync v0.23.0 // indirect

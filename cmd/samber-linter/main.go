@@ -31,10 +31,13 @@ func main() {
 		fs.PrintDefaults()
 	}
 	_ = fs.Parse(os.Args[1:])
+
 	if *showVersion {
 		fmt.Println(version)
+
 		return
 	}
+
 	patterns := fs.Args()
 	if len(patterns) == 0 {
 		patterns = []string{"./..."}

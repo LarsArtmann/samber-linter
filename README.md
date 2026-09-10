@@ -120,14 +120,14 @@ Every claim below was read from `samber/do v2.1.0` source (module cache,
 
 ### 2.5 The lifecycle interfaces (di_lifecycle.go)
 
-| Interface                       | Line | Signature                              |
-| ------------------------------- | ---- | -------------------------------------- |
-| `Healthchecker`                 | :21  | `HealthCheck() error`                  |
-| `HealthcheckerWithContext`      | :42  | `HealthCheck(context.Context) error`   |
-| `Shutdowner`                    | :62  | `Shutdown()`                           |
-| `ShutdownerWithError`           | :82  | `Shutdown() error`                     |
-| `ShutdownerWithContext`         | :102 | `Shutdown(context.Context)`            |
-| `ShutdownerWithContextAndError` | :122 | `Shutdown(context.Context) error`      |
+| Interface                       | Line | Signature                            |
+| ------------------------------- | ---- | ------------------------------------ |
+| `Healthchecker`                 | :21  | `HealthCheck() error`                |
+| `HealthcheckerWithContext`      | :42  | `HealthCheck(context.Context) error` |
+| `Shutdowner`                    | :62  | `Shutdown()`                         |
+| `ShutdownerWithError`           | :82  | `Shutdown() error`                   |
+| `ShutdownerWithContext`         | :102 | `Shutdown(context.Context)`          |
+| `ShutdownerWithContextAndError` | :122 | `Shutdown(context.Context) error`    |
 
 All four `Shutdowner*` variants share the method name `Shutdown`, differing
 only in parameters/returns. Method-set matching must compare exact
@@ -136,20 +136,20 @@ signatures — a naive name-only match conflates `Shutdowner` with
 
 ### 2.6 Registration-to-wrapper mapping (di.go)
 
-| Public API                     | Wrapper            | Health check behavior                             |
-| ------------------------------ | ------------------ | ------------------------------------------------- |
-| `Provide` (di.go:57)           | `serviceLazy`      | nil when unbuilt; nil when type doesn't implement |
-| `ProvideNamed` (di.go:78)      | `serviceLazy`      | same                                              |
-| `ProvideValue` (di.go:92)      | `serviceEager`     | nil when type doesn't implement                   |
-| `ProvideNamedValue` (:107)     | `serviceEager`     | same                                              |
-| `ProvideTransient` (:131)      | `serviceTransient` | **always nil** (upstream TODO)                    |
-| `ProvideNamedTransient` (:155) | `serviceTransient` | **always nil**                                    |
-| `Override` (di.go:187)         | `serviceLazy`      | same as `Provide`                                 |
-| `OverrideNamed` (:199)         | `serviceLazy`      | same                                              |
-| `OverrideValue` (:212)         | `serviceEager`     | same as `ProvideValue`                            |
-| `OverrideNamedValue` (:224)    | `serviceEager`     | same                                              |
-| `OverrideTransient` (:238)     | `serviceTransient` | **always nil**                                    |
-| `OverrideNamedTransient` (:251)| `serviceTransient` | **always nil**                                    |
+| Public API                      | Wrapper            | Health check behavior                             |
+| ------------------------------- | ------------------ | ------------------------------------------------- |
+| `Provide` (di.go:57)            | `serviceLazy`      | nil when unbuilt; nil when type doesn't implement |
+| `ProvideNamed` (di.go:78)       | `serviceLazy`      | same                                              |
+| `ProvideValue` (di.go:92)       | `serviceEager`     | nil when type doesn't implement                   |
+| `ProvideNamedValue` (:107)      | `serviceEager`     | same                                              |
+| `ProvideTransient` (:131)       | `serviceTransient` | **always nil** (upstream TODO)                    |
+| `ProvideNamedTransient` (:155)  | `serviceTransient` | **always nil**                                    |
+| `Override` (di.go:187)          | `serviceLazy`      | same as `Provide`                                 |
+| `OverrideNamed` (:199)          | `serviceLazy`      | same                                              |
+| `OverrideValue` (:212)          | `serviceEager`     | same as `ProvideValue`                            |
+| `OverrideNamedValue` (:224)     | `serviceEager`     | same                                              |
+| `OverrideTransient` (:238)      | `serviceTransient` | **always nil**                                    |
+| `OverrideNamedTransient` (:251) | `serviceTransient` | **always nil**                                    |
 
 The six `Override*` functions (di.go:187-251) create the identical wrappers
 (`newServiceLazy`:201, `newServiceEager`:226, `newServiceTransient`:253)
@@ -339,7 +339,7 @@ healthwash_checked{scope="root"} 6
 ```
 
 If `checked / registered` dips below the static baseline, the runtime caught
-what the compiler could not. Transients count as *skipped*, never *checked*
+what the compiler could not. Transients count as _skipped_, never _checked_
 (`serviceTransient.isHealthchecker()` returns `false` unconditionally,
 `service_transient.go:58-60`). Optional; the static analyzer is the MVP and
 delivers most of the value.
@@ -367,18 +367,18 @@ delivers most of the value.
 
 ### Test corpus (golden cases from the CV incident, 2026-09-09)
 
-| Fixture                                                          | Expected                        |
-| ---------------------------------------------------------------- | ------------------------------- |
-| `graphrag.Store` (Shutdowner, no Healthchecker, Provide)         | HW-1 fires                      |
-| Value registration of struct with pointer-receiver `HealthCheck` | HW-5 fires                      |
-| Transient registration implementing `HealthcheckerWithContext`   | HW-3 fires                      |
-| Lazy registration implementing `HealthcheckerWithContext`        | HW-4 fires (info)               |
-| Contextless `HealthCheck() error` implementer                    | HW-2 fires (info)               |
-| `internal/database/connection.go` (real checker)                 | clean                           |
-| `chat/groq` ChatService (real checker)                           | clean                           |
-| Handler struct, no Shutdowner, no Healthchecker                  | clean (rule precision)          |
-| `//samber-linter:allow hw-1 <reason>` on a flagged site          | suppressed                      |
-| `//samber-linter:allow hw-1` without reason                      | `HW-0` fires                    |
+| Fixture                                                          | Expected               |
+| ---------------------------------------------------------------- | ---------------------- |
+| `graphrag.Store` (Shutdowner, no Healthchecker, Provide)         | HW-1 fires             |
+| Value registration of struct with pointer-receiver `HealthCheck` | HW-5 fires             |
+| Transient registration implementing `HealthcheckerWithContext`   | HW-3 fires             |
+| Lazy registration implementing `HealthcheckerWithContext`        | HW-4 fires (info)      |
+| Contextless `HealthCheck() error` implementer                    | HW-2 fires (info)      |
+| `internal/database/connection.go` (real checker)                 | clean                  |
+| `chat/groq` ChatService (real checker)                           | clean                  |
+| Handler struct, no Shutdowner, no Healthchecker                  | clean (rule precision) |
+| `//samber-linter:allow hw-1 <reason>` on a flagged site          | suppressed             |
+| `//samber-linter:allow hw-1` without reason                      | `HW-0` fires           |
 
 Discrimination proof required before shipping P0: each golden case must be
 shown to **fail** on a mutant analyzer (rule inverted or removed) in a
@@ -402,25 +402,25 @@ tree within hours of the incident analysis — live references rot.
 
 Claims in this document and their sources:
 
-| Claim                                                                        | Source                                                                                                                                                          |
-| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sweep queues every service in scope + ancestors                              | samber/do v2.1.0 `scope.go:307,328-348`                                                                                                                         |
-| Non-implementers return nil ("healthy or doesn't implement")                 | `scope.go:733-735`, `service_eager.go:87-101`                                                                                                                   |
-| Lazy unbuilt services return nil unchecked                                   | `service_lazy.go:128-134`                                                                                                                                       |
-| Transient healthcheck is an upstream TODO, always nil                        | `service_transient.go:62-66`                                                                                                                                    |
-| Interface names/signatures                                                   | `di_lifecycle.go:21,42,62,82,102,122`                                                                                                                           |
-| Registration-to-wrapper mapping                                              | `di.go:57,78,92,107,131,155`                                                                                                                                    |
-| Wrapper asserts the stored instance (pointer-receiver trap)                  | `service_eager.go:88,94`, `service_lazy.go:136`                                                                                                                 |
-| CV dashboard: 60 rows, all pass, ~6 fail-capable                             | `https://cv.home.lan/admin/health` (fetched 2026-09-09) + implementer grep (`chat/groq/chat.go`, `internal/database/connection.go`, `internal/di/lifecycle.go`) |
-| CV pipeline-store ping rides a handler option, not the store's Healthchecker | `internal/di/handlers_pipeline.go:38-40`                                                                                                                        |
-| doanalyzerv2 currently defines DO-1..DO-8                                    | `~/projects/branching-flow/pkg/doanalyzerv2/doc.go` (read 2026-09-09)                                                                                           |
-| samber-do-best-practices §6.3 lifecycle-interface rule                       | `~/.config/crush/skills/samber-do-best-practices/SKILL.md`                                                                                                      |
-| `ShutdownerWithError` is `Shutdown() error`, not `ShutdownWithError()`       | `di_lifecycle.go:82-83` (re-read 2026-09-09; the original table was wrong)                                                                                      |
-| Override\* family registers identical wrappers                               | `di.go:187-251` (`newServiceLazy`:201, `newServiceEager`:226, `newServiceTransient`:253)                                                                        |
-| As/AsNamed register delegating alias rows                                    | `di.go:456,507`, `service_alias.go:100-126`                                                                                                                     |
-| transient `isHealthchecker()` returns `false` unconditionally                | `service_transient.go:58-60`                                                                                                                                    |
-| CV registration sites: 61 today (53 `Provide`, 8 `ProvideValue`) — counts drift | `~/projects/CV` grep 2026-09-09                                                                                                                              |
-| go-finding / go-linter-sdk / go-atomic-write APIs                            | local source reads 2026-09-09 (`analysis/analysis.go`, `registry.go:358`, `atomicwrite.go:66-140`)                                                              |
+| Claim                                                                           | Source                                                                                                                                                          |
+| ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sweep queues every service in scope + ancestors                                 | samber/do v2.1.0 `scope.go:307,328-348`                                                                                                                         |
+| Non-implementers return nil ("healthy or doesn't implement")                    | `scope.go:733-735`, `service_eager.go:87-101`                                                                                                                   |
+| Lazy unbuilt services return nil unchecked                                      | `service_lazy.go:128-134`                                                                                                                                       |
+| Transient healthcheck is an upstream TODO, always nil                           | `service_transient.go:62-66`                                                                                                                                    |
+| Interface names/signatures                                                      | `di_lifecycle.go:21,42,62,82,102,122`                                                                                                                           |
+| Registration-to-wrapper mapping                                                 | `di.go:57,78,92,107,131,155`                                                                                                                                    |
+| Wrapper asserts the stored instance (pointer-receiver trap)                     | `service_eager.go:88,94`, `service_lazy.go:136`                                                                                                                 |
+| CV dashboard: 60 rows, all pass, ~6 fail-capable                                | `https://cv.home.lan/admin/health` (fetched 2026-09-09) + implementer grep (`chat/groq/chat.go`, `internal/database/connection.go`, `internal/di/lifecycle.go`) |
+| CV pipeline-store ping rides a handler option, not the store's Healthchecker    | `internal/di/handlers_pipeline.go:38-40`                                                                                                                        |
+| doanalyzerv2 currently defines DO-1..DO-8                                       | `~/projects/branching-flow/pkg/doanalyzerv2/doc.go` (read 2026-09-09)                                                                                           |
+| samber-do-best-practices §6.3 lifecycle-interface rule                          | `~/.config/crush/skills/samber-do-best-practices/SKILL.md`                                                                                                      |
+| `ShutdownerWithError` is `Shutdown() error`, not `ShutdownWithError()`          | `di_lifecycle.go:82-83` (re-read 2026-09-09; the original table was wrong)                                                                                      |
+| Override\* family registers identical wrappers                                  | `di.go:187-251` (`newServiceLazy`:201, `newServiceEager`:226, `newServiceTransient`:253)                                                                        |
+| As/AsNamed register delegating alias rows                                       | `di.go:456,507`, `service_alias.go:100-126`                                                                                                                     |
+| transient `isHealthchecker()` returns `false` unconditionally                   | `service_transient.go:58-60`                                                                                                                                    |
+| CV registration sites: 61 today (53 `Provide`, 8 `ProvideValue`) — counts drift | `~/projects/CV` grep 2026-09-09                                                                                                                                 |
+| go-finding / go-linter-sdk / go-atomic-write APIs                               | local source reads 2026-09-09 (`analysis/analysis.go`, `registry.go:358`, `atomicwrite.go:66-140`)                                                              |
 
 Upstream drift guard: pin the analyzed samber/do version in CI and re-run the
 mechanism assertions (§2) against new releases; a behavior change upstream

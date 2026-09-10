@@ -44,6 +44,7 @@ func TestAuditCounts(t *testing.T) {
 	if _, err := do.Invoke[healthy](injector); err != nil {
 		t.Fatalf("invoke healthy: %v", err)
 	}
+
 	if _, err := do.Invoke[*flaky](injector); err != nil {
 		t.Fatalf("invoke flaky: %v", err)
 	}
@@ -57,6 +58,7 @@ func TestAuditCounts(t *testing.T) {
 	if got := audit.Errored(); got != 1 {
 		t.Fatalf("errored = %d, want 1 (only a non-nil result proves a check can fail)", got)
 	}
+
 	skipped := audit.Skipped()
 	if len(skipped) != 1 || !strings.Contains(skipped[0], "healthy") {
 		t.Fatalf("skipped = %v, want the healthy service only", skipped)

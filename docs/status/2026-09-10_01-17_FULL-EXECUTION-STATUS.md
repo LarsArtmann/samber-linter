@@ -11,17 +11,17 @@ real gaps listed below.
 
 ## 0. Where things stand right now
 
-| Artifact | State |
-| --- | --- |
-| `LarsArtmann/samber-linter` @ `v0.1.0` (master `f8d8305`) | pushed, tagged |
-| `LarsArtmann/branching-flow` DO-9 delegation @ `00fb7cef` | pushed |
-| `go build` / `go vet` / `go test ./... -count=1` | green |
-| `nix flake check` (build + test + lint) | green |
-| Drift matrix vs real samber/do v2.0.0 + v2.1.0 | green |
-| Fuzz (`FuzzParseDirective`) | 5.5M execs, 0 crashes |
-| Dogfood: CV | 9 findings (7× HW-1, 2× HW-4), coverage 5/61 = 8% |
-| Dogfood: branching-flow | clean (0 findings) |
-| TODO_LIST.md | claims 102/102 done — **overclaims, see §d** |
+| Artifact                                                  | State                                             |
+| --------------------------------------------------------- | ------------------------------------------------- |
+| `LarsArtmann/samber-linter` @ `v0.1.0` (master `f8d8305`) | pushed, tagged                                    |
+| `LarsArtmann/branching-flow` DO-9 delegation @ `00fb7cef` | pushed                                            |
+| `go build` / `go vet` / `go test ./... -count=1`          | green                                             |
+| `nix flake check` (build + test + lint)                   | green                                             |
+| Drift matrix vs real samber/do v2.0.0 + v2.1.0            | green                                             |
+| Fuzz (`FuzzParseDirective`)                               | 5.5M execs, 0 crashes                             |
+| Dogfood: CV                                               | 9 findings (7× HW-1, 2× HW-4), coverage 5/61 = 8% |
+| Dogfood: branching-flow                                   | clean (0 findings)                                |
+| TODO_LIST.md                                              | claims 102/102 done — **overclaims, see §d**      |
 
 ---
 
@@ -141,7 +141,7 @@ real gaps listed below.
    landed as ~10 "chore: auto-commit N file(s)" commits (including a 671-file
    vendor blob) with the narrative only in 3 of my own commits. Unfixable
    without history rewrite; I should have committed in detailed increments
-   *while* working instead of letting the daemon sweep.
+   _while_ working instead of letting the daemon sweep.
 4. **Plan-vs-reality drift inside one session** — I amended the plan (stack
    adoption round) and later executed tasks that differed from it
    (singlechecker → custom driver; A94/A95 semantics), without writing the
@@ -176,6 +176,7 @@ real gaps listed below.
 ## f) NEXT — 50 things to get done (ordered by value)
 
 **Correctness & honesty (do first)**
+
 1. Fix TODO_LIST.md/FEATURES.md to real status; re-open A61/A68/A74/A75/A81/A96.
 2. Add `.crush/` to `.gitignore` + `git rm --cached`.
 3. Add MIT LICENSE.
@@ -202,28 +203,28 @@ real gaps listed below.
 19. `--check` in CI workflow dogfood job instead of bare run.
 20. Coverage ratchet: warn when registered==0 (currently silent 0/0 case).
 21. Record CV baseline decision: commit a baseline into CV or leave un-baselined
-    (user call).
+(user call).
 22. Alias coverage: verify As-dedupe against a real multi-alias repo case.
-23. Suppress *stale positive*: a directive whose site no longer produces a
-    finding should be reportable (`hw-stale-suppression`, opt-in).
+23. Suppress _stale positive_: a directive whose site no longer produces a
+finding should be reportable (`hw-stale-suppression`, opt-in).
 24. HW-5 fix suggestion: emit `Suggestion` field ("register *T") into JSON/SARIF
-    output (FixStrategy=suggest already modeled).
+output (FixStrategy=suggest already modeled).
 25. Fuzz the analyzer end-to-end over mutated fixture corpus (not just the
-    directive parser).
+directive parser).
 
 **Ecosystem**
 26. Upstream issue: finalize per verify-before-filing (re-run repro against
-    latest samber/do; then file under user's account).
+latest samber/do; then file under user's account).
 27. DO-9: add the remaining HW-2/3/4 cases to the do9 fixture (currently only
-    HW-1 exercised).
+HW-1 exercised).
 28. Run samber-linter over go-auto-upgrade + go-cqrs-lite; record results.
 29. InboxClean-lint-baseline: wire healthwash into its CI as a consumer pilot.
 30. go-finding `analysis.NewAnalyzerDetector` — evaluate replacing the hand
-    pass-runner with it (chose hand-rolled; document the tradeoff or switch).
+pass-runner with it (chose hand-rolled; document the tradeoff or switch).
 31. Publish the suppression/exit-code conventions to the linter-building skill's
-    ecosystem map (sambers-linter row).
+ecosystem map (sambers-linter row).
 32. Version matrix: add a CI job asserting drift test skips loudly when cache
-    missing (no silent green).
+missing (no silent green).
 33. Semantic versioning policy doc (when to break HW IDs — never — vs new IDs).
 34. `samber-linter --version` should print commit hash (ldflags via goreleaser).
 35. goreleaser pipeline + GitHub Release for v0.1.0 binaries.
@@ -231,29 +232,29 @@ real gaps listed below.
 **Docs & adoption**
 36. README: CI badge, real example output block, comparison table vs plain vet.
 37. docs/DOMAIN_LANGUAGE.md (health-washing, checked-vs-skipped, ratchet,
-    confidence vs severity) — per docs-health doctrine.
+confidence vs severity) — per docs-health doctrine.
 38. Demo: record the CV before/after dashboard story in the README (§1 already
-    narrates it; add the 8% coverage screenshot/data).
+narrates it; add the 8% coverage screenshot/data).
 39. ADR-0001: why delegation (not port) for DO-9; ADR-0002: why hand-rolled
-    driver pass instead of singlechecker.
+driver pass instead of singlechecker.
 40. Known-limitations section: third-party registrations invisible, test-file
-    Override* skipped (Tests:false), check-quality invisible.
+Override* skipped (Tests:false), check-quality invisible.
 41. Convert the plan HTML's "risks" section into tracked issues.
 42. Run docs-health skill: harvest plan → TODO_LIST reconciliation (it will
-    catch the §d overclaim mechanically).
+catch the §d overclaim mechanically).
 
 **Nice-to-have**
 43. `--output text|json|sarif` consolidated flag (current booleans can combine
-    awkwardly).
+awkwardly).
 44. Baseline file: include per-rule counts, not just coverage (trend analysis).
 45. Parallel package analysis in driver (packages.Load is serial per pkg run).
 46. Config file: also support `.samber-linter.json` auto-discovery (zero-flag UX).
 47. HW-6: per-scope breakdown (root vs child) — needs fact enrichment.
 48.色彩: lipgloss-styled text output (matches go-auto-upgrade UX), off by
-    default in CI.
+default in CI.
 49. Benchmark: analyzer ms/package on CV (regression visibility).
 50. Website/launch: revisit only after an external adopter exists (standing
-    decision).
+decision).
 
 ## g) Questions I cannot answer myself
 

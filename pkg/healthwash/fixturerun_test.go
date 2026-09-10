@@ -16,7 +16,7 @@ import (
 // output without touching any shared fixture file.
 func runOnFixture(t interface {
 	Helper()
-	Fatalf(format string, args ...interface{})
+	Fatalf(format string, args ...any)
 }, a *analysis.Analyzer, pkgPattern string,
 ) []analysis.Diagnostic {
 	t.Helper()
@@ -33,13 +33,16 @@ func runOnFixture(t interface {
 		Dir: filepath.Join(abs, "src", pkgPattern),
 		Env: append(os.Environ(), "GOPATH="+abs, "GO111MODULE=off", "GOFLAGS=-mod=mod"),
 	}
+
 	pkgs, err := packages.Load(cfg, pkgPattern)
 	if err != nil {
 		t.Fatalf("load %s: %v", pkgPattern, err)
 	}
+
 	if len(pkgs) == 0 {
 		t.Fatalf("no packages loaded for %s", pkgPattern)
 	}
+
 	pkg := pkgs[0]
 	for _, e := range pkg.Errors {
 		t.Fatalf("fixture %s has errors (compile gate): %v", pkgPattern, e)
@@ -61,14 +64,16 @@ func runOnFixture(t interface {
 		ExportPackageFact: func(fact analysis.Fact) {},
 		AllObjectFacts:    func() []analysis.ObjectFact { return nil },
 		AllPackageFacts:   func() []analysis.PackageFact { return nil },
-		ResultOf:          map[*analysis.Analyzer]interface{}{},
+		ResultOf:          map[*analysis.Analyzer]any{},
 	}
 
 	var diags []analysis.Diagnostic
+
 	pass.Report = func(d analysis.Diagnostic) { diags = append(diags, d) }
 
 	if _, err := a.Run(pass); err != nil {
 		t.Fatalf("analyzer run on %s: %v", pkgPattern, err)
 	}
+
 	return diags
 }

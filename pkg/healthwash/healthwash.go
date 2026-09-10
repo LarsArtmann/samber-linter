@@ -50,6 +50,7 @@ func regKindOf(fn string) (ServiceKind, bool) {
 	case "As", "AsNamed":
 		return KindAlias, true
 	}
+
 	return "", false
 }
 
@@ -64,6 +65,7 @@ func providerArgIndex(fn string) (int, bool) {
 		"ProvideNamedTransient", "OverrideNamedTransient":
 		return 2, true
 	}
+
 	return 0, false
 }
 
@@ -81,6 +83,7 @@ func New() *analysis.Analyzer {
 	}
 	a.Flags.Bool("strict", false, "report HW-unresolved for unresolvable service types instead of staying silent")
 	a.Flags.String("disable", "", "comma-separated rule IDs to skip (e.g. HW-1,HW-4) — testing/migration aid")
+
 	return a
 }
 
@@ -90,19 +93,21 @@ type siteReport struct {
 	pos     token.Pos
 }
 
-func run(pass *analysis.Pass) (interface{}, error) {
+func run(pass *analysis.Pass) (any, error) {
 	doPkg := findDoPackage(pass)
 	if doPkg == nil {
 		return nil, nil // target does not use samber/do v2
 	}
+
 	ifaces := loadInterfaces(doPkg)
 	strict := pass.Analyzer.Flags.Lookup("strict") != nil &&
 		pass.Analyzer.Flags.Lookup("strict").Value.String() == "true"
 
 	directives := collectDirectives(pass.Fset, pass.Files)
 	disabled := map[string]bool{}
+
 	if f := pass.Analyzer.Flags.Lookup("disable"); f != nil {
-		for _, r := range strings.Split(f.Value.String(), ",") {
+		for r := range strings.SplitSeq(f.Value.String(), ",") {
 			r = strings.ToUpper(strings.TrimSpace(r))
 			if r != "" {
 				disabled[r] = true
@@ -110,8 +115,11 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		}
 	}
 
-	var records []ServiceRecord
-	var reports []siteReport
+	var (
+		records []ServiceRecord
+		reports []siteReport
+	)
+
 	hw0Reported := map[token.Pos]bool{}
 
 	for _, file := range pass.Files {
@@ -120,15 +128,19 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			if !ok {
 				return true
 			}
+
 			sel, ok := call.Fun.(*ast.SelectorExpr)
 			if !ok {
 				return true
 			}
+
 			obj := pass.TypesInfo.Uses[sel.Sel]
+
 			fn, ok := obj.(*types.Func)
 			if !ok || fn.Pkg() == nil || fn.Pkg().Path() != DoPath {
 				return true
 			}
+
 			kind, known := regKindOf(fn.Name())
 			if !known {
 				return true
@@ -137,6 +149,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			rec, reps := evalSite(pass, fn.Name(), kind, call, ifaces, strict)
 			records = append(records, rec)
 			reports = append(reports, reps...)
+
 			return true
 		})
 	}
@@ -144,6 +157,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	for _, d := range reports {
 		pos := pass.Fset.Position(d.pos)
 		suppressed := false
+
 		for _, line := range []int{pos.Line - 1, pos.Line} {
 			for _, fd := range directives[dirKey{pos.Filename, line}] {
 				if fd.invalid {
@@ -158,16 +172,20 @@ func run(pass *analysis.Pass) (interface{}, error) {
 							Message:  fmt.Sprintf("%s: %s", RuleHW0, RuleMessageHW0),
 						})
 					}
+
 					continue
 				}
+
 				if !fd.expired && matchesRule(fd.rule, d.rule) {
 					suppressed = true
 				}
 			}
 		}
+
 		if suppressed || disabled[strings.ToUpper(d.rule)] {
 			continue
 		}
+
 		pass.Report(analysis.Diagnostic{
 			Pos:      d.pos,
 			Category: d.rule,
@@ -176,6 +194,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	}
 
 	pass.ExportPackageFact(&PackageFacts{Records: records})
+
 	return nil, nil
 }
 
@@ -186,6 +205,7 @@ type dirKey struct {
 
 type foundDirective struct {
 	directive
+
 	pos token.Pos
 }
 
@@ -205,11 +225,13 @@ func matchesRule(token, rule string) bool {
 	if tok == RuleCodeAll {
 		return true
 	}
+
 	return tok == strings.ToLower(rule)
 }
 
 func collectDirectives(fset *token.FileSet, files []*ast.File) map[dirKey][]foundDirective {
 	out := map[dirKey][]foundDirective{}
+
 	for _, f := range files {
 		for _, cg := range f.Comments {
 			for _, c := range cg.List {
@@ -217,12 +239,14 @@ func collectDirectives(fset *token.FileSet, files []*ast.File) map[dirKey][]foun
 				if !ok {
 					continue
 				}
+
 				pos := fset.Position(c.Pos())
 				k := dirKey{pos.Filename, pos.Line}
 				out[k] = append(out[k], foundDirective{directive: d, pos: c.Pos()})
 			}
 		}
 	}
+
 	return out
 }
 
@@ -230,16 +254,20 @@ func parseDirectiveComment(text string) (directive, bool) {
 	if !strings.Contains(text, DirectivePrefix) {
 		return directive{}, false
 	}
+
 	d, ok := ParseDirective(text)
 	if !ok {
 		return directive{}, false
 	}
+
 	res := directive{rule: d.Rule, reason: d.Reason}
 	if d.Rule == "" || d.Reason == "" {
 		res.invalid = true
 	}
+
 	if d.Expires != nil && d.Expired(time.Now()) {
 		res.expired = true
 	}
+
 	return res, true
 }

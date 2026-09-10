@@ -1,7 +1,6 @@
 package healthwash
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -37,6 +36,7 @@ var untilRe = regexp.MustCompile(`\s+until\s+(\d{4}-\d{2}-\d{2})\s*$`)
 // must not silently vanish.
 func ParseDirective(line string) (Directive, bool) {
 	trimmed := strings.TrimRight(line, " \t")
+
 	m := directiveRe.FindStringSubmatch(trimmed)
 	if m == nil {
 		// Accept a bare prefix with nothing after it as a malformed directive.
@@ -44,6 +44,7 @@ func ParseDirective(line string) (Directive, bool) {
 			strings.Contains(strings.TrimSpace(trimmed), DirectivePrefix) {
 			return Directive{}, true
 		}
+
 		return Directive{}, false
 	}
 
@@ -58,6 +59,7 @@ func ParseDirective(line string) (Directive, bool) {
 			d.Reason = strings.TrimSpace(untilRe.ReplaceAllString(rest, ""))
 		}
 	}
+
 	return d, true
 }
 
@@ -72,8 +74,10 @@ func (d Directive) String() string {
 	if d.Reason != "" {
 		s += " " + d.Reason
 	}
+
 	if d.Expires != nil {
-		s += fmt.Sprintf(" until %s", d.Expires.Format("2006-01-02"))
+		s += " until " + d.Expires.Format("2006-01-02")
 	}
+
 	return s
 }

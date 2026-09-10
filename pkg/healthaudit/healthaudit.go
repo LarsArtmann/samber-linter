@@ -65,6 +65,7 @@ func (a *Audit) AfterRegistration() func(scope *do.Scope, serviceName string) {
 	return func(_ *do.Scope, serviceName string) {
 		a.mu.Lock()
 		defer a.mu.Unlock()
+
 		if !a.registered[serviceName] {
 			a.registered[serviceName] = true
 			a.order = append(a.order, serviceName)
@@ -78,6 +79,7 @@ func (a *Audit) AfterInvocation() func(scope *do.Scope, serviceName string, err 
 	return func(_ *do.Scope, serviceName string, err error) {
 		a.mu.Lock()
 		defer a.mu.Unlock()
+
 		a.invoked[serviceName] = true
 	}
 }
@@ -86,13 +88,16 @@ func (a *Audit) AfterInvocation() func(scope *do.Scope, serviceName string, err 
 // services errored — the only runtime proof that a check can actually fail.
 func (a *Audit) Sweep(ctx context.Context, injector do.Injector) map[string]error {
 	results := injector.HealthCheckWithContext(ctx)
+
 	a.mu.Lock()
 	defer a.mu.Unlock()
+
 	for name, err := range results {
 		if err != nil {
 			a.errored[name] = true
 		}
 	}
+
 	return results
 }
 
@@ -100,6 +105,7 @@ func (a *Audit) Sweep(ctx context.Context, injector do.Injector) map[string]erro
 func (a *Audit) Registered() int {
 	a.mu.Lock()
 	defer a.mu.Unlock()
+
 	return len(a.registered)
 }
 
@@ -107,6 +113,7 @@ func (a *Audit) Registered() int {
 func (a *Audit) Invoked() int {
 	a.mu.Lock()
 	defer a.mu.Unlock()
+
 	return len(a.invoked)
 }
 
@@ -115,6 +122,7 @@ func (a *Audit) Invoked() int {
 func (a *Audit) Errored() int {
 	a.mu.Lock()
 	defer a.mu.Unlock()
+
 	return len(a.errored)
 }
 
@@ -124,12 +132,16 @@ func (a *Audit) Errored() int {
 func (a *Audit) Skipped() []string {
 	a.mu.Lock()
 	defer a.mu.Unlock()
+
 	var out []string
+
 	for _, name := range a.order {
 		if !a.errored[name] {
 			out = append(out, name)
 		}
 	}
+
 	sort.Strings(out)
+
 	return out
 }

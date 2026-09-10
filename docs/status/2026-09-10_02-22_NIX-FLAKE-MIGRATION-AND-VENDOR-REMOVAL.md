@@ -17,31 +17,31 @@
 
 ## a) FULLY DONE (verified green, evidence attached)
 
-| # | Item | Evidence |
-|---|------|----------|
-| 1 | `flake.nix` rewritten to `go-standard` (nixpkgs + flake-parts + go-nix-helpers; real `vendorHash`; `subPackages = ["./cmd/samber-linter"]`; version now git-derived, was hardcoded `0.1.0`; full `meta` via module) | `flake.nix` in tree; `nix build` green |
-| 2 | `vendor/` removed — build fetches via proxy.golang.org, hermetic in sandbox | 659 files untracked+trashed; `go mod tidy` is a **no-op** in devShell |
-| 3 | `checkPhase` override → **entire module tested on every `nix build`** (driver + healthaudit + healthwash golden corpus) | check log: `ok internal/driver`, `ok pkg/healthaudit`, `ok pkg/healthwash` |
-| 4 | `apps.test` override (`GOEXPERIMENT=jsonv2 CGO_ENABLED=0 go test -count=1 ./...`) | `nix run .#test` green |
-| 5 | Hermetic lint under `nix flake check` (`lintAsCheck = true`, inherits GOEXPERIMENT env) | `checks.lint` passed; `nix run .#lint` → `0 issues` |
-| 6 | treefmt applied (gofumpt + goimports + nixfmt), 8 files reformatted, tests re-verified after | `nix flake check` → `all checks passed!` |
-| 7 | DevShell verified end-to-end with vendor/ gone (GOWORK/GOTOOLCHAIN/GOEXPERIMENT wired) | `nix develop -c 'go mod tidy && go build ./...'` green |
-| 8 | Binary smoke test of the nix-built artifact | `nix run .#default -- --help` prints usage |
-| 9 | nix-review checklist pass (purity, structural, correctness, consistency, devshells, hermeticity of apps) — no open findings on final file | report from session |
-| 10 | `AGENTS.md` repaired (status header, build automation, non-obvious gotchas, all-deps-public fact) + `dprint.json` dead `vendor/**` exclude removed | in tree |
-| 11 | `flake.lock` updated with new inputs (flake-parts, go-nix-helpers) | `grep` confirms both present |
-| 12 | nixpkgs `go_1_26` verified **exactly 1.26.7 = go.mod floor** | `nix eval nixpkgs#go_1_26.version` |
+| #  | Item                                                                                                                                                                                                                | Evidence                                                                   |
+| -- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| 1  | `flake.nix` rewritten to `go-standard` (nixpkgs + flake-parts + go-nix-helpers; real `vendorHash`; `subPackages = ["./cmd/samber-linter"]`; version now git-derived, was hardcoded `0.1.0`; full `meta` via module) | `flake.nix` in tree; `nix build` green                                     |
+| 2  | `vendor/` removed — build fetches via proxy.golang.org, hermetic in sandbox                                                                                                                                         | 659 files untracked+trashed; `go mod tidy` is a **no-op** in devShell      |
+| 3  | `checkPhase` override → **entire module tested on every `nix build`** (driver + healthaudit + healthwash golden corpus)                                                                                             | check log: `ok internal/driver`, `ok pkg/healthaudit`, `ok pkg/healthwash` |
+| 4  | `apps.test` override (`GOEXPERIMENT=jsonv2 CGO_ENABLED=0 go test -count=1 ./...`)                                                                                                                                   | `nix run .#test` green                                                     |
+| 5  | Hermetic lint under `nix flake check` (`lintAsCheck = true`, inherits GOEXPERIMENT env)                                                                                                                             | `checks.lint` passed; `nix run .#lint` → `0 issues`                        |
+| 6  | treefmt applied (gofumpt + goimports + nixfmt), 8 files reformatted, tests re-verified after                                                                                                                        | `nix flake check` → `all checks passed!`                                   |
+| 7  | DevShell verified end-to-end with vendor/ gone (GOWORK/GOTOOLCHAIN/GOEXPERIMENT wired)                                                                                                                              | `nix develop -c 'go mod tidy && go build ./...'` green                     |
+| 8  | Binary smoke test of the nix-built artifact                                                                                                                                                                         | `nix run .#default -- --help` prints usage                                 |
+| 9  | nix-review checklist pass (purity, structural, correctness, consistency, devshells, hermeticity of apps) — no open findings on final file                                                                           | report from session                                                        |
+| 10 | `AGENTS.md` repaired (status header, build automation, non-obvious gotchas, all-deps-public fact) + `dprint.json` dead `vendor/**` exclude removed                                                                  | in tree                                                                    |
+| 11 | `flake.lock` updated with new inputs (flake-parts, go-nix-helpers)                                                                                                                                                  | `grep` confirms both present                                               |
+| 12 | nixpkgs `go_1_26` verified **exactly 1.26.7 = go.mod floor**                                                                                                                                                        | `nix eval nixpkgs#go_1_26.version`                                         |
 
 ## b) PARTIALLY DONE
 
-| # | Item | What exists | What's missing |
-|---|------|-------------|----------------|
-| 1 | `GOEXPERIMENT=jsonv2` invariant | Kept, documented in flake + AGENTS.md; empirically verified that **no compiled file imports `encoding/json/v2`** (only vendor docs matched); CI runs without it | **Provenance never traced.** The claim "go-finding requires jsonv2" comes from the old flake's comment; I did not find where go-finding declares it. It may be vestigial |
-| 2 | AGENTS.md freshness | Status header + build automation rewritten | "Testing discipline (required before shipping P0)" and "Phasing" sections still read as pre-ship requirements; I marked phasing historical in the header but didn't rewrite the sections |
-| 3 | Lint story | Stock golangci-lint green in nix (config uses standard linters only) | `.custom-gcl.yml` plugin path (`golangci-lint custom` → healthwash plugin) is **not** exercised by any nix app/check; nix lint ≠ full lint story |
-| 4 | CI ↔ nix parity | CI green (4 jobs); nix flake check green | CI does not consume the flake; env drift exists (CI lints/tests **without** GOEXPERIMENT, nix **with** — currently zero-impact, but two sources of truth) |
-| 5 | Version injection | Module wires `-X main.version=<git-rev>` | **Never verified** the binary actually receives it (`internal/driver/version.go` is not package `main`; if `cmd/samber-linter` doesn't re-declare the var, ldflags is a silent no-op). I only smoke-tested `--help` |
-| 6 | Formatter coverage matrix | treefmt owns go/nix; dprint owns json/yaml/md/dockerfile | Split-brain check done (dprint does NOT claim .nix ✓), but dprint is not integrated into any nix check — md/json formatting is unverified in `nix flake check`, and I never ran dprint against my own AGENTS.md/dprint.json edits |
+| # | Item                            | What exists                                                                                                                                                     | What's missing                                                                                                                                                                                                                    |
+| - | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 | `GOEXPERIMENT=jsonv2` invariant | Kept, documented in flake + AGENTS.md; empirically verified that **no compiled file imports `encoding/json/v2`** (only vendor docs matched); CI runs without it | **Provenance never traced.** The claim "go-finding requires jsonv2" comes from the old flake's comment; I did not find where go-finding declares it. It may be vestigial                                                          |
+| 2 | AGENTS.md freshness             | Status header + build automation rewritten                                                                                                                      | "Testing discipline (required before shipping P0)" and "Phasing" sections still read as pre-ship requirements; I marked phasing historical in the header but didn't rewrite the sections                                          |
+| 3 | Lint story                      | Stock golangci-lint green in nix (config uses standard linters only)                                                                                            | `.custom-gcl.yml` plugin path (`golangci-lint custom` → healthwash plugin) is **not** exercised by any nix app/check; nix lint ≠ full lint story                                                                                  |
+| 4 | CI ↔ nix parity                 | CI green (4 jobs); nix flake check green                                                                                                                        | CI does not consume the flake; env drift exists (CI lints/tests **without** GOEXPERIMENT, nix **with** — currently zero-impact, but two sources of truth)                                                                         |
+| 5 | Version injection               | Module wires `-X main.version=<git-rev>`                                                                                                                        | **Never verified** the binary actually receives it (`internal/driver/version.go` is not package `main`; if `cmd/samber-linter` doesn't re-declare the var, ldflags is a silent no-op). I only smoke-tested `--help`               |
+| 6 | Formatter coverage matrix       | treefmt owns go/nix; dprint owns json/yaml/md/dockerfile                                                                                                        | Split-brain check done (dprint does NOT claim .nix ✓), but dprint is not integrated into any nix check — md/json formatting is unverified in `nix flake check`, and I never ran dprint against my own AGENTS.md/dprint.json edits |
 
 ## c) NOT STARTED (noticed, deliberately deferred)
 
@@ -63,11 +63,11 @@ Nothing is broken — every verification is green on the final state. But two th
 
 1. **I destroyed the baseline before proving the replacement.** I untracked and trashed `vendor/` **before** the new flake had a single green build (only a hash-mismatch failure had occurred). The safe order was: green build first, then delete. It was recoverable via `git restore` (and everything did go green), but if the migration had dead-ended, I'd have degraded local dev mid-task. This violates my own "roll back incomplete changes / stop on first error" discipline. Zero actual damage — nonzero luck.
 2. **The most consequential commit of the session has no curated history.** The auto-commit daemon captured the vendor removal (661 files) and the reformat sweep as heuristic `chore: auto-commit N changed file(s)` messages. The "why" of the migration exists only in this report and AGENTS.md, not in `git log`. Fixing it would require a history rewrite, which is forbidden — accepted debt, documented here.
-3. *(minor, unresolved contradiction)* The old flake's baseline build behaved contradictorily: with no root `main.go` and default `subPackages = ["."]`, `nix build` should have failed in seconds, yet the derivation ran until my 300s timeout killed it. I replaced the flake **without ever resolving whether the old flake worked at all**. Moot now (replacement is strictly better and fully verified), but I papered over contradictory evidence instead of resolving it.
+3. _(minor, unresolved contradiction)_ The old flake's baseline build behaved contradictorily: with no root `main.go` and default `subPackages = ["."]`, `nix build` should have failed in seconds, yet the derivation ran until my 300s timeout killed it. I replaced the flake **without ever resolving whether the old flake worked at all**. Moot now (replacement is strictly better and fully verified), but I papered over contradictory evidence instead of resolving it.
 
 ## e) WHAT WE SHOULD IMPROVE (process, extracted from d) + b))
 
-1. **Order of operations for destructive migrations:** prove the replacement green *before* removing the thing it replaces.
+1. **Order of operations for destructive migrations:** prove the replacement green _before_ removing the thing it replaces.
 2. **Resolve contradictory tool output before moving on** — a 300s mystery build was a signal; I shrugged.
 3. **Empirically run what you claim is broken before overriding it** — the `-race`-needs-cc claim for the module's default `apps.test` is sound inference, never observed.
 4. **Trace documented invariants to their source before propagating them** — "documented loudly while required" was copied forward on faith.
@@ -78,9 +78,10 @@ Nothing is broken — every verification is green on the final state. But two th
 
 ## f) Up to 50 things we should get done next
 
-*Per skill guidance: N > 25 is a brainstorm, not a commitment list. Impact-sorted; ⭐ = the real short queue.*
+_Per skill guidance: N > 25 is a brainstorm, not a commitment list. Impact-sorted; ⭐ = the real short queue._
 
 **Docs & harvesting**
+
 1. ⭐ HARVEST this report → `TODO_LIST.md` / `ROADMAP.md` (docs-health)
 2. ⭐ CHANGELOG entry: flake migration + vendor removal
 3. README: nix-based install/run, dev quickstart, plugin build docs
@@ -148,4 +149,4 @@ Nothing is broken — every verification is green on the final state. But two th
 
 ---
 
-*Point-in-time snapshot. Section (f) is brainstorm-grade input for docs-health HARVEST. Do not treat items 21–50 as commitments.*
+_Point-in-time snapshot. Section (f) is brainstorm-grade input for docs-health HARVEST. Do not treat items 21–50 as commitments._
