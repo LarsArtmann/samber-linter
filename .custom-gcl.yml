@@ -2,7 +2,23 @@
 # Produces ./custom-gcl with the healthwash module plugin compiled in.
 #
 # Usage:
-#   golangci-lint custom && ./custom-gcl run ./...
+#   golangci-lint custom
+#
+# Then, in the TARGET project's .golangci.yml, the plugin MUST be registered
+# under linters.settings.custom — without that section golangci-lint reports
+# "unknown linters: healthwash" even though it is compiled in (verified
+# 2026-09-10; see plugin/plugin_integration_test.go for the full proof):
+#
+#   version: "2"
+#   linters:
+#     enable:
+#       - healthwash
+#     settings:
+#       custom:
+#         healthwash:
+#           type: module
+#
+# Then: ./custom-gcl run ./...
 version: v2.12.2
 plugins:
   - module: github.com/larsartmann/samber-linter
