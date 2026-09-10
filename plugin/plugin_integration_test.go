@@ -128,6 +128,7 @@ func TestCustomGCLIntegration(t *testing.T) {
 
 	app := t.TempDir()
 	stub := filepath.Join(app, "dostub")
+
 	src, err := os.ReadFile(filepath.Join(projectRoot, "testdata", "src", "github.com", "samber", "do", "v2", "do.go"))
 	if err != nil {
 		t.Fatalf("read do stub: %v", err)
@@ -151,9 +152,13 @@ func TestCustomGCLIntegration(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := os.WriteFile(filepath.Join(target, "go.mod"),
-		[]byte("module example.com/target\n\ngo 1.26\n\nrequire github.com/samber/do/v2 v2.1.0\n\nreplace github.com/samber/do/v2 => ../dostub\n"),
-		0o644); err != nil {
+	if err := os.WriteFile(
+		filepath.Join(target, "go.mod"),
+		[]byte(
+			"module example.com/target\n\ngo 1.26\n\nrequire github.com/samber/do/v2 v2.1.0\n\nreplace github.com/samber/do/v2 => ../dostub\n",
+		),
+		0o644,
+	); err != nil {
 		t.Fatal(err)
 	}
 

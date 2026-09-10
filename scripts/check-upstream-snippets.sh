@@ -69,7 +69,7 @@ for gofile in "$work"/*.go; do
 	mod="$work/mod$(basename "$gofile" .go)"
 	mkdir -p "$mod"
 	cp "$gofile" "$mod/main.go"
-	cat > "$mod/go.mod" <<EOF
+	cat >"$mod/go.mod" <<EOF
 module snippet/local
 
 go 1.26

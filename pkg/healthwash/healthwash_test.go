@@ -40,6 +40,7 @@ func TestOrphanedDirectiveHW0(t *testing.T) {
 	diags := runOnFixture(t, New(), "hw0orphan")
 
 	var found bool
+
 	for _, d := range diags {
 		if d.Category == RuleHW0 {
 			found = true
