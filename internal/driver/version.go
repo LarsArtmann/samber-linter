@@ -33,19 +33,17 @@ func warnDover(out io.Writer, pkgs []*packages.Package) {
 
 		for _, req := range mf.Require {
 			if req.Mod.Path == healthwash.DoPath {
-				if VerifiedDover[req.Mod.Version] {
+				if isVerifiedDoVersion(req.Mod.Version) {
 					return
 				}
 
-				verified := make([]string, 0, len(VerifiedDover))
-				for v := range VerifiedDover {
-					verified = append(verified, v)
-				}
+				verified := VerifiedDoVersions()
 
 				sort.Strings(verified)
 				fmt.Fprintf(
 					out,
-					"[info] target module uses github.com/samber/do/v2 %s; mechanism assertions are verified against %v — rules may not hold\n",
+					"[info] target module uses github.com/samber/do/v2 %s; "+
+						"mechanism assertions are verified against %v — rules may not hold\n",
 					req.Mod.Version,
 					verified,
 				)

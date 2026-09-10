@@ -32,9 +32,22 @@ const ToolName = "samber-linter"
 // DefaultBaselinePath is where --set-baseline persists the ratchet floor.
 const DefaultBaselinePath = ".samber-linter-baseline.json"
 
-// VerifiedDover lists the samber/do versions whose mechanism behavior the
-// rules encode (see README §11). Targets outside this set get a warning.
-var VerifiedDover = map[string]bool{"v2.0.0": true, "v2.1.0": true}
+// VerifiedDoVersions lists the samber/do versions whose mechanism behavior
+// the rules encode (see README §11). Targets outside this set get a warning.
+func VerifiedDoVersions() []string {
+	return []string{"v2.0.0", "v2.1.0"}
+}
+
+// isVerifiedDoVersion reports whether v is inside the verified set.
+func isVerifiedDoVersion(v string) bool {
+	for _, verified := range VerifiedDoVersions() {
+		if v == verified {
+			return true
+		}
+	}
+
+	return false
+}
 
 // Options configures one driver run.
 type Options struct {
@@ -72,6 +85,7 @@ type ruleMeta struct {
 // severity != confidence: HW-1/3/5 are type facts (Full), HW-2 a strong
 // convention (High), HW-4 a judgment call (Medium). Exit codes key on
 // confidence only.
+//nolint:gochecknoglobals // read-only rule metadata table (severity/confidence per rule)
 var ruleMetaByRule = map[string]ruleMeta{
 	healthwash.RuleHW1: {
 		severity:   finding.SeverityWarning,
@@ -148,7 +162,7 @@ func Run(opts Options) int {
 
 	analyzer := buildAnalyzer(opts)
 
-	findings, records := analyzePackages(analyzer, pkgs, opts, errw)
+	findings, records := analyzePackages(analyzer, pkgs, errw)
 	findings = applyAllowlist(findings, opts.ConfigPath, errw)
 
 	report := finding.NewReportFromFindings(
@@ -185,7 +199,7 @@ func buildAnalyzer(opts Options) *analysis.Analyzer {
 // analyzePackages runs the analyzer over every loaded package, converting
 // diagnostics to findings and collecting registration records for HW-6.
 func analyzePackages(
-	analyzer *analysis.Analyzer, pkgs []*packages.Package, opts Options, errw io.Writer,
+	analyzer *analysis.Analyzer, pkgs []*packages.Package, errw io.Writer,
 ) ([]finding.Finding, []healthwash.ServiceRecord) {
 	var (
 		records  []healthwash.ServiceRecord
@@ -280,7 +294,12 @@ func load(opts Options) ([]*packages.Package, error) {
 		Tests: false, // composition roots are what dashboards see; DO-3 keeps Override* in tests
 	}
 
-	return packages.Load(cfg, opts.Patterns...)
+	pkgs, err := packages.Load(cfg, opts.Patterns...)
+	if err != nil {
+		return nil, fmt.Errorf("load packages: %w", err)
+	}
+
+	return pkgs, nil
 }
 
 // runAnalyzer builds an analysis.Pass by hand (the x/tools checker internals
@@ -328,10 +347,10 @@ func runAnalyzer(analyzer *analysis.Analyzer, pkg *packages.Package) (
 
 func toFinding(
 	analyzer *analysis.Analyzer,
-	d analysis.Diagnostic,
+	diag analysis.Diagnostic,
 	fset *token.FileSet,
 ) finding.Finding {
-	rule := d.Category
+	rule := diag.Category
 	if rule == "" {
 		rule = analyzer.Name
 	}
@@ -341,12 +360,12 @@ func toFinding(
 		meta = ruleMeta{severity: finding.SeverityWarning, confidence: finding.ConfidenceMedium}
 	}
 
-	pos := fset.Position(d.Pos)
+	pos := fset.Position(diag.Pos)
 
 	return finding.NewBuilder(
 		finding.RuleName(rule),
 		finding.ToolName(ToolName),
-		d.Message,
+		diag.Message,
 		meta.severity,
 		finding.Position{
 			File:   finding.FilePath(pos.Filename),
@@ -385,11 +404,11 @@ func applyAllowlist(
 	usable := usableAllowEntries(cfg.Allow)
 
 	kept := findings[:0]
-	for _, f := range findings {
+	for _, entry := range findings {
 		suppressed := false
 
 		for _, e := range usable {
-			if entryCovers(e, f) {
+			if entryCovers(e, entry) {
 				suppressed = true
 
 				break
@@ -397,7 +416,7 @@ func applyAllowlist(
 		}
 
 		if !suppressed {
-			kept = append(kept, f)
+			kept = append(kept, entry)
 		}
 	}
 
@@ -477,24 +496,24 @@ func reportCoverage(
 ) float64 {
 	uniq := map[string]healthwash.ServiceRecord{}
 
-	for _, r := range records {
-		if !r.AffectsHW6() {
+	for _, record := range records {
+		if !record.AffectsHW6() {
 			continue // alias rows delegate to their target; never counted
 		}
 
-		if prev, ok := uniq[r.Name]; !ok ||
-			(r.Kind != healthwash.KindTransient && prev.ImplementsCheck != r.ImplementsCheck) {
-			uniq[r.Name] = r
+		if prev, ok := uniq[record.Name]; !ok ||
+			(record.Kind != healthwash.KindTransient && prev.ImplementsCheck != record.ImplementsCheck) {
+			uniq[record.Name] = record
 		}
 	}
 
 	registered := len(uniq)
 	checked := 0
 
-	for _, r := range uniq {
+	for _, record := range uniq {
 		// Transients are skipped, never checked — the sweep never dispatches
 		// to them even when the type implements a check (README §2.4, §7).
-		if r.ImplementsCheck && r.Kind != healthwash.KindTransient {
+		if record.ImplementsCheck && record.Kind != healthwash.KindTransient {
 			checked++
 		}
 	}

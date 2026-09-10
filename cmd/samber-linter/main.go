@@ -20,74 +20,74 @@ var version = "0.1.0"
 const defaultMinConfidence = 0.75
 
 func main() {
-	fs := flag.NewFlagSet("samber-linter", flag.ExitOnError)
-	jsonOut := fs.Bool("json", false, "emit the go-finding JSON report")
-	sarifOut := fs.Bool("sarif", false, "emit a SARIF 2.1 report for code scanning")
-	outputFlag := fs.String("output", "", fmt.Sprintf(
+	flagSet := flag.NewFlagSet("samber-linter", flag.ExitOnError)
+	jsonOut := flagSet.Bool("json", false, "emit the go-finding JSON report")
+	sarifOut := flagSet.Bool("sarif", false, "emit a SARIF 2.1 report for code scanning")
+	outputFlag := flagSet.String("output", "", fmt.Sprintf(
 		"findings presentation format (%s); plain text lines by default",
 		strings.Join(driver.SupportedOutputFormatNames(), ", ")))
-	strict := fs.Bool(
+	strict := flagSet.Bool(
 		"strict",
 		false,
 		"report HW-unresolved for statically unresolvable service types",
 	)
-	disable := fs.String(
+	disable := flagSet.String(
 		"disable",
 		"",
 		"comma-separated rule IDs to skip (e.g. HW-1,HW-4); testing/migration aid",
 	)
-	check := fs.Bool(
+	check := flagSet.Bool(
 		"check",
 		false,
 		"advisory mode: report everything but always exit 0 (for CI annotation pipelines)",
 	)
-	coverageMin := fs.Float64(
+	coverageMin := flagSet.Float64(
 		"coverage-min",
 		-1,
 		"fail when health coverage is below this fraction (0..1)",
 	)
-	setBaseline := fs.Bool(
+	setBaseline := flagSet.Bool(
 		"set-baseline",
 		false,
 		"write the current coverage as the ratchet floor and pass",
 	)
-	baselinePath := fs.String(
+	baselinePath := flagSet.String(
 		"baseline",
 		driver.DefaultBaselinePath,
 		"path of the committed coverage baseline file",
 	)
-	configPath := fs.String(
+	configPath := flagSet.String(
 		"config",
 		"",
 		"path of the allowlist config for recurring suppression categories",
 	)
-	minConf := fs.Float64(
+	minConf := flagSet.Float64(
 		"min-confidence",
 		defaultMinConfidence,
 		"exit 1 when any finding is at or above this confidence (0..1)",
 	)
-	showVersion := fs.Bool("version", false, "print the tool version")
-	fs.Usage = func() {
-		fmt.Fprintln(fs.Output(), "usage: samber-linter [flags] <packages...>")
-		fs.PrintDefaults()
+	showVersion := flagSet.Bool("version", false, "print the tool version")
+	flagSet.Usage = func() {
+		fmt.Fprintln(flagSet.Output(), "usage: samber-linter [flags] <packages...>")
+		flagSet.PrintDefaults()
 	}
-	_ = fs.Parse(os.Args[1:])
+	_ = flagSet.Parse(os.Args[1:])
 
 	if *showVersion {
-		fmt.Println(version)
+		fmt.Fprintln(os.Stdout, version)
 
 		return
 	}
 
-	patterns := fs.Args()
+	patterns := flagSet.Args()
 	if len(patterns) == 0 {
 		patterns = []string{"./..."}
 	}
 
 	outputFormat, err := driver.ParseOutputFormat(*outputFlag)
 	if err != nil {
-		fmt.Fprintln(fs.Output(), err)
-		fs.Usage()
+		fmt.Fprintln(flagSet.Output(), err)
+		flagSet.Usage()
 
 		os.Exit(2)
 	}

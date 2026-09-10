@@ -51,16 +51,16 @@ func ParseDirective(line string) (Directive, bool) {
 	rule := strings.ToLower((m[1] + m[2]))
 	rest := strings.TrimSpace(m[3])
 
-	d := Directive{Rule: rule, Reason: rest}
+	directive := Directive{Rule: rule, Reason: rest}
 
 	if mUntil := untilRe.FindStringSubmatch(rest); mUntil != nil {
 		if t, err := time.Parse("2006-01-02", mUntil[1]); err == nil {
-			d.Expires = &t
-			d.Reason = strings.TrimSpace(untilRe.ReplaceAllString(rest, ""))
+			directive.Expires = &t
+			directive.Reason = strings.TrimSpace(untilRe.ReplaceAllString(rest, ""))
 		}
 	}
 
-	return d, true
+	return directive, true
 }
 
 // Expired reports whether the directive's re-review deadline has passed.
@@ -70,14 +70,14 @@ func (d Directive) Expired(now time.Time) bool {
 
 // String renders the directive back to source form.
 func (d Directive) String() string {
-	s := "//" + DirectivePrefix + " " + d.Rule
+	line := "//" + DirectivePrefix + " " + d.Rule
 	if d.Reason != "" {
-		s += " " + d.Reason
+		line += " " + d.Reason
 	}
 
 	if d.Expires != nil {
-		s += " until " + d.Expires.Format("2006-01-02")
+		line += " until " + d.Expires.Format("2006-01-02")
 	}
 
-	return s
+	return line
 }
