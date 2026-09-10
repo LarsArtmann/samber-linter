@@ -17,14 +17,20 @@ Honest inventory by status. Last updated: 2026-09-09.
   check reachable only on `*T` while the registration stores value `T`.
 - **HW-0** (meta): suppression directive without a reason, attributed to the
   suppressible site. Not disable-able (it audits the auditor).
-- **Suppression model**: `//samber-linter:allow hw-N <reason>` (line above or
-  trailing), `all` token, `until YYYY-MM-DD` expiry with automatic resurfacing.
+- **Suppression model**: `//samber-linter:allow hw-N <reason>` (line above,
+  trailing, or anywhere inside a multi-line registration call), `all` token,
+  `until YYYY-MM-DD` expiry with automatic resurfacing. Malformed directives
+  are themselves reported (HW-0) even when orphaned — no live violation
+  required.
 - **HW-6 coverage ratchet**: alias-deduped checked/registered ratio, committed
   baseline file, `--coverage-min`, `--set-baseline` (atomic, idempotent via
   go-atomic-write).
-- **Driver CLI**: text output, `--json` (go-finding), `--sarif` (SARIF 2.1),
-  0/1/2 confidence exit codes (go-linter-sdk `ExitCodeByConfidence`),
-  `--strict` (HW-unresolved), `--config` allowlist (reason mandatory).
+- **Driver CLI**: text output, `--output` presentation tables (go-output),
+  `--json` (go-finding), `--sarif` (SARIF 2.1), 0/1/2 confidence exit codes
+  (go-linter-sdk `ExitCodeByConfidence`; load failures exit 2, not 1),
+  `--strict` (HW-unresolved), `--config` allowlist (reason AND rule
+  mandatory; empty pathPattern = project-wide), `--disable` rule mute,
+  `--check` advisory mode (always exit 0).
 - **Drift matrix**: mechanism assertions executed against REAL samber/do
   v2.0.0 and v2.1.0 sources from the module cache.
 - **Discrimination proofs**: every P0 rule demonstrated to fail on a mutant
@@ -32,7 +38,9 @@ Honest inventory by status. Last updated: 2026-09-09.
 - **Target version awareness**: warns when the analyzed module's samber/do
   version is outside the verified set {v2.0.0, v2.1.0}.
 - **golangci-lint v2 module plugin** (`plugin/`, `.custom-gcl.yml`), wiring
-  copied from go-humanize-linter.
+  copied from go-humanize-linter; registration + settings pass-through and a
+  full `golangci-lint custom` build-and-fire proof live in
+  `plugin/plugin_integration_test.go`.
 - **Runtime companion** `pkg/healthaudit`: registration/invocation hooks +
   sweep audit; `errored` = only runtime proof a check can fail.
 - **Dogfooded**: run on `~/projects/CV` (9 findings: 7× HW-1, 2× HW-4;

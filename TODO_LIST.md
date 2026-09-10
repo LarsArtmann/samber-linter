@@ -30,6 +30,16 @@ actually executed them, plus fixes found by running the shipped binary:
   ast-state-analyzer (stale go.mod) are target-project breakage, not analyzer
   bugs; both fail cleanly with an explanatory message
 
+Known remaining debt (pre-existing, tracked):
+
+- [ ] Repo-wide golangci-lint is red (~141 findings, ALL in files untouched by
+  the 0.1.1 round: analysistest-based tests without t.Parallel, single-letter
+  loop vars in legacy code, 2 gochecknoglobals tables, wrapcheck on
+  packages.Load). CI's lint job has never been green with this config — burn
+  it down in a dedicated pass; do not mix into feature work.
+- [ ] Ecology note: CV fixed its 9 findings after the scan; the committed
+  8% baseline now reads 10% and suggests --set-baseline.
+
 Open decisions (user):
 
 - [ ] HW-4 default posture: stay on-by-default `info` vs opt-in
