@@ -1,10 +1,12 @@
 # Upstream issue draft: transient services never dispatch health checks
 
-> Status: DRAFT — not yet filed. Per verify-before-filing discipline: the
-> diagnosis below is source-verified against v2.1.0 (and re-verified against
-> v2.0.0 by this repo's drift matrix), and an executable reproduction exists
-> at `pkg/healthaudit/upstream_transient_test.go` (build tag
-> `upstream_issue`, fails on v2.1.0 as expected).
+> Status: FILED 2026-09-10 as [samber/do#317](https://github.com/samber/do/issues/317)
+> (concise, human-edited version of this draft; repro re-run and failing as
+> expected immediately before filing). The broader status-model proposal
+> (explicit passed/not-built/unsupported/skipped states) was filed separately
+> as [samber/do#318](https://github.com/samber/do/issues/318), referencing #317.
+> Source verification: service_transient.go:58-66, scope.go:733-735,
+> service_lazy.go:128-134 (v2.1.0); drift matrix covers v2.0.0 + v2.1.0.
 
 ## Summary
 

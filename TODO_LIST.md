@@ -45,6 +45,7 @@ Open decisions (user):
 - [ ] HW-4 default posture: stay on-by-default `info` vs opt-in
 - [ ] Commit `.samber-linter-baseline.json` at 8% into CV; triage CV's 9 findings
 - [ ] GitHub purge of `.crush` history blobs (support ticket vs delete+recreate)
+- [x] Upstream filed: samber/do#317 (transient healthcheck visibility) + samber/do#318 (health outcome states) — 2026-09-10
 - [ ] Candidate HW-7 "stale directive": valid-but-orphaned directives with an
   `until` expiry could resurface for cleanup (see docs/FP-BUDGETS.md)
 
