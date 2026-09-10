@@ -1,6 +1,7 @@
 package driver
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"slices"
@@ -13,6 +14,12 @@ import (
 	_ "github.com/larsartmann/go-output/markup"    // html, xml, asciidoc table marshalers
 	_ "github.com/larsartmann/go-output/table"     // terminal table marshaler
 )
+
+// ErrUnsupportedOutputFormat reports a --output value that is a valid
+// go-output format but cannot render findings. Callers can match it with
+// errors.Is; the message names the supported formats and the machine-readable
+// flags.
+var ErrUnsupportedOutputFormat = errors.New("unsupported --output format")
 
 // SupportedOutputFormats lists the presentation formats renderFindings can
 // emit. Machine-readable formats are deliberately absent: --json and --sarif
@@ -45,7 +52,8 @@ func ParseOutputFormat(s string) (output.Format, error) {
 
 	if !slices.Contains(SupportedOutputFormats(), format) {
 		return "", fmt.Errorf(
-			"--output %q cannot render findings; supported formats: %s (machine-readable output: --json, --sarif)",
+			"%w: %q cannot render findings; supported formats: %s (machine-readable output: --json, --sarif)",
+			ErrUnsupportedOutputFormat,
 			s,
 			strings.Join(SupportedOutputFormatNames(), ", "),
 		)
