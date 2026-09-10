@@ -73,13 +73,31 @@ type ruleMeta struct {
 // convention (High), HW-4 a judgment call (Medium). Exit codes key on
 // confidence only.
 var ruleMetaByRule = map[string]ruleMeta{
-	healthwash.RuleHW1:        {severity: finding.SeverityWarning, confidence: finding.ConfidenceFull},
-	healthwash.RuleHW2:        {severity: finding.SeverityInfo, confidence: finding.ConfidenceHigh},
-	healthwash.RuleHW3:        {severity: finding.SeverityWarning, confidence: finding.ConfidenceFull},
-	healthwash.RuleHW4:        {severity: finding.SeverityInfo, confidence: finding.ConfidenceMedium},
-	healthwash.RuleHW5:        {severity: finding.SeverityWarning, confidence: finding.ConfidenceFull},
-	healthwash.RuleHW0:        {severity: finding.SeverityWarning, confidence: finding.ConfidenceFull},
-	healthwash.RuleUnresolved: {severity: finding.SeverityInfo, confidence: finding.ConfidenceMedium},
+	healthwash.RuleHW1: {
+		severity:   finding.SeverityWarning,
+		confidence: finding.ConfidenceFull,
+	},
+	healthwash.RuleHW2: {severity: finding.SeverityInfo, confidence: finding.ConfidenceHigh},
+	healthwash.RuleHW3: {
+		severity:   finding.SeverityWarning,
+		confidence: finding.ConfidenceFull,
+	},
+	healthwash.RuleHW4: {
+		severity:   finding.SeverityInfo,
+		confidence: finding.ConfidenceMedium,
+	},
+	healthwash.RuleHW5: {
+		severity:   finding.SeverityWarning,
+		confidence: finding.ConfidenceFull,
+	},
+	healthwash.RuleHW0: {
+		severity:   finding.SeverityWarning,
+		confidence: finding.ConfidenceFull,
+	},
+	healthwash.RuleUnresolved: {
+		severity:   finding.SeverityInfo,
+		confidence: finding.ConfidenceMedium,
+	},
 }
 
 // allowlistConfig is the --config file: recurring suppression categories,
@@ -128,6 +146,30 @@ func Run(opts Options) int {
 		return 2 // exit 1 is reserved for findings; a tool that cannot load has none
 	}
 
+	analyzer := buildAnalyzer(opts)
+
+	findings, records := analyzePackages(analyzer, pkgs, opts, errw)
+	findings = applyAllowlist(findings, opts.ConfigPath, errw)
+
+	report := finding.NewReportFromFindings(
+		finding.ToolInfo{Name: ToolName, Version: opts.Version}, findings)
+
+	if !emitOutputs(out, errw, report, findings, opts) {
+		return 1
+	}
+
+	code := applyGates(out, errw, report, records, pkgs, opts)
+	if opts.Check {
+		fmt.Fprintln(out, "--check: advisory run; exit code forced to 0")
+
+		return 0
+	}
+
+	return code
+}
+
+// buildAnalyzer constructs the analyzer with the driver-level flags applied.
+func buildAnalyzer(opts Options) *analysis.Analyzer {
 	analyzer := healthwash.New()
 	if opts.Strict {
 		_ = analyzer.Flags.Set("strict", "true")
@@ -137,6 +179,14 @@ func Run(opts Options) int {
 		_ = analyzer.Flags.Set("disable", opts.DisableRules)
 	}
 
+	return analyzer
+}
+
+// analyzePackages runs the analyzer over every loaded package, converting
+// diagnostics to findings and collecting registration records for HW-6.
+func analyzePackages(
+	analyzer *analysis.Analyzer, pkgs []*packages.Package, opts Options, errw io.Writer,
+) ([]finding.Finding, []healthwash.ServiceRecord) {
 	var (
 		records  []healthwash.ServiceRecord
 		findings []finding.Finding
@@ -158,16 +208,25 @@ func Run(opts Options) int {
 		}
 	}
 
-	findings = applyAllowlist(findings, opts.ConfigPath, errw)
+	if loadErrs > 0 {
+		fmt.Fprintf(errw, "%s: %d package error(s) during load; results may be incomplete\n",
+			ToolName, loadErrs)
+	}
 
-	report := finding.NewReportFromFindings(
-		finding.ToolInfo{Name: ToolName, Version: opts.Version}, findings)
+	return findings, records
+}
 
+// emitOutputs writes the findings in every requested representation. It
+// returns false when a requested presentation cannot be rendered (the run
+// must then fail with exit 1).
+func emitOutputs(
+	out, errw io.Writer, report *finding.Report, findings []finding.Finding, opts Options,
+) bool {
 	if opts.OutputFormat != "" {
 		if err := renderFindings(out, findings, opts.OutputFormat); err != nil {
 			fmt.Fprintf(errw, "%s: %v\n", ToolName, err)
 
-			return 1
+			return false
 		}
 	} else {
 		printText(out, findings)
@@ -187,24 +246,22 @@ func Run(opts Options) int {
 		}
 	}
 
+	return true
+}
+
+// applyGates computes the HW-6 ratchet output, warns about the samber/do
+// version, and maps the outcome to the confidence exit contract.
+func applyGates(
+	out, errw io.Writer, report *finding.Report, records []healthwash.ServiceRecord,
+	pkgs []*packages.Package, opts Options,
+) int {
 	gateFailed := false
 	coverage := reportCoverage(out, records, opts, &gateFailed)
 	warnDover(out, pkgs)
 
-	if loadErrs > 0 {
-		fmt.Fprintf(errw, "%s: %d package error(s) during load; results may be incomplete\n",
-			ToolName, loadErrs)
-	}
-
 	code := linter.ExitCodeByConfidence(report, opts.MinConfidence)
 	if gateFailed && code == 0 {
 		code = 1
-	}
-
-	if opts.Check {
-		fmt.Fprintln(out, "--check: advisory run; exit code forced to 0")
-
-		return 0
 	}
 
 	_ = coverage
@@ -269,7 +326,12 @@ func runAnalyzer(analyzer *analysis.Analyzer, pkg *packages.Package) (
 	return diags, records
 }
 
-func toFinding(analyzer *analysis.Analyzer, d analysis.Diagnostic, fset *token.FileSet, _ string) finding.Finding {
+func toFinding(
+	analyzer *analysis.Analyzer,
+	d analysis.Diagnostic,
+	fset *token.FileSet,
+	_ string,
+) finding.Finding {
 	rule := d.Category
 	if rule == "" {
 		rule = analyzer.Name
@@ -287,11 +349,20 @@ func toFinding(analyzer *analysis.Analyzer, d analysis.Diagnostic, fset *token.F
 		finding.ToolName(ToolName),
 		d.Message,
 		meta.severity,
-		finding.Position{File: finding.FilePath(pos.Filename), Line: pos.Line, Column: pos.Column, Offset: pos.Offset},
+		finding.Position{
+			File:   finding.FilePath(pos.Filename),
+			Line:   pos.Line,
+			Column: pos.Column,
+			Offset: pos.Offset,
+		},
 	).WithConfidence(meta.confidence).MustBuild()
 }
 
-func applyAllowlist(findings []finding.Finding, configPath string, errw io.Writer) []finding.Finding {
+func applyAllowlist(
+	findings []finding.Finding,
+	configPath string,
+	errw io.Writer,
+) []finding.Finding {
 	if configPath == "" {
 		return findings
 	}
@@ -348,7 +419,11 @@ func warnMalformedAllowlist(entries []allowEntry, errw io.Writer) {
 		}
 
 		if strings.TrimSpace(e.Rule) == "" {
-			fmt.Fprintf(errw, "%s: config allowlist entry lacks a rule; ignoring entry (name the rule, or \"all\")\n", ToolName)
+			fmt.Fprintf(
+				errw,
+				"%s: config allowlist entry lacks a rule; ignoring entry (name the rule, or \"all\")\n",
+				ToolName,
+			)
 		}
 	}
 }
@@ -395,7 +470,12 @@ func allowMatches(entry, rule string) bool {
 	return e == strings.ToLower(rule)
 }
 
-func reportCoverage(out io.Writer, records []healthwash.ServiceRecord, opts Options, gateFailed *bool) float64 {
+func reportCoverage(
+	out io.Writer,
+	records []healthwash.ServiceRecord,
+	opts Options,
+	gateFailed *bool,
+) float64 {
 	uniq := map[string]healthwash.ServiceRecord{}
 
 	for _, r := range records {
@@ -427,35 +507,58 @@ func reportCoverage(out io.Writer, records []healthwash.ServiceRecord, opts Opti
 
 	baselinePath := opts.BaselinePath
 	if opts.SetBaseline {
-		b := baseline{Version: 1, Checked: checked, Registered: registered, Coverage: coverage}
-
-		data, _ := json.Marshal(b, jsontext.WithIndentPrefix(""), jsontext.WithIndent("  "))
-		if _, err := atomicwrite.WriteIfChanged(baselinePath, append(data, '\n')); err != nil {
-			fmt.Fprintf(opts.Stderr, "%s: baseline write failed: %v\n", ToolName, err)
-
-			*gateFailed = true
-		} else {
-			fmt.Fprintf(out, "baseline written: %s (coverage %d/%d = %.0f%%)\n",
-				baselinePath, checked, registered, coverage*100)
-		}
+		writeBaseline(out, opts.Stderr, baselinePath, baseline{
+			Version: 1, Checked: checked, Registered: registered, Coverage: coverage,
+		}, gateFailed)
 
 		return coverage
 	}
 
 	if opts.CoverageMin > 0 {
-		fmt.Fprintf(out, "health-coverage: %d/%d = %.0f%% (threshold: %.0f%%)\n",
-			checked, registered, coverage*100, opts.CoverageMin*100)
-
-		if registered > 0 && coverage < opts.CoverageMin {
-			fmt.Fprintf(opts.Stderr, "%s: coverage %.0f%% is below the required minimum %.0f%%\n",
-				ToolName, coverage*100, opts.CoverageMin*100)
-
-			*gateFailed = true
-		}
+		enforceCoverageMin(out, opts.Stderr, checked, registered, coverage, opts.CoverageMin, gateFailed)
 
 		return coverage
 	}
 
+	enforceBaselineRatchet(out, opts.Stderr, baselinePath, checked, registered, coverage, gateFailed)
+
+	return coverage
+}
+
+// writeBaseline persists the current coverage as the ratchet floor.
+func writeBaseline(out, errw io.Writer, path string, b baseline, gateFailed *bool) {
+	data, _ := json.Marshal(b, jsontext.WithIndentPrefix(""), jsontext.WithIndent("  "))
+	if _, err := atomicwrite.WriteIfChanged(path, append(data, '\n')); err != nil {
+		fmt.Fprintf(errw, "%s: baseline write failed: %v\n", ToolName, err)
+
+		*gateFailed = true
+
+		return
+	}
+
+	fmt.Fprintf(out, "baseline written: %s (coverage %d/%d = %.0f%%)\n",
+		path, b.Checked, b.Registered, b.Coverage*100)
+}
+
+// enforceCoverageMin applies the absolute --coverage-min gate.
+func enforceCoverageMin(
+	out, errw io.Writer, checked, registered int, coverage, min float64, gateFailed *bool,
+) {
+	fmt.Fprintf(out, "health-coverage: %d/%d = %.0f%% (threshold: %.0f%%)\n",
+		checked, registered, coverage*100, min*100)
+
+	if registered > 0 && coverage < min {
+		fmt.Fprintf(errw, "%s: coverage %.0f%% is below the required minimum %.0f%%\n",
+			ToolName, coverage*100, min*100)
+
+		*gateFailed = true
+	}
+}
+
+// enforceBaselineRatchet applies the committed-baseline regression gate.
+func enforceBaselineRatchet(
+	out, errw io.Writer, baselinePath string, checked, registered int, coverage float64, gateFailed *bool,
+) {
 	if data, err := os.ReadFile(baselinePath); err == nil {
 		var b baseline
 		if json.Unmarshal(data, &b) == nil && b.Registered > 0 {
@@ -464,7 +567,7 @@ func reportCoverage(out io.Writer, records []healthwash.ServiceRecord, opts Opti
 
 			if coverage < b.Coverage {
 				fmt.Fprintf(
-					opts.Stderr,
+					errw,
 					"%s: coverage %.0f%% regressed below the committed baseline %.0f%%; fix the regressions or explicitly re-baseline with --set-baseline\n",
 					ToolName,
 					coverage*100,
@@ -473,19 +576,22 @@ func reportCoverage(out io.Writer, records []healthwash.ServiceRecord, opts Opti
 
 				*gateFailed = true
 			} else if coverage > b.Coverage {
-				fmt.Fprintf(out, "coverage improved; lock in the gain with --set-baseline\n")
+				fmt.Fprintln(out, "coverage improved; lock in the gain with --set-baseline")
 			}
 
-			return coverage
+			return
 		}
 	}
 
 	if registered > 0 {
-		fmt.Fprintf(out, "health-coverage: %d/%d = %.0f%% (no baseline; use --set-baseline to start the ratchet)\n",
-			checked, registered, coverage*100)
+		fmt.Fprintf(
+			out,
+			"health-coverage: %d/%d = %.0f%% (no baseline; use --set-baseline to start the ratchet)\n",
+			checked,
+			registered,
+			coverage*100,
+		)
 	}
-
-	return coverage
 }
 
 func printText(out io.Writer, findings []finding.Finding) {

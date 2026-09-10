@@ -23,14 +23,46 @@ func main() {
 	outputFlag := fs.String("output", "", fmt.Sprintf(
 		"findings presentation format (%s); plain text lines by default",
 		strings.Join(driver.SupportedOutputFormatNames(), ", ")))
-	strict := fs.Bool("strict", false, "report HW-unresolved for statically unresolvable service types")
-	disable := fs.String("disable", "", "comma-separated rule IDs to skip (e.g. HW-1,HW-4); testing/migration aid")
-	check := fs.Bool("check", false, "advisory mode: report everything but always exit 0 (for CI annotation pipelines)")
-	coverageMin := fs.Float64("coverage-min", -1, "fail when health coverage is below this fraction (0..1)")
-	setBaseline := fs.Bool("set-baseline", false, "write the current coverage as the ratchet floor and pass")
-	baselinePath := fs.String("baseline", driver.DefaultBaselinePath, "path of the committed coverage baseline file")
-	configPath := fs.String("config", "", "path of the allowlist config for recurring suppression categories")
-	minConf := fs.Float64("min-confidence", 0.75, "exit 1 when any finding is at or above this confidence (0..1)")
+	strict := fs.Bool(
+		"strict",
+		false,
+		"report HW-unresolved for statically unresolvable service types",
+	)
+	disable := fs.String(
+		"disable",
+		"",
+		"comma-separated rule IDs to skip (e.g. HW-1,HW-4); testing/migration aid",
+	)
+	check := fs.Bool(
+		"check",
+		false,
+		"advisory mode: report everything but always exit 0 (for CI annotation pipelines)",
+	)
+	coverageMin := fs.Float64(
+		"coverage-min",
+		-1,
+		"fail when health coverage is below this fraction (0..1)",
+	)
+	setBaseline := fs.Bool(
+		"set-baseline",
+		false,
+		"write the current coverage as the ratchet floor and pass",
+	)
+	baselinePath := fs.String(
+		"baseline",
+		driver.DefaultBaselinePath,
+		"path of the committed coverage baseline file",
+	)
+	configPath := fs.String(
+		"config",
+		"",
+		"path of the allowlist config for recurring suppression categories",
+	)
+	minConf := fs.Float64(
+		"min-confidence",
+		0.75,
+		"exit 1 when any finding is at or above this confidence (0..1)",
+	)
 	showVersion := fs.Bool("version", false, "print the tool version")
 	fs.Usage = func() {
 		fmt.Fprintln(fs.Output(), "usage: samber-linter [flags] <packages...>")

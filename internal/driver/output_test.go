@@ -39,7 +39,10 @@ func TestSupportedOutputFormats(t *testing.T) {
 		output.FormatTree, output.FormatD2, output.FormatMermaid, output.FormatDOT, output.FormatPlantUML,
 	} {
 		if slices.Contains(formats, banned) {
-			t.Errorf("format %q must not be served by --output (machine formats belong to --json/--sarif)", banned)
+			t.Errorf(
+				"format %q must not be served by --output (machine formats belong to --json/--sarif)",
+				banned,
+			)
 		}
 	}
 }
@@ -53,11 +56,19 @@ func TestParseOutputFormat(t *testing.T) {
 		for _, empty := range []string{"", "  ", "\t"} {
 			got, err := ParseOutputFormat(empty)
 			if err != nil {
-				t.Fatalf("ParseOutputFormat(%q) = %v, want nil: the zero flag value must not break plain invocations", empty, err)
+				t.Fatalf(
+					"ParseOutputFormat(%q) = %v, want nil: the zero flag value must not break plain invocations",
+					empty,
+					err,
+				)
 			}
 
 			if got != "" {
-				t.Errorf("ParseOutputFormat(%q) = %q, want empty (driver falls back to plain text)", empty, got)
+				t.Errorf(
+					"ParseOutputFormat(%q) = %q, want empty (driver falls back to plain text)",
+					empty,
+					got,
+				)
 			}
 		}
 	})

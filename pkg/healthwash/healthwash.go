@@ -81,8 +81,16 @@ func New() *analysis.Analyzer {
 		Run:       run,
 		FactTypes: []analysis.Fact{(*PackageFacts)(nil)},
 	}
-	a.Flags.Bool("strict", false, "report HW-unresolved for unresolvable service types instead of staying silent")
-	a.Flags.String("disable", "", "comma-separated rule IDs to skip (e.g. HW-1,HW-4) — testing/migration aid")
+	a.Flags.Bool(
+		"strict",
+		false,
+		"report HW-unresolved for unresolvable service types instead of staying silent",
+	)
+	a.Flags.String(
+		"disable",
+		"",
+		"comma-separated rule IDs to skip (e.g. HW-1,HW-4) — testing/migration aid",
+	)
 
 	return a
 }
@@ -159,7 +167,7 @@ func parseDisabledRules(pass *analysis.Pass) map[string]bool {
 // node is a samber/do registration call.
 func inspectRegistration(
 	pass *analysis.Pass, n ast.Node, lc ifaces, strict bool,
-) (rec ServiceRecord, reps []siteReport, isReg bool) {
+) (ServiceRecord, []siteReport, bool) {
 	call, isCall := n.(*ast.CallExpr)
 	if !isCall {
 		return ServiceRecord{}, nil, false
@@ -180,7 +188,7 @@ func inspectRegistration(
 		return ServiceRecord{}, nil, false
 	}
 
-	rec, reps = evalSite(pass, fn.Name(), kind, call, lc, strict)
+	rec, reps := evalSite(pass, fn.Name(), kind, call, lc, strict)
 
 	return rec, reps, true
 }

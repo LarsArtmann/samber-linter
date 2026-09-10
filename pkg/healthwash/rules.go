@@ -113,7 +113,10 @@ func evalSite(
 	var reps []siteReport
 
 	add := func(rule, msg string) {
-		reps = append(reps, siteReport{rule: rule, message: rule + ": " + msg, pos: call.Pos(), endLine: endLine})
+		reps = append(
+			reps,
+			siteReport{rule: rule, message: rule + ": " + msg, pos: call.Pos(), endLine: endLine},
+		)
 	}
 
 	// KindAlias never reaches the switch body: evalSite handles it before
@@ -189,7 +192,8 @@ func evalAlias(pass *analysis.Pass, call *ast.CallExpr) ServiceRecord {
 	name := ""
 
 	if sel, ok := call.Fun.(*ast.SelectorExpr); ok {
-		if inst, ok2 := pass.TypesInfo.Instances[sel.Sel]; ok2 && inst.TypeArgs != nil && inst.TypeArgs.Len() >= 2 {
+		if inst, ok2 := pass.TypesInfo.Instances[sel.Sel]; ok2 && inst.TypeArgs != nil &&
+			inst.TypeArgs.Len() >= 2 {
 			name = types.TypeString(inst.TypeArgs.At(1), nil)
 		}
 	}
