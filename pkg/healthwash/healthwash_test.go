@@ -91,22 +91,26 @@ func TestDiscriminationProofs(t *testing.T) {
 		{RuleHW2, "hw2bare", "HW-2"},
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.rule, func(t *testing.T) {
+	for _, testCase := range cases {
+		t.Run(testCase.rule, func(t *testing.T) {
 			t.Parallel()
 
-			healthy := collectRules(t, New(), tc.pkg)
-			if !containsRule(healthy, tc.rule) {
-				t.Fatalf("healthy analyzer produced no %s on %s; fixture or rule is broken", tc.rule, tc.pkg)
+			healthy := collectRules(t, New(), testCase.pkg)
+			if !containsRule(healthy, testCase.rule) {
+				t.Fatalf(
+					"healthy analyzer produced no %s on %s; fixture or rule is broken",
+					testCase.rule,
+					testCase.pkg,
+				)
 			}
 
-			mutant := collectRules(t, newDisabled(tc.mutant), tc.pkg)
-			if containsRule(mutant, tc.rule) {
+			mutant := collectRules(t, newDisabled(testCase.mutant), testCase.pkg)
+			if containsRule(mutant, testCase.rule) {
 				t.Fatalf(
 					"mutant analyzer (disabled %s) still reports %s on %s; the corpus does not discriminate",
-					tc.mutant,
-					tc.rule,
-					tc.pkg,
+					testCase.mutant,
+					testCase.rule,
+					testCase.pkg,
 				)
 			}
 		})
@@ -178,25 +182,25 @@ func TestParseDirective(t *testing.T) {
 		},
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			parsed, ok := ParseDirective(tc.line)
-			if ok != tc.wantOK {
-				t.Fatalf("ok = %v, want %v", ok, tc.wantOK)
+			parsed, ok := ParseDirective(testCase.line)
+			if ok != testCase.wantOK {
+				t.Fatalf("ok = %v, want %v", ok, testCase.wantOK)
 			}
 
 			if !ok {
 				return
 			}
 
-			if parsed.Rule != tc.wantRule {
-				t.Errorf("rule = %q, want %q", parsed.Rule, tc.wantRule)
+			if parsed.Rule != testCase.wantRule {
+				t.Errorf("rule = %q, want %q", parsed.Rule, testCase.wantRule)
 			}
 
-			if parsed.Reason != tc.wantReason {
-				t.Errorf("reason = %q, want %q", parsed.Reason, tc.wantReason)
+			if parsed.Reason != testCase.wantReason {
+				t.Errorf("reason = %q, want %q", parsed.Reason, testCase.wantReason)
 			}
 
 			gotExpiry := ""
@@ -204,12 +208,12 @@ func TestParseDirective(t *testing.T) {
 				gotExpiry = parsed.Expires.Format("2006-01-02")
 			}
 
-			if gotExpiry != tc.wantExpiry {
-				t.Errorf("expiry = %q, want %q", gotExpiry, tc.wantExpiry)
+			if gotExpiry != testCase.wantExpiry {
+				t.Errorf("expiry = %q, want %q", gotExpiry, testCase.wantExpiry)
 			}
 
-			if parsed.Expired(now) != tc.wantExpired {
-				t.Errorf("expired = %v, want %v", parsed.Expired(now), tc.wantExpired)
+			if parsed.Expired(now) != testCase.wantExpired {
+				t.Errorf("expired = %v, want %v", parsed.Expired(now), testCase.wantExpired)
 			}
 		})
 	}

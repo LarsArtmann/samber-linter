@@ -15,6 +15,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"slices"
 	"strings"
 
 	atomicwrite "github.com/larsartmann/go-atomic-write"
@@ -40,13 +41,7 @@ func VerifiedDoVersions() []string {
 
 // isVerifiedDoVersion reports whether v is inside the verified set.
 func isVerifiedDoVersion(v string) bool {
-	for _, verified := range VerifiedDoVersions() {
-		if v == verified {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(VerifiedDoVersions(), v)
 }
 
 // Options configures one driver run.
@@ -85,6 +80,7 @@ type ruleMeta struct {
 // severity != confidence: HW-1/3/5 are type facts (Full), HW-2 a strong
 // convention (High), HW-4 a judgment call (Medium). Exit codes key on
 // confidence only.
+//
 //nolint:gochecknoglobals // read-only rule metadata table (severity/confidence per rule)
 var ruleMetaByRule = map[string]ruleMeta{
 	healthwash.RuleHW1: {

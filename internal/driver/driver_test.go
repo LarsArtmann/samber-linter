@@ -255,8 +255,8 @@ func TestCleanModuleExitsZero(t *testing.T) {
 	must(t, os.WriteFile(
 		filepath.Join(app, "go.mod"),
 		[]byte(
-			"module example.com/clean\n\ngo 1.26\n\n" +
-				"require github.com/samber/do/v2 v2.1.0\n\n" +
+			"module example.com/clean\n\ngo 1.26\n\n"+
+				"require github.com/samber/do/v2 v2.1.0\n\n"+
 				"replace github.com/samber/do/v2 => ../dostub\n",
 		),
 		0o644,

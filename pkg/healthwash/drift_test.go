@@ -39,8 +39,8 @@ func doSourceDir(t *testing.T, version string) string {
 	return dir
 }
 
-// parseSrc parses one file of dir and returns fset, file, and raw source.
-func parseSrc(t *testing.T, dir, name string) (*token.FileSet, *ast.File, string) {
+// parseSrc parses one file of dir and returns the file and raw source.
+func parseSrc(t *testing.T, dir, name string) (*ast.File, string) {
 	t.Helper()
 
 	path := filepath.Join(dir, name)
@@ -60,7 +60,7 @@ func parseSrc(t *testing.T, dir, name string) (*token.FileSet, *ast.File, string
 		t.Fatalf("read %s: %v", path, err)
 	}
 
-	return fset, file, string(src)
+	return file, string(src)
 }
 
 // funcSource returns the raw source text of the named function or method.
@@ -115,7 +115,7 @@ func assertMechanism(t *testing.T, dir string) {
 	t.Helper()
 
 	// §2.5 lifecycle interfaces: all six exist, with the exact method names.
-	_, _, lcSrc := parseSrc(t, dir, "di_lifecycle.go")
+	_, lcSrc := parseSrc(t, dir, "di_lifecycle.go")
 	ifaces := collectIfaces(t, "di_lifecycle.go", lcSrc)
 
 	for _, name := range []string{
@@ -138,7 +138,7 @@ func assertMechanism(t *testing.T, dir string) {
 
 	// §2.4 transient healthcheck: upstream TODO, unconditional nil; and
 	// isHealthchecker() unconditional false.
-	_, fTr, trSrc := parseSrc(t, dir, "service_transient.go")
+	fTr, trSrc := parseSrc(t, dir, "service_transient.go")
 
 	hc := funcSource(t, fTr, trSrc, "healthcheck")
 	if !strings.Contains(hc, "return nil") {
@@ -156,7 +156,7 @@ func assertMechanism(t *testing.T, dir string) {
 
 	// §2.2 eager wrapper: dispatches on HealthcheckerWithContext then
 	// Healthchecker over the stored instance, with a fallthrough nil.
-	_, fEager, eagerSrc := parseSrc(t, dir, "service_eager.go")
+	fEager, eagerSrc := parseSrc(t, dir, "service_eager.go")
 
 	eager := funcSource(t, fEager, eagerSrc, "healthcheck")
 	if !strings.Contains(eager, "HealthcheckerWithContext") ||
@@ -173,7 +173,7 @@ func assertMechanism(t *testing.T, dir string) {
 	}
 
 	// §2.3 lazy wrapper: !s.built → nil before any dispatch.
-	_, fLazy, lazySrc := parseSrc(t, dir, "service_lazy.go")
+	fLazy, lazySrc := parseSrc(t, dir, "service_lazy.go")
 
 	lazy := funcSource(t, fLazy, lazySrc, "healthcheck")
 	if !strings.Contains(lazy, "!s.built") || !strings.Contains(lazy, "return nil") {
@@ -181,7 +181,7 @@ func assertMechanism(t *testing.T, dir string) {
 	}
 
 	// §2.6 registration surface: six Provide* + six Override* + As/AsNamed.
-	_, _, diSrc := parseSrc(t, dir, "di.go")
+	_, diSrc := parseSrc(t, dir, "di.go")
 	fns := collectFuncNames(t, "di.go", diSrc)
 
 	for _, fn := range []string{
@@ -197,7 +197,7 @@ func assertMechanism(t *testing.T, dir string) {
 	}
 
 	// Alias rows delegate their healthcheck to the target wrapper.
-	_, fAlias, aliasSrc := parseSrc(t, dir, "service_alias.go")
+	fAlias, aliasSrc := parseSrc(t, dir, "service_alias.go")
 
 	aliasHc := funcSource(t, fAlias, aliasSrc, "healthcheck")
 	if !strings.Contains(aliasHc, "targetName") && !strings.Contains(aliasHc, "serviceGetRec") {
@@ -214,14 +214,14 @@ func collectIfaces(t *testing.T, name, src string) map[string]bool {
 
 	fset := token.NewFileSet()
 
-	f, err := parser.ParseFile(fset, name, src, parser.SkipObjectResolution)
+	file, err := parser.ParseFile(fset, name, src, parser.SkipObjectResolution)
 	if err != nil {
 		t.Fatalf("parse %s: %v", name, err)
 	}
 
 	ifaces := map[string]bool{}
 
-	for _, decl := range f.Decls {
+	for _, decl := range file.Decls {
 		gd, ok := decl.(*ast.GenDecl)
 		if !ok || gd.Tok != token.TYPE {
 			continue
@@ -245,14 +245,14 @@ func collectFuncNames(t *testing.T, name, src string) map[string]bool {
 
 	fset := token.NewFileSet()
 
-	f, err := parser.ParseFile(fset, name, src, parser.SkipObjectResolution)
+	file, err := parser.ParseFile(fset, name, src, parser.SkipObjectResolution)
 	if err != nil {
 		t.Fatalf("parse %s: %v", name, err)
 	}
 
 	fns := map[string]bool{}
 
-	for _, decl := range f.Decls {
+	for _, decl := range file.Decls {
 		if fDecl, ok := decl.(*ast.FuncDecl); ok {
 			fns[fDecl.Name.Name] = true
 		}

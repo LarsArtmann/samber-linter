@@ -27,9 +27,8 @@
 package plugin
 
 import (
-	"strings"
-
 	"fmt"
+	"strings"
 
 	"github.com/golangci/plugin-module-register/register"
 	"github.com/larsartmann/samber-linter/pkg/healthwash"

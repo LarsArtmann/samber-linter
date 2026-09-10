@@ -20,6 +20,8 @@ var errBoom = errors.New("boom")
 func (flaky) HealthCheck(context.Context) error { return errBoom }
 
 func TestAuditCounts(t *testing.T) {
+	t.Parallel()
+
 	audit := New()
 
 	injector := do.NewWithOpts(&do.InjectorOpts{
