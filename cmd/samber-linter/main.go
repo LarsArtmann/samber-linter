@@ -16,6 +16,9 @@ import (
 // version is the tool version reported in findings and SARIF exports.
 var version = "0.1.0"
 
+// defaultMinConfidence is the exit-1 threshold for the confidence gate.
+const defaultMinConfidence = 0.75
+
 func main() {
 	fs := flag.NewFlagSet("samber-linter", flag.ExitOnError)
 	jsonOut := fs.Bool("json", false, "emit the go-finding JSON report")
@@ -60,7 +63,7 @@ func main() {
 	)
 	minConf := fs.Float64(
 		"min-confidence",
-		0.75,
+		defaultMinConfidence,
 		"exit 1 when any finding is at or above this confidence (0..1)",
 	)
 	showVersion := fs.Bool("version", false, "print the tool version")
@@ -89,9 +92,9 @@ func main() {
 		os.Exit(2)
 	}
 
-	var min finding.Confidence
+	var minRequired finding.Confidence
 	if minConf != nil {
-		min = finding.Confidence(*minConf)
+		minRequired = finding.Confidence(*minConf)
 	}
 
 	os.Exit(driver.Run(driver.Options{
@@ -106,7 +109,7 @@ func main() {
 		BaselinePath:  *baselinePath,
 		ConfigPath:    *configPath,
 		DisableRules:  *disable,
-		MinConfidence: min,
+		MinConfidence: minRequired,
 		Version:       version,
 		Stdout:        os.Stdout,
 		Stderr:        os.Stderr,

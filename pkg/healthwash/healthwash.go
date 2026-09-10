@@ -141,7 +141,7 @@ func run(pass *analysis.Pass) (any, error) {
 
 	pass.ExportPackageFact(&PackageFacts{Records: records})
 
-	return nil, nil
+	return nil, nil //nolint:nilnil // analyzers signal "nothing found" via nil, nil
 }
 
 // parseDisabledRules reads the analyzer's disable flag into a lookup set.
@@ -170,7 +170,7 @@ func inspectRegistration(
 ) (ServiceRecord, []siteReport, bool) {
 	call, isCall := n.(*ast.CallExpr)
 	if !isCall {
-		return ServiceRecord{}, nil, false //nolint:nilnil // "not a registration" is signaled by ok=false
+		return ServiceRecord{}, nil, false
 	}
 
 	sel, isSel := call.Fun.(*ast.SelectorExpr)

@@ -164,9 +164,9 @@ type typeFacts struct {
 func reportTransientRules(add func(rule, msg string), rel, fnName string, facts typeFacts) {
 	if facts.anyCheck {
 		add(RuleHW3, fmt.Sprintf(
-			"%s implements a Healthchecker variant but is registered transiently (%s); " +
-				"the transient healthcheck is an upstream TODO and always returns nil, so the check can never execute. " +
-				"Register as a singleton or drop the dead implementation. " +
+			"%s implements a Healthchecker variant but is registered transiently (%s); "+
+				"the transient healthcheck is an upstream TODO and always returns nil, so the check can never execute. "+
+				"Register as a singleton or drop the dead implementation. "+
 				"Suppress with //samber-linter:allow %s <reason>",
 			rel,
 			fnName,
@@ -185,9 +185,9 @@ func reportTransientRules(add func(rule, msg string), rel, fnName string, facts 
 func reportSweepRules(add func(rule, msg string), rel, fnName string, kind ServiceKind, facts typeFacts) {
 	if facts.valueReg && facts.anyCheckP && !facts.anyCheck {
 		add(RuleHW5, fmt.Sprintf(
-			"%s declares its health check on receiver *T but is registered as value %s; " +
-				"the sweep type-asserts the stored value, so the implementation exists and never runs. " +
-				"Register the pointer or move the receiver to T. " +
+			"%s declares its health check on receiver *T but is registered as value %s; "+
+				"the sweep type-asserts the stored value, so the implementation exists and never runs. "+
+				"Register the pointer or move the receiver to T. "+
 				"Suppress with //samber-linter:allow %s <reason>",
 			rel,
 			rel,
@@ -199,9 +199,9 @@ func reportSweepRules(add func(rule, msg string), rel, fnName string, kind Servi
 
 	if facts.shutdown && !facts.anyCheck {
 		add(RuleHW1, fmt.Sprintf(
-			"%s implements do.Shutdowner but no Healthchecker; " +
-				"it renders an unconditional %q on health dashboards. " +
-				"Implement HealthCheck(context.Context) error or suppress with a reason: " +
+			"%s implements do.Shutdowner but no Healthchecker; "+
+				"it renders an unconditional %q on health dashboards. "+
+				"Implement HealthCheck(context.Context) error or suppress with a reason: "+
 				"//samber-linter:allow %s <reason>",
 			rel,
 			"pass",
@@ -212,9 +212,9 @@ func reportSweepRules(add func(rule, msg string), rel, fnName string, kind Servi
 	if facts.anyCheck {
 		if kind == KindLazy {
 			add(RuleHW4, fmt.Sprintf(
-				"%s implements a Healthchecker variant but is registered lazily (%s); " +
-					"until first resolution it reports green without ever having been constructed. " +
-					"Register eagerly when boot-critical or suppress with a reason: " +
+				"%s implements a Healthchecker variant but is registered lazily (%s); "+
+					"until first resolution it reports green without ever having been constructed. "+
+					"Register eagerly when boot-critical or suppress with a reason: "+
 					"//samber-linter:allow %s <reason>",
 				rel,
 				fnName,
@@ -231,9 +231,9 @@ func reportSweepRules(add func(rule, msg string), rel, fnName string, kind Servi
 // addBareCheckRule is the shared HW-2 message for bare checks.
 func addBareCheckRule(add func(rule, msg string), rel string) {
 	add(RuleHW2, fmt.Sprintf(
-		"%s implements HealthCheck() without a context variant; " +
-			"a hung bare check cannot be cancelled and degrades the whole sweep. " +
-			"Prefer HealthCheck(context.Context) error. " +
+		"%s implements HealthCheck() without a context variant; "+
+			"a hung bare check cannot be cancelled and degrades the whole sweep. "+
+			"Prefer HealthCheck(context.Context) error. "+
 			"Suppress with //samber-linter:allow %s <reason>",
 		rel,
 		RuleCodeHW2,

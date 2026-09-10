@@ -35,6 +35,8 @@ func TestStrictUnresolved(t *testing.T) {
 // lives outside TestGoldenCorpus because a `// want` comment on the
 // directive line would parse as the missing reason and make it valid.
 func TestOrphanedDirectiveHW0(t *testing.T) {
+	t.Parallel()
+
 	diags := runOnFixture(t, New(), "hw0orphan")
 
 	var found bool
