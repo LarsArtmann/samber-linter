@@ -30,6 +30,25 @@ func TestStrictUnresolved(t *testing.T) {
 	analysistest.Run(t, testdataDir(), a, "unresolvedstrict")
 }
 
+// TestOrphanedDirectiveHW0 verifies that a malformed suppression directive
+// with no violation to attach to still surfaces, at the comment itself. It
+// lives outside TestGoldenCorpus because a `// want` comment on the
+// directive line would parse as the missing reason and make it valid.
+func TestOrphanedDirectiveHW0(t *testing.T) {
+	diags := runOnFixture(t, New(), "hw0orphan")
+
+	var found bool
+	for _, d := range diags {
+		if d.Category == RuleHW0 {
+			found = true
+		}
+	}
+
+	if !found {
+		t.Fatalf("orphaned malformed directive produced no HW-0: %v", diags)
+	}
+}
+
 // newDisabled returns an analyzer with the given rule IDs muted — the
 // "mutant analyzer" of the discrimination proofs. The fixtures themselves are
 // never mutated (scratch-copy discipline).

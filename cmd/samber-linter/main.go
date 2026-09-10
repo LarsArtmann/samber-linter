@@ -24,6 +24,8 @@ func main() {
 		"findings presentation format (%s); plain text lines by default",
 		strings.Join(driver.SupportedOutputFormatNames(), ", ")))
 	strict := fs.Bool("strict", false, "report HW-unresolved for statically unresolvable service types")
+	disable := fs.String("disable", "", "comma-separated rule IDs to skip (e.g. HW-1,HW-4); testing/migration aid")
+	check := fs.Bool("check", false, "advisory mode: report everything but always exit 0 (for CI annotation pipelines)")
 	coverageMin := fs.Float64("coverage-min", -1, "fail when health coverage is below this fraction (0..1)")
 	setBaseline := fs.Bool("set-baseline", false, "write the current coverage as the ratchet floor and pass")
 	baselinePath := fs.String("baseline", driver.DefaultBaselinePath, "path of the committed coverage baseline file")
@@ -65,11 +67,13 @@ func main() {
 		Strict:        *strict,
 		JSON:          *jsonOut,
 		SARIF:         *sarifOut,
+		Check:         *check,
 		OutputFormat:  outputFormat,
 		CoverageMin:   *coverageMin,
 		SetBaseline:   *setBaseline,
 		BaselinePath:  *baselinePath,
 		ConfigPath:    *configPath,
+		DisableRules:  *disable,
 		MinConfidence: min,
 		Version:       version,
 		Stdout:        os.Stdout,

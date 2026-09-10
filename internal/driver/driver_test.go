@@ -296,3 +296,125 @@ func lastJSONLine(s string) string {
 
 	return s
 }
+
+// TestCheckAdvisoryMode: --check reports findings but always exits 0, so CI
+// annotation pipelines can parse output without failing the build.
+func TestCheckAdvisoryMode(t *testing.T) {
+	app := e2eModule(t)
+
+	var out, errOut bytes.Buffer
+
+	code := Run(Options{
+		Patterns: []string{"./..."}, Dir: app, Version: "test",
+		Env:    []string{"GOFLAGS=-mod=mod"},
+		Check:  true,
+		Stdout: &out, Stderr: &errOut,
+	})
+	if code != 0 {
+		t.Fatalf("advisory exit = %d, want 0; stderr: %s", code, errOut.String())
+	}
+
+	if !strings.Contains(out.String(), "HW-1") {
+		t.Errorf("advisory run must still report findings; out:\n%s", out.String())
+	}
+
+	if !strings.Contains(out.String(), "--check: advisory run; exit code forced to 0") {
+		t.Errorf("advisory run must say so; out:\n%s", out.String())
+	}
+}
+
+// TestDisableRules: the CLI --disable flag mutes rules the way the analyzer
+// flag does (the golangci plugin path was already covered by wiring).
+func TestDisableRules(t *testing.T) {
+	app := e2eModule(t)
+
+	var out, errOut bytes.Buffer
+
+	code := Run(Options{
+		Patterns: []string{"./..."}, Dir: app, Version: "test",
+		Env:          []string{"GOFLAGS=-mod=mod"},
+		DisableRules: "HW-1",
+		Stdout:       &out, Stderr: &errOut,
+	})
+	if code != 0 {
+		t.Fatalf("disabled HW-1 exit = %d, want 0; out: %s err: %s", code, out.String(), errOut.String())
+	}
+
+	if strings.Contains(out.String(), "HW-1") {
+		t.Errorf("disabled rule still reported; out:\n%s", out.String())
+	}
+}
+
+// TestAllowlistEmptyPathPatternCoversProject: an entry without pathPattern is
+// the project-wide form, not a silent no-op; a rule-less entry warns and
+// stays inert.
+func TestAllowlistEmptyPathPatternCoversProject(t *testing.T) {
+	app := e2eModule(t)
+	cfg := filepath.Join(app, "allow.json")
+
+	must(t, os.WriteFile(cfg, []byte(
+		`{"allow":[{"rule":"HW-1","reason":"accepted: legacy store, ticket HW-1-101"}]}`),
+		0o644))
+
+	var out, errOut bytes.Buffer
+
+	code := Run(Options{
+		Patterns: []string{"./..."}, Dir: app, Version: "test",
+		Env:        []string{"GOFLAGS=-mod=mod"},
+		ConfigPath: cfg,
+		Stdout:     &out, Stderr: &errOut,
+	})
+	if code != 0 {
+		t.Fatalf("allowlisted HW-1 exit = %d, want 0; out: %s err: %s", code, out.String(), errOut.String())
+	}
+
+	if strings.Contains(errOut.String(), "lacks a rule") {
+		t.Errorf("well-formed entry must not warn: %s", errOut.String())
+	}
+
+	// A rule-less entry is inert and warns.
+	must(t, os.WriteFile(cfg, []byte(
+		`{"allow":[{"pathPattern":"**","reason":"blanket entry with no rule"}]}`), 0o644))
+
+	out.Reset()
+	errOut.Reset()
+
+	code = Run(Options{
+		Patterns: []string{"./..."}, Dir: app, Version: "test",
+		Env:        []string{"GOFLAGS=-mod=mod"},
+		ConfigPath: cfg,
+		Stdout:     &out, Stderr: &errOut,
+	})
+	if code != 1 {
+		t.Fatalf("inert entry exit = %d, want 1 (finding survives); err: %s", code, errOut.String())
+	}
+
+	if !strings.Contains(errOut.String(), "lacks a rule") {
+		t.Errorf("rule-less entry must warn; err: %s", errOut.String())
+	}
+}
+
+// TestLoadFailureExitsTwo: exit 1 is reserved for findings; a run that cannot
+// load anything has none and must say 2.
+func TestLoadFailureExitsTwo(t *testing.T) {
+	broken := t.TempDir()
+	must(t, os.WriteFile(filepath.Join(broken, "go.mod"),
+		[]byte("mod ule example.com/broken\n"), 0o644))
+	must(t, os.WriteFile(filepath.Join(broken, "main.go"),
+		[]byte("package main\n\nfunc main() {}\n"), 0o644))
+
+	var out, errOut bytes.Buffer
+
+	code := Run(Options{
+		Patterns: []string{"./..."}, Dir: broken, Version: "test",
+		Env:    []string{"GOFLAGS=-mod=mod"},
+		Stdout: &out, Stderr: &errOut,
+	})
+	if code != 2 {
+		t.Fatalf("load failure exit = %d, want 2; stderr: %s", code, errOut.String())
+	}
+
+	if !strings.Contains(errOut.String(), "load failed") {
+		t.Errorf("load failure must explain itself; stderr: %s", errOut.String())
+	}
+}

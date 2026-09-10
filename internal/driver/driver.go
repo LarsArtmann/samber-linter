@@ -42,6 +42,7 @@ type Options struct {
 	Strict   bool
 	JSON     bool
 	SARIF    bool
+	Check    bool // advisory mode: report everything, always exit 0
 
 	// OutputFormat selects the findings presentation format via --output
 	// (empty = the default plain text lines). Machine formats stay on
@@ -52,6 +53,7 @@ type Options struct {
 	SetBaseline  bool
 	BaselinePath string
 	ConfigPath   string
+	DisableRules string // comma-separated rule IDs passed to the analyzer's disable flag
 
 	MinConfidence finding.Confidence
 	Version       string
@@ -123,12 +125,16 @@ func Run(opts Options) int {
 	if err != nil {
 		fmt.Fprintf(errw, "%s: load failed: %v\n", ToolName, err)
 
-		return 1
+		return 2 // exit 1 is reserved for findings; a tool that cannot load has none
 	}
 
 	analyzer := healthwash.New()
 	if opts.Strict {
 		_ = analyzer.Flags.Set("strict", "true")
+	}
+
+	if opts.DisableRules != "" {
+		_ = analyzer.Flags.Set("disable", opts.DisableRules)
 	}
 
 	var (
@@ -193,6 +199,12 @@ func Run(opts Options) int {
 	code := linter.ExitCodeByConfidence(report, opts.MinConfidence)
 	if gateFailed && code == 0 {
 		code = 1
+	}
+
+	if opts.Check {
+		fmt.Fprintln(out, "--check: advisory run; exit code forced to 0")
+
+		return 0
 	}
 
 	_ = coverage
@@ -307,6 +319,10 @@ func applyAllowlist(findings []finding.Finding, configPath string, errw io.Write
 				e.Rule,
 			)
 		}
+
+		if strings.TrimSpace(e.Rule) == "" {
+			fmt.Fprintf(errw, "%s: config allowlist entry lacks a rule; ignoring entry (name the rule, or \"all\")\n", ToolName)
+		}
 	}
 
 	kept := findings[:0]
@@ -314,12 +330,20 @@ func applyAllowlist(findings []finding.Finding, configPath string, errw io.Write
 		suppressed := false
 
 		for _, e := range cfg.Allow {
-			if e.Reason == "" {
+			if e.Reason == "" || strings.TrimSpace(e.Rule) == "" {
 				continue
 			}
 
 			if !allowMatches(e.Rule, string(f.Rule)) {
 				continue
+			}
+
+			// An empty pathPattern means the entry covers every file: it is
+			// the project-wide form, not a silent no-op.
+			if e.PathPattern == "" {
+				suppressed = true
+
+				break
 			}
 
 			if ok, _ := path.Match(e.PathPattern, string(f.Position.File)); ok {
