@@ -3,11 +3,12 @@
 All notable changes to this project are documented here. Format based on
 Keep a Changelog; versioning: SemVer.
 
-## [Unreleased]
+## [0.1.1] - 2026-09-10
 
 Hardening round after the first ecology scan (43 samber/do v2 consumers, 66
-findings, 0 confirmed false positives). Not yet tagged: `@latest` still
-serves v0.1.0.
+findings, 0 confirmed false positives). First release where the
+golangci-lint CI job, `nix flake check` (build + tests + hermetic lint +
+treefmt) and the upstream snippet gate all pass green.
 
 ### Fixed
 

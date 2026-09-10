@@ -26,8 +26,6 @@ samber-linter --json ./...     # go-finding JSON
 samber-linter --sarif ./...    # SARIF 2.1
 
 # Presentation formats (findings table)
-# NOTE: ships in v0.1.1, not yet tagged — @latest (v0.1.0) rejects --output;
-# until then run from source: go run ./cmd/samber-linter --output markdown ./...
 samber-linter --output markdown ./...   # also: table, csv, tsv, html, xml, asciidoc
 
 # Coverage ratchet (HW-6)
@@ -456,8 +454,8 @@ when it falls outside the verified set.
 
 ## 12. Status, license, upstream
 
-- Latest tagged release: **v0.1.0** (the `[Unreleased]` section in
-  `CHANGELOG.md` tracks what ships next). The mechanism matrix covers
+- Latest tagged release: **v0.1.1** (2026-09-10; `CHANGELOG.md` tracks
+  everything that ships per version). The mechanism matrix covers
   samber/do v2.0.0 + v2.1.0; upstream findings are filed as
   [samber/do#317](https://github.com/samber/do/issues/317) and
   [#318](https://github.com/samber/do/issues/318).

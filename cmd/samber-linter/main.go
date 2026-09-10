@@ -14,7 +14,7 @@ import (
 )
 
 // version is the tool version reported in findings and SARIF exports.
-var version = "0.1.0"
+var version = "0.1.1"
 
 // defaultMinConfidence is the exit-1 threshold for the confidence gate.
 const defaultMinConfidence = 0.75
