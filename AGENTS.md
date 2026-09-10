@@ -1,11 +1,10 @@
 # AGENTS.md — samber-linter
 
-## Repo status: pre-implementation (verified 2026-09-09)
+## Repo status: implemented v0.1.0 (updated 2026-09-10)
 
-This repository contains **only `README.md`** — a complete, verified design spec.
-No `go.mod`, no source code, no `flake.nix`, no CI, no tests exist yet. If you
-see Go source here, it was added after this file was written; re-verify the
-status claims below against the tree.
+HW-1..HW-6, driver, golangci plugin, and runtime companion are implemented
+(`cmd/`, `internal/`, `pkg/`, `plugin/`), with CI in `.github/workflows/ci.yml`
+(test, drift-matrix, lint, dogfood). The phasing section below is historical.
 
 **`README.md` is the contract.** Read it fully before writing any code. Its
 claims carry a verification ledger (§11) with file:line pins into
@@ -74,9 +73,36 @@ doanalyzerv2 backport as DO-9 family, upstream conversation. See README §9.
 
 ## Build/task automation
 
-None exists yet. When scaffolding: this is a LarsArtmann project — build and
-task automation belongs in **`flake.nix`** (`nix build`, `nix flake check`,
-`nix run .#test`, `nix run .#lint`). Never create a Makefile or justfile.
+`flake.nix` uses the `go-standard` module from `github.com/LarsArtmann/go-nix-helpers`
+(3 inputs: nixpkgs, flake-parts, go-nix-helpers). Commands: `nix build`,
+`nix flake check` (build + full test suite + treefmt + hermetic golangci-lint),
+`nix run .#test`, `nix run .#lint`, `nix run .#fmt`. Never create a Makefile
+or justfile.
+
+Non-obvious, easy to break:
+
+- **vendor/ was removed 2026-09-10** — build fetches via proxy.golang.org with
+  a pinned `vendorHash`. All four `larsartmann/*` deps (go-atomic-write,
+  go-finding, go-linter-sdk, go-error-family) are **public** (verified via
+  GitHub 2026-09-10), so no `deps`/`GOPRIVATE`/mkPreparedSource wiring exists
+  or should be added unless a genuinely private dep appears.
+- **`subPackages = [ "./cmd/samber-linter" ]`** — the repo root has no Go
+  files; the module default `"."` fails the build.
+- **`extraBuildAttrs.checkPhase` overrides buildGoModule's default**, which
+  only tests built subPackages (cmd has no test files) — without the override
+  the golden corpus silently stops gating `nix build`.
+- **`apps.test` is overridden with `lib.mkForce`** — the module default runs
+  `go test -race`, which needs a C compiler and no GOEXPERIMENT; ours matches
+  CI (`GOEXPERIMENT=jsonv2 CGO_ENABLED=0 go test -count=1 ./...`).
+- **GOEXPERIMENT=jsonv2 is kept as a documented ecosystem invariant** (go-finding);
+  no compiled file imports `encoding/json/v2` today (verified 2026-09-10). CI
+  runs without it. If a dep update starts importing `encoding/json/v2`, CI's
+  plain `go test` will fail loudly — then add GOEXPERIMENT to CI too.
+- **nixpkgs `go_1_26` is exactly 1.26.7 = go.mod floor** (verified 2026-09-10).
+  Bumping the go.mod floor past nixpkgs' toolchain requires
+  `goTarballVersion`/`goTarballHash` in go-standard.
+- Formatting: treefmt (gofumpt + goimports + nixfmt) for go/nix, dprint for
+  json/yaml/markdown — the two tools own disjoint file sets.
 
 ## Ecosystem references (local, on this machine)
 
