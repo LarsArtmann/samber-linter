@@ -17,7 +17,8 @@ CI time, before they become production theater.
 # Analyze a module (text output + coverage line)
 go run github.com/larsartmann/samber-linter/cmd/samber-linter@latest ./...
 
-# CI gate: fail on high-confidence findings
+# CI gate: exit 1 on findings at/above the default confidence (0.75),
+# exit 2 on load failures or triage-only findings
 go run github.com/larsartmann/samber-linter/cmd/samber-linter@latest ./...
 
 # Machine-readable output
@@ -25,6 +26,8 @@ samber-linter --json ./...     # go-finding JSON
 samber-linter --sarif ./...    # SARIF 2.1
 
 # Presentation formats (findings table)
+# NOTE: ships in v0.1.1, not yet tagged — @latest (v0.1.0) rejects --output;
+# until then run from source: go run ./cmd/samber-linter --output markdown ./...
 samber-linter --output markdown ./...   # also: table, csv, tsv, html, xml, asciidoc
 
 # Coverage ratchet (HW-6)
@@ -449,3 +452,13 @@ should fail the build loudly rather than silently invalidate the rules. The
 matrix covers **v2.0.0 and v2.1.0** (both in the local module cache); the
 driver reads the target module's samber/do version and emits an info finding
 when it falls outside the verified set.
+
+## 12. Status, license, upstream
+
+- Latest tagged release: **v0.1.0** (the `[Unreleased]` section in
+  `CHANGELOG.md` tracks what ships next). The mechanism matrix covers
+  samber/do v2.0.0 + v2.1.0; upstream findings are filed as
+  [samber/do#317](https://github.com/samber/do/issues/317) and
+  [#318](https://github.com/samber/do/issues/318).
+- License: PROPRIETARY — see `LICENSE`. Contributions via fork + PR
+  (`CONTRIBUTING.md`).

@@ -4,9 +4,18 @@
 
 HW-1..HW-6, driver, golangci plugin, and runtime companion are implemented
 (`cmd/`, `internal/`, `pkg/`, `plugin/`), with CI in `.github/workflows/ci.yml`
-(test, drift-matrix, lint, dogfood). `--output` (go-output findings table:
-table/csv/tsv/markdown/html/xml/asciidoc) added 2026-09-10; `--json`/`--sarif`
-stay the only machine formats. The phasing section below is historical.
+(test, drift-matrix, lint, dogfood, upstream-snippets). `--output` (go-output
+findings table: table/csv/tsv/markdown/html/xml/asciidoc) added 2026-09-10;
+`--json`/`--sarif` stay the only machine formats. The phasing section below is
+historical.
+
+**Quality-gate reality (2026-09-10):** every CI run to date is red —
+`test`/`dogfood` failed on missing `GOEXPERIMENT=jsonv2` (fixed in the
+workflow same day, unverified until the next push), and the `lint` job fails
+twice over (golangci-lint-action's `latest` binary is built with go1.24 <
+go.mod 1.26.7, plus ~141 pre-existing findings — see TODO_LIST). Only
+`drift-matrix` has ever been green. Do not claim "CI green" in any doc until
+a run proves it.
 
 **`README.md` is the contract.** Read it fully before writing any code. Its
 claims carry a verification ledger (§11) with file:line pins into
@@ -132,10 +141,12 @@ Non-obvious, easy to break:
 - **`apps.test` is overridden with `lib.mkForce`** — the module default runs
   `go test -race`, which needs a C compiler and no GOEXPERIMENT; ours matches
   CI (`GOEXPERIMENT=jsonv2 CGO_ENABLED=0 go test -count=1 ./...`).
-- **GOEXPERIMENT=jsonv2 is kept as a documented ecosystem invariant** (go-finding);
-  no compiled file imports `encoding/json/v2` today (verified 2026-09-10). CI
-  runs without it. If a dep update starts importing `encoding/json/v2`, CI's
-  plain `go test` will fail loudly — then add GOEXPERIMENT to CI too.
+- **GOEXPERIMENT=jsonv2 is a HARD build requirement** since go-finding v1.9.2
+  started importing `encoding/json/v2` (earlier claim "nothing imports it"
+  is obsolete). Without the experiment the toolchain excludes those files and
+  every package build fails — this is exactly what red-lined all 2026-09-10
+  CI runs; the workflow now sets `env: GOEXPERIMENT: jsonv2`. Any new Go
+  entry point (scripts, snippet builds, future CI jobs) must inherit it.
 - **nixpkgs `go_1_26` is exactly 1.26.7 = go.mod floor** (verified 2026-09-10).
   Bumping the go.mod floor past nixpkgs' toolchain requires
   `goTarballVersion`/`goTarballHash` in go-standard.
@@ -159,7 +170,7 @@ Non-obvious, easy to break:
 
 | Artifact                                                        | Relevance                                                                     |
 | --------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| `~/projects/branching-flow/pkg/doanalyzerv2`                    | DO-1..DO-8 usage-shape rules; HW-* backports there as DO-9 family once stable |
-| `samber-do-auditlog`                                            | Wrapping pattern the phase-3 runtime companion is modeled on                  |
+| `~/projects/branching-flow/pkg/doanalyzerv2`                    | DO-1..DO-8 usage-shape rules + DO-9a–e delegating to this repo's healthwash  |
+| `samber-do-auditlog`                                            | Wrapping pattern the runtime companion is modeled on; biggest ecology offender (7×HW-1 + 5×HW-2 + 1×HW-3)                                     |
 | `~/.config/crush/skills/samber-do-best-practices/SKILL.md` §6.3 | The skill rule this linter mechanizes                                         |
 | `samber/do v2.1.0` module cache                                 | Source of all mechanism pins in README §2                                     |
