@@ -204,7 +204,7 @@ func analyzePackages(
 
 		records = append(records, recs...)
 		for _, d := range diags {
-			findings = append(findings, toFinding(analyzer, d, pkg.Fset, opts.Version))
+			findings = append(findings, toFinding(analyzer, d, pkg.Fset))
 		}
 	}
 
@@ -330,7 +330,6 @@ func toFinding(
 	analyzer *analysis.Analyzer,
 	d analysis.Diagnostic,
 	fset *token.FileSet,
-	_ string,
 ) finding.Finding {
 	rule := d.Category
 	if rule == "" {
