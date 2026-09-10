@@ -122,29 +122,30 @@ recovered from the auto-commit daemon's history with zero loss.
 
 ## b) PARTIALLY DONE
 
-| Item                  | State                                                                                                                                                                                                                                                                 |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-~~| Lint debt             | 141 pre-existing findings remain (paralleltest on analysistest-based tests, varnamelen in legacy code, 2 gochecknoglobals tables, wrapcheck, drift_test gocognit/lll). CI lint job has NEVER been green. Tracked in TODO_LIST, deliberately not mixed into this round |~~ done (2026-09-10: still red; root causes + burn-down tracked as TODO_LIST quality gate) |~~
-| v0.1.1 release        | CHANGELOG entry written; main.go still says 0.1.0; no git tag, no push of a release                                                                                                                                                                                   |
-| CV baseline ownership | CV's 9 findings were FIXED externally since the scan; committed 8% baseline now reads 10% and correctly prompts `--set-baseline`. Lock-in still pending (user decision)                                                                                               |
-~~| HW-0 completeness     | Orphaned _malformed_ directives now surface; _valid_ orphaned directives (stale suppressions) are only documented as a future HW-7 candidate                                                                                                                          |~~ done (HW-7 candidate tracked: TODO_LIST decision + docs/FP-BUDGETS.md)
-| Ecology triage        | Pseudonymous queue committed; CV cleaned itself; rank-1 (standard-bug-tracking-schema, 63 unprotected services) untouched                                                                                                                                             |
-~~| Concurrent session    | Its `--output` feature adopted + fixed + regression-tested; its README/AGENTS/flake edits observed and respected; no coordination channel exists                                                                                                                      |~~ done (exercised again 2026-09-10: a parallel session edited this repo during the docs-health audit; verified before write, no clobbering)
+| Item                  | State                                                                                                                                                                   |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ~~                    | Lint debt                                                                                                                                                               |
+| v0.1.1 release        | CHANGELOG entry written; main.go still says 0.1.0; no git tag, no push of a release                                                                                     |
+| CV baseline ownership | CV's 9 findings were FIXED externally since the scan; committed 8% baseline now reads 10% and correctly prompts `--set-baseline`. Lock-in still pending (user decision) |
+| ~~                    | HW-0 completeness                                                                                                                                                       |
+| Ecology triage        | Pseudonymous queue committed; CV cleaned itself; rank-1 (standard-bug-tracking-schema, 63 unprotected services) untouched                                               |
+| ~~                    | Concurrent session                                                                                                                                                      |
 
 ## c) NOT STARTED
 
 ~~- GitHub CI verification of the actual Actions runs (`gh run list`) — repo may
-  finally be green but nobody has looked~~ done 2026-09-10: red — test/dogfood failed on missing GOEXPERIMENT (fixed `17732a4`), lint red; only drift-matrix green (run 34425222926)
+finally be green but nobody has looked~~ done 2026-09-10: red — test/dogfood failed on missing GOEXPERIMENT (fixed `17732a4`), lint red; only drift-matrix green (run 34425222926)
 ~~- `nix flake check` after final commit~~ done 2026-09-10: build+test checks green; lint check red (44 findings — tracked debt)
+
 - Rank-1 triage execution (standard-bug-tracking-schema: 4×HW-1, 63 unprotected)
 - samber-do-auditlog fixes (7×HW-1, 5×HW-2, 1×HW-3 — biggest offender)
 - FluffBall / KeyCountdown MISSING_DIR investigation
-~~- Upstream samber/do issue filing (docs/upstream/ISSUE_DRAFT.md + repro exist,
+  ~~- Upstream samber/do issue filing (docs/upstream/ISSUE_DRAFT.md + repro exist,
   verify-before-filing not yet executed)~~ done at `ae77908` — filed as samber/do#317 + #318, both verified OPEN
 - HW-7 stale-directive rule design
 - Health-washing fix proposals for any of the 11 remaining finding projects
-~~- AGENTS.md update (see "forgot" list)~~ done 2026-09-10: Driver contract + Upstream engagement sections (parallel session) + GOEXPERIMENT/CI-status rewrite (docs-health audit)
-~~- dprint formatting pass over hand-edited markdown~~ done 2026-09-10: `dprint fmt` clean, check green (integration into nix checks still open, TODO_LIST)
+  ~~- AGENTS.md update (see "forgot" list)~~ done 2026-09-10: Driver contract + Upstream engagement sections (parallel session) + GOEXPERIMENT/CI-status rewrite (docs-health audit)
+  ~~- dprint formatting pass over hand-edited markdown~~ done 2026-09-10: `dprint fmt` clean, check green (integration into nix checks still open, TODO_LIST)
 
 ## d) TOTALLY FUCKED UP
 

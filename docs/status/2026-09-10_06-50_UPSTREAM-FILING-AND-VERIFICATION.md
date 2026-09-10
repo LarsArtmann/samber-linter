@@ -106,11 +106,11 @@ a control experiment that ended up _strengthening_ both issues.
 
 | Item                       | State                                                                                                                                                                              |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-~~| Upstream engagement        | #317 and #318 filed, OPEN, 0 comments, no response yet; follow-up/PR unowned                                                                                                       |~~ done (re-verified 2026-09-10 via gh: both OPEN, 0 responses; watch ownership is a TODO_LIST decision)
+| ~~                         | Upstream engagement                                                                                                                                                                |
 | go-health integration idea | `unknown`/`skipped` statuses fed by healthaudit discussed in #318 context; no implementation in go-health or healthaudit                                                           |
 | oops lessons               | researched (Join→stdlib, Unwrap linear, hint/public/owner audience split, duration as field) but the delivered answer was incomplete; not folded into #318 beyond the Join comment |
-~~| Lint debt                  | 141 findings unchanged this segment (untouched by design); CI lint still red                                                                                                       |~~ done (2026-09-10: red, root causes diagnosed — golangci toolchain mismatch + findings burn-down tracked as TODO_LIST quality gate)
-~~| Still-open user decisions  | HW-4 posture; CV baseline lock-in (CV now reads 10% vs 8% baseline); GitHub `.crush` purge; v0.1.1 tag                                                                             |~~ done (all tracked in TODO_LIST Open decisions — 2026-09-10 docs-health rebuild)
+| ~~                         | Lint debt                                                                                                                                                                          |
+| ~~                         | Still-open user decisions                                                                                                                                                          |
 
 ## c) NOT STARTED
 
@@ -118,7 +118,7 @@ a control experiment that ended up _strengthening_ both issues.
 - healthaudit: formal `Status` enum (registered/invoked/errored/skipped → typed)
 - go-health: `Check.Status` extension (`unknown`/`skipped`) + classifier wiring
 - PR preparation for whichever #317 direction the maintainer picks
-~~- `.config/metadata.yaml` investigation (foreign modification)~~ done — tool-owned timestamp/tag churn, daemon-committed (`0b3e519`)
+  ~~- `.config/metadata.yaml` investigation (foreign modification)~~ done — tool-owned timestamp/tag churn, daemon-committed (`0b3e519`)
 - Everything carried from the previous report's "not started": rank-1 ecology triage,
   samber-do-auditlog fixes, FluffBall/KeyCountdown MISSING_DIR, CI run verification,
   `nix flake check`, v0.1.1 tag/release, AGENTS.md update, dprint pass

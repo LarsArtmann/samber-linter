@@ -4,6 +4,10 @@ First ecology scan of all local samber/do v2 consumers (43 analyzed, 2 missing).
 Real project names live ONLY in a local keyfile outside any repository
 (`~/backups/ecology/keyfile.json`); this document is safe to commit.
 
+[2026-09-10 docs-health] The queue below is the LIVE triage backlog — unmarked rows are open
+by design. Execution is tracked in `TODO_LIST.md` (samber-do-auditlog + rank-1
+standard-bug-tracking-schema); CV self-fixed post-scan (baseline reads 10% vs the 8% committed).
+
 Scoring: `unprotected = registered − checked` (services whose sweep row is an
 unconditional green "pass"). Triage states per finding: **fix** · **suppress
 with reason** · **accept into baseline**. Re-scan after each batch; the
