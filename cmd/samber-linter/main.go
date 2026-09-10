@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/larsartmann/go-finding"
 	"github.com/larsartmann/samber-linter/internal/driver"
@@ -19,6 +20,9 @@ func main() {
 	fs := flag.NewFlagSet("samber-linter", flag.ExitOnError)
 	jsonOut := fs.Bool("json", false, "emit the go-finding JSON report")
 	sarifOut := fs.Bool("sarif", false, "emit a SARIF 2.1 report for code scanning")
+	outputFlag := fs.String("output", "", fmt.Sprintf(
+		"findings presentation format (%s); plain text lines by default",
+		strings.Join(driver.SupportedOutputFormatNames(), ", ")))
 	strict := fs.Bool("strict", false, "report HW-unresolved for statically unresolvable service types")
 	coverageMin := fs.Float64("coverage-min", -1, "fail when health coverage is below this fraction (0..1)")
 	setBaseline := fs.Bool("set-baseline", false, "write the current coverage as the ratchet floor and pass")
@@ -43,6 +47,14 @@ func main() {
 		patterns = []string{"./..."}
 	}
 
+	outputFormat, err := driver.ParseOutputFormat(*outputFlag)
+	if err != nil {
+		fmt.Fprintln(fs.Output(), err)
+		fs.Usage()
+
+		os.Exit(2)
+	}
+
 	var min finding.Confidence
 	if minConf != nil {
 		min = finding.Confidence(*minConf)
@@ -53,6 +65,7 @@ func main() {
 		Strict:        *strict,
 		JSON:          *jsonOut,
 		SARIF:         *sarifOut,
+		OutputFormat:  outputFormat,
 		CoverageMin:   *coverageMin,
 		SetBaseline:   *setBaseline,
 		BaselinePath:  *baselinePath,

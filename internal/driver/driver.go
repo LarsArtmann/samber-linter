@@ -20,6 +20,7 @@ import (
 	atomicwrite "github.com/larsartmann/go-atomic-write"
 	"github.com/larsartmann/go-finding"
 	linter "github.com/larsartmann/go-linter-sdk"
+	output "github.com/larsartmann/go-output"
 	"github.com/larsartmann/samber-linter/pkg/healthwash"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/packages"
@@ -41,6 +42,11 @@ type Options struct {
 	Strict   bool
 	JSON     bool
 	SARIF    bool
+
+	// OutputFormat selects the findings presentation format via --output
+	// (empty = the default plain text lines). Machine formats stay on
+	// --json/--sarif.
+	OutputFormat output.Format
 
 	CoverageMin  float64 // negative disables the gate
 	SetBaseline  bool
@@ -151,7 +157,15 @@ func Run(opts Options) int {
 	report := finding.NewReportFromFindings(
 		finding.ToolInfo{Name: ToolName, Version: opts.Version}, findings)
 
-	printText(out, findings)
+	if opts.OutputFormat != "" {
+		if err := renderFindings(out, findings, opts.OutputFormat); err != nil {
+			fmt.Fprintf(errw, "%s: %v\n", ToolName, err)
+
+			return 1
+		}
+	} else {
+		printText(out, findings)
+	}
 
 	if opts.JSON {
 		s, _ := report.JSON()
