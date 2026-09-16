@@ -69,7 +69,8 @@ for dir in "${candidates[@]}"; do
 	out=""
 	rc=0
 	if [ -f "$dir/go.work" ]; then
-		mods="$(cd "$dir" && go work edit -json 2>>"$work/err-$pseudo.txt" | jq -r '.Use[].DiskDir' || true)"
+		mods="$(cd "$dir" && go work edit -json 2>>"$work/err-$pseudo.txt" \
+			| jq -r --arg dir "$dir" '.Use[].DiskPath | if startswith("/") then . else $dir + "/" + . end' || true)"
 		if [ -z "$mods" ]; then
 			rc=2
 		else
