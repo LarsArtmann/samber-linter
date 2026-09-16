@@ -6,6 +6,7 @@
 package driver
 
 import (
+	"context"
 	"encoding/json/jsontext"
 	"encoding/json/v2"
 	"errors"
@@ -158,7 +159,7 @@ func Run(opts Options) int {
 		opts.BaselinePath = DefaultBaselinePath
 	}
 
-	pkgs, err := load(opts)
+	pkgs, err := load(context.Background(), opts)
 	if err != nil {
 		fmt.Fprintf(errw, "%s: load failed: %v\n", ToolName, err)
 
@@ -296,15 +297,21 @@ func applyGates(
 	return code
 }
 
-func load(opts Options) ([]*packages.Package, error) {
+// load loads the target packages for one run. ctx may be nil (x/tools
+// defaults it): the CLI passes no deadline, in-process callers pass theirs so
+// a hung `go list` cannot outlive it. The inherited GOFLAGS is sanitized
+// (see loadEnv); explicit opts.Env entries are appended last and therefore
+// win, so callers can always override.
+func load(ctx context.Context, opts Options) ([]*packages.Package, error) {
 	cfg := &packages.Config{
 		Mode: packages.NeedName | packages.NeedFiles | packages.NeedCompiledGoFiles |
 			packages.NeedSyntax | packages.NeedTypes | packages.NeedTypesInfo |
 			packages.NeedTypesSizes | packages.NeedDeps | packages.NeedImports |
 			packages.NeedModule,
-		Dir:   opts.Dir,
-		Env:   append(os.Environ(), opts.Env...),
-		Tests: false, // composition roots are what dashboards see; DO-3 keeps Override* in tests
+		Dir:     opts.Dir,
+		Env:     append(loadEnv(), opts.Env...),
+		Tests:   false, // composition roots are what dashboards see; DO-3 keeps Override* in tests
+		Context: ctx,
 	}
 
 	pkgs, err := packages.Load(cfg, opts.Patterns...)
@@ -313,6 +320,47 @@ func load(opts Options) ([]*packages.Package, error) {
 	}
 
 	return pkgs, nil
+}
+
+// loadEnv builds the child-process env for package loading: the inherited
+// environment with GOFLAGS stripped of -mod tokens. Neither inherited extreme
+// is safe: -mod=vendor fails when the analyzed repo has no vendor directory,
+// and -mod=mod is illegal in workspace mode. The go command deduplicates env
+// with the LAST occurrence winning, so the sanitized entry is always present
+// (empty when nothing was stripped) and later explicit entries shadow it.
+func loadEnv() []string {
+	inherited := os.Environ()
+	env := make([]string, 0, len(inherited)+1)
+	goFlags := ""
+
+	for _, kv := range inherited {
+		if key, value, ok := strings.Cut(kv, "="); ok && key == "GOFLAGS" {
+			goFlags = value
+			continue
+		}
+
+		env = append(env, kv)
+	}
+
+	return append(env, "GOFLAGS="+stripModTokens(goFlags))
+}
+
+// stripModTokens removes "-mod=..." (and a bare "-mod") from a
+// space-separated GOFLAGS value.
+func stripModTokens(flags string) string {
+	tokens := strings.Fields(flags)
+
+	kept := tokens[:0:0]
+
+	for _, tok := range tokens {
+		if tok == "-mod" || strings.HasPrefix(tok, "-mod=") {
+			continue
+		}
+
+		kept = append(kept, tok)
+	}
+
+	return strings.Join(kept, " ")
 }
 
 // runAnalyzer builds an analysis.Pass by hand (the x/tools checker internals
