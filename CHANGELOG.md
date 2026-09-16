@@ -23,6 +23,20 @@ Keep a Changelog; versioning: SemVer.
 - **A failed quality gate no longer escalates only from exit 0.** Baseline
   regressions and coverage-gate failures now force exit 1 even when findings
   alone would map to 2 (triage-only): a regressed ratchet is never advisory.
+- **The CLI ignored inherited `GOFLAGS` poisoning.** A global
+  `GOFLAGS=-mod=vendor` (or `-mod=mod`) broke package loading for every CLI
+  invocation — only the new programmatic SDK path sanitized it. Both paths
+  now share one loader (`load`): the inherited GOFLAGS is stripped of `-mod`
+  tokens (explicit caller env still wins, last occurrence), and the SDK's
+  duplicate `packages.Config` — previously kept in sync only by a comment —
+  is gone.
+- **The ecology survey over-scanned go.work projects.** The workspace
+  pattern `all` expands to the full dependency closure, so dependency
+  packages with their own samber/do registrations were counted against the
+  consumer (a phantom HW-2 surfaced from a dependency's own self-
+  registration, unfixable and unownable by the analyzed repo). The survey
+  now scans each workspace module listed in `go.work` with `./...` and sums
+  coverage across modules; ownership lands where the code lives.
 
 ### Added
 
@@ -40,6 +54,10 @@ Keep a Changelog; versioning: SemVer.
   post-change regression proof.
 - CI `dogfood` job also runs `--output markdown`, so the presentation path
   can no longer rot silently (plain-text dogfood remains).
+- The upstream snippet gate now also covers `docs/status/**`: the same
+  contract applies to point-in-time reports (a ```go block is either a
+  runnable repro or marked `snippet-skip`; unclassified blocks fail), so a
+  pasted-in fragment can never silently rot.
 - `nix flake check` now gates hand-edited markdown/json/yaml via a hermetic
   dprint check (`checks.format-dprint`): the repo's URL-pinned dprint
   plugins are prefetched by hash and injected as store paths, with a drift

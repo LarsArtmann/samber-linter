@@ -84,8 +84,14 @@ These come straight from the spec; violating any of them invalidates the analyze
   silent no-op); entries with no rules warn once and stay inert.
 - Suppression directives are honored anywhere inside a multi-line
   registration call; orphaned malformed directives surface as `HW-0`.
-- go.work consumers are analyzed with the pattern `all`, not `./...` —
-  `./...` silently skips workspace roots' sibling modules.
+- go.work consumers must be scanned per workspace module (parse `go.work`,
+  `./...` per module). Two traps: `./...` from the root silently skips
+  workspace roots' sibling modules, while the workspace pattern `all`
+  over-scans — it expands to the full dependency closure, attributing
+  dependency packages' own registrations (e.g. a library's self-registration
+  in the module cache) to the consumer, where they can be neither fixed nor
+  suppressed. `go work edit -json` exposes members as `.Use[].DiskPath`
+  (relative — resolve against the project dir; it is NOT `DiskDir`).
 - golangci-lint integration requires the custom build
   (`.custom-gcl.yml` + `plugin/plugin_integration_test.go` locks registration
   and settings pass-through); a stock golangci-lint cannot load the plugin.
@@ -100,10 +106,12 @@ These come straight from the spec; violating any of them invalidates the analyze
 - Upstream text rules: first person, concise, concrete numbers, real links,
   no offer-speak ("do not suggest. Just explain the problem!"), AI
   disclaimer in a small `<sub>` footer (`GLM-5.3-Flash via Crush`).
-- Snippet gate: every Go block in `docs/upstream/*.md` is compiled and run
-  verbatim by `scripts/check-upstream-snippets.sh` (CI job
-  `upstream-snippets`). Blocks quoting upstream source must be marked
-  `` ```go snippet-skip ``; unclassified blocks fail the check.
+- Snippet gate: every Go block in `docs/upstream/*.md` AND
+  `docs/status/**/*.md` is compiled and run verbatim by
+  `scripts/check-upstream-snippets.sh` (CI job `upstream-snippets`). Blocks
+  quoting upstream source must be marked `` ```go snippet-skip ``;
+  unclassified blocks fail the check. Status reports are snapshots, but the
+  same contract applies to their Go blocks.
 - Verification lessons (encoded after two incidents): execute snippets
   verbatim before filing; print whole structures, never map-index lookups
   (a missing key and a nil value print identically — `res["x"] == nil`
@@ -192,10 +200,16 @@ Non-obvious, easy to break:
 - `scripts/ecology-scan.sh [root]` surveys all local samber/do v2 consumers:
   pseudonymous output (`p-` + 4 hex of sha256(abs path), matched against
   `~/backups/ecology/keyfile.json` — never commit real names), ranked by
-  unprotected services, load errors surfaced. Projects whose packages fail
-  to load exit 0 under `--check` with stderr notes; the script greps
+  unprotected services, load errors surfaced. go.work projects are scanned
+  per workspace module (see driver-contract note). Projects whose packages
+  fail to load exit 0 under `--check` with stderr notes; the script greps
   "package error(s) during load" and marks them LOAD_ERROR — never mistake
-  those for clean. Used as the post-change regression proof.
+  those for clean. Always run it with the output redirected to a persistent
+  file (a `| tail` pipe has already eaten half a ranked table). Fixture
+  traps for its smoke test: a `go.work` anywhere above a standalone module
+  poisons it ("directory prefix . does not contain modules listed in
+  go.work"), and `replace` paths are relative — moving fixture dirs breaks
+  them. Used as the post-change regression proof.
 
 ## Ecosystem references (local, on this machine)
 

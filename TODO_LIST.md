@@ -18,19 +18,31 @@ execution plan is historical:
 
 ## Short-term work queue (bounded, actionable)
 
-- [ ] Re-baseline CV: its committed baseline is schema v1; baseline v2 now
-      fails the gate loudly with the migration hint. Run
-      `samber-linter --set-baseline ./...` in CV and commit the v2 file.
-- [ ] Baselines/gates for samber-do-auditlog (coverage 60%) and
-      standard-bug-tracking-schema (3%): commit v2 baselines and wire
-      samber-linter into their CI so the fixed state cannot regress silently.
+- [ ] **After the next push + release:** tag the schema-v2 release
+      (baseline v2, per-module go.work scanning, shared loader, snippet-gate
+      extension are all unreleased as of v0.2.1), then wire the health-wash
+      CI job into `samber-do-auditlog` and `standard-bug-tracking-schema`
+      pinning that version. Both repos already carry committed v2 baselines
+      (auditlog 12/20 = 60%, standard-bug 2/61 = 3%) and an AGENTS.md note
+      describing the exact pending step; a v0.2.1 pin would fail closed on
+      schema v2.
+- [ ] **cmdguard (its repo, not here):** `*CLI[T]` implements a bare
+      `HealthCheck()` while registered via `Package` (`do.ProvideValue`) —
+      the ecology survey's only true HW-2 (ctx variant
+      `HealthCheckWithContext` already exists next to it). Decide there:
+      satisfy `do.Healthchecker` (naming collision with the existing bare
+      method — needs an API decision) or suppress with a documented reason.
+      CV is unaffected: its nine workspace modules scan clean, and its
+      schema-v2 baseline (10/30 = 33%) is committed.
 - [ ] Refresh the pseudonymous triage doc with the post-fix ecology numbers
-      (`scripts/ecology-scan.sh` output supersedes the 2026-09-10 table).
-- [ ] Snippet gate over `docs/status/**` Go blocks too (currently only
-      `docs/upstream`).
+      (`docs/ecology/2026-09-16-scan*.txt` + `scripts/ecology-scan.sh`
+      output supersede the 2026-09-10 table).
 
 ## Open decisions (user)
 
+- [ ] **Push authorization:** master carries the v2.13.2 lint pin, baseline
+      v2, and this round's fixes; none of it is observable in CI until
+      pushed (never push without an explicit go-ahead).
 - [ ] **HW-4 default posture:** on-by-default `info`/Medium vs opt-in.
       24 of 66 ecology findings were HW-4; it is the main noise dial
       (docs/FP-BUDGETS.md soft ceiling ≈ 20%).
