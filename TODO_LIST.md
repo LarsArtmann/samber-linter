@@ -8,13 +8,14 @@ execution plan is historical:
 
 ## Quality gate
 
-- [ ] **First all-green CI run still unobserved.** The `GOEXPERIMENT=jsonv2`
-      fix made `test`/`dogfood`/`drift-matrix`/`upstream-snippets` green
-      (run 35089293309, 2026-09-16), but `lint` stayed red because
-      `golangci-lint-action` `version: latest` resolves to a **v1** binary
-      (v1.64.8) that cannot load the v2 config. The v2.13.2 pin (matching
-      `.custom-gcl.yml` and nixpkgs) lands with the next push — watch the run
-      before claiming the gate green anywhere.
+- [x] **First all-green CI run: ACHIEVED 2026-09-16.** Run
+      [35126418813](https://github.com/LarsArtmann/samber-linter/actions/runs/35126418813)
+      — all five jobs green (`test`, `dogfood`, `drift-matrix`,
+      `upstream-snippets`, and `lint` on golangci-lint v2.13.2 via
+      golangci-lint-action v7). Getting there took two more real fixes the
+      red runs had masked: action v6 rejects v2 version pins entirely, and
+      the first actually-executing lint run flagged three findings. Keep
+      claiming "CI green" only while the latest run says so.
 
 ## Short-term work queue (bounded, actionable)
 

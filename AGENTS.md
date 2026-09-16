@@ -16,15 +16,18 @@ run 35089293309) — it is NOT a go-toolchain-only problem. The pin is now
 **golangci-lint v2.13.2 everywhere** (CI action, `.custom-gcl.yml`, nixpkgs;
 its binary is built with go1.27 ≥ the go.mod 1.26.7 floor). The ~141 findings
 were burned down (commit 3572927; `nix run .#lint` green at v2.13.2). The
-GOEXPERIMENT=jsonv2 fix is observed green on GitHub for
-test/dogfood/drift-matrix/upstream-snippets (run 35089293309); the lint job
-v2.13.2 pin still awaits its first observed green run — do not claim "CI
-green" in any doc until a run proves it.
+first fully green CI run landed 2026-09-16 (run 35126418813: all five jobs
+incl. `lint` on v2.13.2). Two more failure layers were peeled on the way:
+`golangci-lint-action` **v6 rejects v2 version pins outright** (the action
+must be v7, SHA-pinned), and the first actually-executing lint run flagged
+3 findings (`varnamelen`, `paralleltest`×2 with reason-carrying nolint,
+`nlreturn`) — a red lint job that never runs proves nothing.
 
 **golangci-lint version policy:** one version everywhere, currently v2.13.2.
 When bumping: CI action `version:`, `.custom-gcl.yml`, and nixpkgs' package
 must move together, and `nix run .#lint` must be re-run locally first — a
 golangci binary built with go < go.mod floor refuses the whole config.
+Also verify the GitHub action major still accepts the pin (v6 did not).
 
 **`README.md` is the contract.** Read it fully before writing any code. Its
 claims carry a verification ledger (§11) with file:line pins into
