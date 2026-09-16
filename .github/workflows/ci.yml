@@ -66,6 +66,7 @@ jobs:
       - name: samber-linter checks itself (fixture module)
         run: |
           go run ./cmd/samber-linter --coverage-min 0.0 ./... >/dev/null
+          go run ./cmd/samber-linter --output markdown --coverage-min 0.0 ./... >/dev/null
           echo "dogfood ok"
 
   upstream-snippets:

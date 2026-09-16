@@ -261,6 +261,13 @@ Modeled after CV's `any-count` ratchet: the count lives in a committed
 baseline file; coverage below baseline fails CI; improving coverage requires
 `--set-baseline` to lock the gain immediately. Directional, never gratuitous.
 
+The baseline file (schema v2) also records per-rule finding counts: any rule
+exceeding its committed count fails the gate even when aggregate coverage
+stays flat (aggregate-only floors can hide a single-rule regression). A
+baseline this tool cannot enforce honestly — older or newer schema version,
+counters inconsistent with the stored coverage, negative counts — fails the
+run loudly with the exact repair, never silently degrades to "no baseline".
+
 ## 4. Detection algorithm
 
 Built on `golang.org/x/tools/go/analysis` (type-checking based; AST alone

@@ -8,6 +8,7 @@ package driver
 import (
 	"encoding/json/jsontext"
 	"encoding/json/v2"
+	"errors"
 	"fmt"
 	"go/token"
 	"go/types"
@@ -131,10 +132,10 @@ type allowEntry struct {
 const baselineSchemaVersion = 2
 
 type baseline struct {
-	Version    int          `json:"version"`
-	Checked    int          `json:"checked"`
-	Registered int          `json:"registered"`
-	Coverage   float64      `json:"coverage"`
+	Version    int            `json:"version"`
+	Checked    int            `json:"checked"`
+	Registered int            `json:"registered"`
+	Coverage   float64        `json:"coverage"`
 	Findings   map[string]int `json:"findings,omitempty"` // rule ID → count; absent rule means floor 0
 }
 
@@ -283,7 +284,10 @@ func applyGates(
 	warnDover(out, pkgs)
 
 	code := linter.ExitCodeByConfidence(report, opts.MinConfidence)
-	if gateFailed && code == 0 {
+	// A failed gate is a must-fix outcome regardless of the finding tiers:
+	// exit 2 means "advisory, please triage", and a regressed ratchet or an
+	// unreadable baseline is never advisory.
+	if gateFailed {
 		code = 1
 	}
 
@@ -628,6 +632,7 @@ func enforceBaselineRatchet(
 	var b baseline
 	if err := json.Unmarshal(data, &b); err != nil {
 		fmt.Fprintf(errw, "%s: baseline %s is not valid JSON: %v\n", ToolName, baselinePath, err)
+
 		*gateFailed = true
 
 		return
@@ -649,6 +654,7 @@ func enforceBaselineRatchet(
 
 	if err := validateBaseline(b); err != nil {
 		fmt.Fprintf(errw, "%s: baseline %s: %v\n", ToolName, baselinePath, err)
+
 		*gateFailed = true
 
 		return
@@ -713,7 +719,7 @@ func validateBaseline(b baseline) error {
 
 	for rule, count := range b.Findings {
 		if rule == "" {
-			return fmt.Errorf("findings map has an empty rule name")
+			return errors.New("findings map has an empty rule name")
 		}
 
 		if count < 0 {

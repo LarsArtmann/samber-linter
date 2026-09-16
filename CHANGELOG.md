@@ -3,6 +3,49 @@
 All notable changes to this project are documented here. Format based on
 Keep a Changelog; versioning: SemVer.
 
+## [Unreleased]
+
+### Fixed
+
+- **The CI `lint` job never had a working golangci-lint.**
+  `golangci-lint-action` `version: latest` resolves to a **v1** binary
+  (v1.64.8) that cannot load the v2 config (exit 3, run 35089293309) — the
+  job was red since day one, behind two layers (this on top of the ~141
+  findings burned down in 3572927). The version is now pinned to **v2.13.2**
+  everywhere: CI action, `.custom-gcl.yml`, and nixpkgs (whose 2.13.2 binary
+  is built with go1.27 ≥ the 1.26.7 go.mod floor; the hermetic
+  `nix run .#lint` gate already ran that version).
+- **`--check` corrupted machine output.** The advisory line ("--check:
+  advisory run; exit code forced to 0") was appended after `--json`/`--sarif`
+  and the structured `--output` formats (csv/tsv/html/xml/asciidoc),
+  breaking parsers. It is now printed only on human-facing presentations
+  (plain text, table, markdown).
+- **A failed quality gate no longer escalates only from exit 0.** Baseline
+  regressions and coverage-gate failures now force exit 1 even when findings
+  alone would map to 2 (triage-only): a regressed ratchet is never advisory.
+
+### Added
+
+- **Baseline v2 (HW-6):** the committed ratchet floor now also records
+  per-rule finding counts; any rule exceeding its committed count fails the
+  gate even when aggregate coverage stays flat (the regression mode v1 could
+  not see). Baseline files are validated loudly — older schema (v1 names the
+  `--set-baseline` migration), newer schema, counters inconsistent with the
+  stored coverage, negative counts, or unparseable JSON all fail the run
+  instead of silently degrading to "no baseline".
+- `scripts/ecology-scan.sh`: repeatable 43-project ecology survey with
+  pseudonymous output (stable `p-` pseudonyms matched against the
+  out-of-repo keyfile), ranked by unprotected services, load errors surfaced
+  with stderr excerpts. Replaces the hand-run one-off scans; used as the
+  post-change regression proof.
+- CI `dogfood` job also runs `--output markdown`, so the presentation path
+  can no longer rot silently (plain-text dogfood remains).
+- `nix flake check` now gates hand-edited markdown/json/yaml via a hermetic
+  dprint check (`checks.format-dprint`): the repo's URL-pinned dprint
+  plugins are prefetched by hash and injected as store paths, with a drift
+  guard that fails when dprint.json references a version the flake does not
+  pin.
+
 ## [0.1.1] - 2026-09-10
 
 Hardening round after the first ecology scan (43 samber/do v2 consumers, 66

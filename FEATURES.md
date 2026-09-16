@@ -23,14 +23,17 @@ Honest inventory by status. Last updated: 2026-09-10.
   are themselves reported (HW-0) even when orphaned — no live violation
   required.
 - **HW-6 coverage ratchet**: alias-deduped checked/registered ratio, committed
-  baseline file, `--coverage-min`, `--set-baseline` (atomic, idempotent via
-  go-atomic-write).
+  baseline file (schema v2: per-rule finding counts + validation that fails
+  loudly on unreadable or inconsistent baselines), `--coverage-min`,
+  `--set-baseline` (atomic, idempotent via go-atomic-write).
 - **Driver CLI**: text output, `--output` presentation tables (go-output),
   `--json` (go-finding), `--sarif` (SARIF 2.1), 0/1/2 confidence exit codes
-  (go-linter-sdk `ExitCodeByConfidence`; load failures exit 2, not 1),
+  (go-linter-sdk `ExitCodeByConfidence`; load failures exit 2, not 1; a
+  failed gate forces 1 even from triage-only 2),
   `--strict` (HW-unresolved), `--config` allowlist (reason AND rule
   mandatory; empty pathPattern = project-wide), `--disable` rule mute,
-  `--check` advisory mode (always exit 0).
+  `--check` advisory mode (always exit 0; the advisory note stays off
+  machine formats).
 - **Drift matrix**: mechanism assertions executed against REAL samber/do
   v2.0.0 and v2.1.0 sources from the module cache.
 - **Discrimination proofs**: every P0 rule demonstrated to fail on a mutant

@@ -9,13 +9,22 @@ findings table: table/csv/tsv/markdown/html/xml/asciidoc) added 2026-09-10;
 `--json`/`--sarif` stay the only machine formats. The phasing section below is
 historical.
 
-**Quality-gate reality (2026-09-10):** every CI run to date is red —
-`test`/`dogfood` failed on missing `GOEXPERIMENT=jsonv2` (fixed in the
-workflow same day, unverified until the next push), and the `lint` job fails
-twice over (golangci-lint-action's `latest` binary is built with go1.24 <
-go.mod 1.26.7, plus ~141 pre-existing findings — see TODO_LIST). Only
-`drift-matrix` has ever been green. Do not claim "CI green" in any doc until
-a run proves it.
+**Quality-gate reality (updated 2026-09-16):** the `lint` job was red since
+day one for a non-obvious reason: `golangci-lint-action` `version: latest`
+resolves to a **v1** binary (v1.64.8) that cannot load the v2 config (exit 3,
+run 35089293309) — it is NOT a go-toolchain-only problem. The pin is now
+**golangci-lint v2.13.2 everywhere** (CI action, `.custom-gcl.yml`, nixpkgs;
+its binary is built with go1.27 ≥ the go.mod 1.26.7 floor). The ~141 findings
+were burned down (commit 3572927; `nix run .#lint` green at v2.13.2). The
+GOEXPERIMENT=jsonv2 fix is observed green on GitHub for
+test/dogfood/drift-matrix/upstream-snippets (run 35089293309); the lint job
+v2.13.2 pin still awaits its first observed green run — do not claim "CI
+green" in any doc until a run proves it.
+
+**golangci-lint version policy:** one version everywhere, currently v2.13.2.
+When bumping: CI action `version:`, `.custom-gcl.yml`, and nixpkgs' package
+must move together, and `nix run .#lint` must be re-run locally first — a
+golangci binary built with go < go.mod floor refuses the whole config.
 
 **`README.md` is the contract.** Read it fully before writing any code. Its
 claims carry a verification ledger (§11) with file:line pins into
@@ -52,12 +61,22 @@ These come straight from the spec; violating any of them invalidates the analyze
   itself a finding (`hw-suppression-reason-missing`).
 - **HW-6 is a ratchet, not a lint**: coverage ratio against a committed baseline
   file; `--set-baseline` locks gains. Modeled on CV's `any-count` ratchet.
+  Baseline schema v2 also records per-rule finding counts (a rule above its
+  committed count fails the gate even at flat coverage) and is validated
+  loudly — wrong schema version, counters inconsistent with coverage,
+  negative counts, or unparseable JSON fail the run instead of degrading to
+  "no baseline". CV's committed v1 baseline needs a one-time
+  `--set-baseline` migration.
 - **samber/do v1 is out of scope** (README §10 non-goals).
 
 ## Driver contract (v0.1.1)
 
 - Exit codes: `0` clean, `1` findings/gate failure, `2` load failure or
-  triage-only (`--check` advisory forces `0` in every case).
+  triage-only (`--check` advisory forces `0` in every case). A failed gate
+  (coverage/baseline/validation) forces `1` even from a triage-only `2`.
+- The `--check` advisory line is printed only on human-facing output (plain
+  text, table, markdown); `--json`/`--sarif` and the structured `--output`
+  formats (csv/tsv/html/xml/asciidoc — see `IsMachineFormat`) stay pure.
 - Empty `--output` value means plain-text default — `ParseOutputFormat` must
   accept the zero value (regression: a parallel session's `--output` flag
   broke every plain invocation; guarded by `output_test.go`).
@@ -164,7 +183,19 @@ Non-obvious, easy to break:
   tests (json/yaml/toml/jsonl and diagram formats are deliberately banned
   there — one shape per consumer, machine formats stay with --json/--sarif).
 - Formatting: treefmt (gofumpt + goimports + nixfmt) for go/nix, dprint for
-  json/yaml/markdown — the two tools own disjoint file sets.
+  json/yaml/markdown — the two tools own disjoint file sets. dprint is gated
+  by `checks.format-dprint` under `nix flake check`: the URL-pinned dprint
+  plugins are prefetched by hash in flake.nix and injected as store paths
+  (hermetic), with a drift guard that fails when dprint.json references a
+  plugin version the flake does not pin — bump both together. Untracked
+  files are invisible to that check (flake source = git-tracked files only).
+- `scripts/ecology-scan.sh [root]` surveys all local samber/do v2 consumers:
+  pseudonymous output (`p-` + 4 hex of sha256(abs path), matched against
+  `~/backups/ecology/keyfile.json` — never commit real names), ranked by
+  unprotected services, load errors surfaced. Projects whose packages fail
+  to load exit 0 under `--check` with stderr notes; the script greps
+  "package error(s) during load" and marks them LOAD_ERROR — never mistake
+  those for clean. Used as the post-change regression proof.
 
 ## Ecosystem references (local, on this machine)
 

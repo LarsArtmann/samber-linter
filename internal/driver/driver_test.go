@@ -179,6 +179,226 @@ func TestSetBaselineAndRatchet(t *testing.T) {
 	}
 }
 
+// hw4Module writes a module whose only findings are two HW-4 sites: Medium
+// confidence, below the default --min-confidence, so findings alone exit 0
+// and the baseline ratchet is the only gate that can fail the run.
+func hw4Module(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+
+	stub := filepath.Join(dir, "dostub")
+	must(t, os.MkdirAll(stub, 0o755))
+	must(t, os.WriteFile(filepath.Join(stub, "go.mod"),
+		[]byte("module github.com/samber/do/v2\n\ngo 1.26\n"), 0o644))
+	src, err := os.ReadFile(filepath.Join("..", "..", "testdata", "src", "github.com", "samber", "do", "v2", "do.go"))
+	must(t, err)
+	must(t, os.WriteFile(filepath.Join(stub, "do.go"), src, 0o644))
+
+	app := filepath.Join(dir, "app")
+	must(t, os.MkdirAll(app, 0o755))
+
+	goMod := "module example.com/app\n\ngo 1.26\n\n" +
+		"require github.com/samber/do/v2 v2.1.0\n\n" +
+		"replace github.com/samber/do/v2 => ../dostub\n"
+	must(t, os.WriteFile(filepath.Join(app, "go.mod"), []byte(goMod), 0o644))
+
+	mainGo := `package main
+
+import (
+	"context"
+
+	do "github.com/samber/do/v2"
+)
+
+// Lazy and Other are healthcheckers registered without an eager option, so
+// each site is HW-4 (lazy + check) — advisory, never a confidence-gate exit.
+type Lazy struct{}
+
+func (l *Lazy) HealthCheck(context.Context) error { return nil }
+
+func NewLazy(i do.Injector) (*Lazy, error) { return &Lazy{}, nil }
+
+type Other struct{}
+
+func (o *Other) HealthCheck(context.Context) error { return nil }
+
+func NewOther(i do.Injector) (*Other, error) { return &Other{}, nil }
+
+func main() {
+	do.Provide(nil, NewLazy)
+	do.Provide(nil, NewOther)
+}
+`
+	must(t, os.WriteFile(filepath.Join(app, "main.go"), []byte(mainGo), 0o644))
+
+	return app
+}
+
+// TestBaselineV2PerRuleRatchet: --set-baseline records per-rule finding
+// counts; any rule exceeding its committed count fails the gate even while
+// aggregate coverage stays flat.
+func TestBaselineV2PerRuleRatchet(t *testing.T) {
+	t.Parallel()
+
+	app := hw4Module(t)
+	baselinePath := filepath.Join(app, DefaultBaselinePath)
+
+	var out, errOut bytes.Buffer
+
+	code := Run(Options{
+		Patterns: []string{"./..."}, Dir: app, Version: "test",
+		Env:          []string{"GOFLAGS=-mod=mod"},
+		SetBaseline:  true,
+		BaselinePath: baselinePath,
+		Stdout:       &out, Stderr: &errOut,
+	})
+	if code != 2 {
+		t.Fatalf("set-baseline exit = %d, want 2 (HW-4 findings are triage-only); stderr: %s", code, errOut.String())
+	}
+
+	if strings.Contains(errOut.String(), "baseline") && !strings.Contains(errOut.String(), "no baseline") {
+		t.Errorf("set-baseline run reported a baseline error: %s", errOut.String())
+	}
+
+	data, err := os.ReadFile(baselinePath)
+	if err != nil {
+		t.Fatalf("baseline not written: %v", err)
+	}
+
+	var b baseline
+	if err := json.Unmarshal(data, &b); err != nil {
+		t.Fatalf("baseline parse: %v", err)
+	}
+
+	if b.Version != baselineSchemaVersion {
+		t.Errorf("baseline version = %d, want %d", b.Version, baselineSchemaVersion)
+	}
+
+	if b.Findings["HW-4"] != 2 {
+		t.Errorf("baseline findings[HW-4] = %d, want 2", b.Findings["HW-4"])
+	}
+
+	run := func() (int, string) {
+		var out, errOut bytes.Buffer
+
+		code := Run(Options{
+			Patterns: []string{"./..."}, Dir: app, Version: "test",
+			Env:          []string{"GOFLAGS=-mod=mod"},
+			BaselinePath: baselinePath,
+			Stdout:       &out, Stderr: &errOut,
+		})
+
+		return code, errOut.String()
+	}
+
+	// A baseline counting one site while the scan sees two regresses the rule
+	// floor while coverage stays flat — exactly what v1 could not catch.
+	regressed, _ := json.Marshal(baseline{
+		Version: 2, Checked: 2, Registered: 2, Coverage: 1,
+		Findings: map[string]int{"HW-4": 1},
+	}, jsontext.WithIndentPrefix(""), jsontext.WithIndent("  "))
+	must(t, os.WriteFile(baselinePath, append(regressed, '\n'), 0o644))
+
+	code, errMsg := run()
+	if code != 1 {
+		t.Fatalf("rule regression exit = %d, want 1; stderr: %s", code, errMsg)
+	}
+
+	if !strings.Contains(errMsg, "HW-4 findings 2 exceed the committed baseline 1") {
+		t.Errorf("stderr missing per-rule regression message: %s", errMsg)
+	}
+
+	// The floor at the current count passes clean.
+	locked, _ := json.Marshal(baseline{
+		Version: 2, Checked: 2, Registered: 2, Coverage: 1,
+		Findings: map[string]int{"HW-4": 2},
+	}, jsontext.WithIndentPrefix(""), jsontext.WithIndent("  "))
+	must(t, os.WriteFile(baselinePath, append(locked, '\n'), 0o644))
+
+	code, errMsg = run()
+	if code != 2 {
+		t.Fatalf("locked floor exit = %d, want 2 (triage-only, no gate failure); stderr: %s", code, errMsg)
+	}
+
+	if strings.Contains(errMsg, "exceed the committed baseline") {
+		t.Errorf("locked floor must not report regressions: %s", errMsg)
+	}
+}
+
+// TestBaselineV2Validation: baseline files this run cannot enforce honestly
+// fail the gate loudly instead of silently degrading to no-baseline.
+func TestBaselineV2Validation(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		file    string
+		wantErr string
+	}{
+		{
+			name:    "v1 baseline names the migration",
+			file:    `{"version":1,"checked":2,"registered":2,"coverage":1}`,
+			wantErr: "predates v2",
+		},
+		{
+			name:    "future schema fails loudly",
+			file:    `{"version":3,"checked":2,"registered":2,"coverage":1}`,
+			wantErr: "newer than this tool supports",
+		},
+		{
+			name:    "coverage inconsistent with counters is corrupt",
+			file:    `{"version":2,"checked":1,"registered":2,"coverage":0.9}`,
+			wantErr: "does not match checked/registered",
+		},
+		{
+			name:    "coverage outside range is corrupt",
+			file:    `{"version":2,"checked":2,"registered":2,"coverage":1.5}`,
+			wantErr: "outside [0,1]",
+		},
+		{
+			name:    "checked above registered is corrupt",
+			file:    `{"version":2,"checked":3,"registered":2,"coverage":1.5}`,
+			wantErr: "exceeds registered",
+		},
+		{
+			name:    "negative finding count is corrupt",
+			file:    `{"version":2,"checked":2,"registered":2,"coverage":1,"findings":{"HW-4":-1}}`,
+			wantErr: "is negative",
+		},
+		{
+			name:    "unparseable JSON fails closed",
+			file:    `{"version":2,`,
+			wantErr: "is not valid JSON",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			app := hw4Module(t)
+			baselinePath := filepath.Join(app, DefaultBaselinePath)
+			must(t, os.WriteFile(baselinePath, []byte(tt.file), 0o644))
+
+			var out, errOut bytes.Buffer
+
+			code := Run(Options{
+				Patterns: []string{"./..."}, Dir: app, Version: "test",
+				Env:          []string{"GOFLAGS=-mod=mod"},
+				BaselinePath: baselinePath,
+				Stdout:       &out, Stderr: &errOut,
+			})
+			if code != 1 {
+				t.Fatalf("invalid baseline exit = %d, want 1 (fail closed); stderr: %s", code, errOut.String())
+			}
+
+			if !strings.Contains(errOut.String(), tt.wantErr) {
+				t.Errorf("stderr missing %q; got: %s", tt.wantErr, errOut.String())
+			}
+		})
+	}
+}
+
 // TestCoverageMinGate: --coverage-min fails below threshold.
 func TestCoverageMinGate(t *testing.T) {
 	t.Parallel()
@@ -350,9 +570,9 @@ func TestCheckAdvisorySilentInMachineFormats(t *testing.T) {
 	app := e2eModule(t)
 
 	tests := []struct {
-		name      string
-		opts      Options
-		wantNote  bool
+		name     string
+		opts     Options
+		wantNote bool
 	}{
 		{name: "plain text keeps the note", opts: Options{}, wantNote: true},
 		{name: "json suppresses the note", opts: Options{JSON: true}},
@@ -374,6 +594,7 @@ func TestCheckAdvisorySilentInMachineFormats(t *testing.T) {
 			opts.Check = true
 
 			var out, errOut bytes.Buffer
+
 			opts.Stdout, opts.Stderr = &out, &errOut
 
 			if code := Run(opts); code != 0 {

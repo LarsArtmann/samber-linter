@@ -59,7 +59,32 @@
       # Module default (`go test -race`) needs a C compiler and no
       # GOEXPERIMENT; run the CI-equivalent suite instead.
       perSystem =
-        { pkgs, lib, ... }:
+        {
+          self,
+          pkgs,
+          lib,
+          ...
+        }:
+        let
+          # dprint owns markdown/json/yaml/dockerfile (treefmt owns go/nix
+          # only), so hand-edited markdown is gated by this check instead of
+          # silently passing `nix flake check`. The repo's dprint.json pins
+          # plugin URLs fetched over the network; pinning the same files by
+          # hash and injecting them as store paths keeps the check hermetic.
+          dprintPluginHashes = {
+            "https://plugins.dprint.dev/json-0.23.0.wasm" =
+              "sha256-Ph8bfBQn32vYmBoRqqLEZv3o0RFend5MZSEwRYU5RDw=";
+            "https://plugins.dprint.dev/g-plane/pretty_yaml-v0.6.0.wasm" =
+              "sha256-QKL92nBAMX6xsjUg86AHaaVXHu2wScTKkXXBue66Aa4=";
+            "https://plugins.dprint.dev/markdown-0.22.1.wasm" =
+              "sha256-SQb7sDiXdzKq4OIW5LC5V+JyL415KCZgzLNtJ90FHxc=";
+            "https://plugins.dprint.dev/dockerfile-0.4.1.wasm" =
+              "sha256-3JU2sddEiX0TrT0GIfVR+PNiFD+fbQb/B4Hg4El8t5Q=";
+          };
+          dprintPlugins = lib.mapAttrsToList (
+            url: hash: pkgs.fetchurl { inherit url hash; }
+          ) dprintPluginHashes;
+        in
         {
           apps.test = {
             type = "app";
@@ -75,6 +100,39 @@
               )
             );
           };
+
+          checks.format-dprint =
+            pkgs.runCommand "samber-linter-dprint-check"
+              {
+                nativeBuildInputs = [
+                  pkgs.dprint
+                  pkgs.jq
+                ];
+                pluginPaths = lib.concatStringsSep " " dprintPlugins;
+              }
+              ''
+                # Fail loudly when dprint.json references a version the flake does
+                # not pin: the rewrite below would silently run stale plugins.
+                for u in $(jq -r '.plugins[]' ${inputs.self}/dprint.json); do
+                  base=$(basename "$u")
+                  found=0
+                  for p in $pluginPaths; do
+                    case $(basename "$p") in
+                      *"$base") found=1 ;;
+                    esac
+                  done
+                  if [ "$found" = 0 ]; then
+                    echo "dprint plugin drift: dprint.json references '$u' but flake.nix pins only: $pluginPaths"
+                    exit 1
+                  fi
+                done
+
+                jq '.plugins = $ARGS.positional' ${inputs.self}/dprint.json --args $pluginPaths > config.json
+                export HOME=$TMPDIR
+                cd ${inputs.self}
+                dprint check --config "$TMPDIR/config.json"
+                touch $out
+              '';
         };
     };
 }

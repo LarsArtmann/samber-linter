@@ -13,19 +13,19 @@ missed, and should do next.
 A ranked lesson set, every claim pinned to file:line evidence read during the
 session:
 
-| # | Lesson (rank) | Evidence (go-auto-upgrade side) | Gap verified on samber-linter side |
-|---|---------------|----------------------------------|------------------------------------|
-| 1 | Binary-level e2e check in nix (P0) | `flake.nix:296-319` runs freshly built CLI on `testdata/e2e/` fixture offline (`GOPROXY=off`), then `go build && go vet` | `cmd/samber-linter/` contains ONLY `main.go` — zero test files; flag-parse→`os.Exit` boundary untested at process level |
-| 2 | README/help drift tests pinned to registry (P0) | `cmd/go-auto-upgrade/help_drift_test.go:20-71` (born from a real drift bug) | samber-linter drift tests cover samber/do mechanisms only; flags table, rule table §3, install commands drift by hand |
-| 3 | Panic isolation per unit of work (P1) | `safeProcessSingleFile` + `panic_isolation_test.go:34` | `grep recover(` → no hits in repo |
-| 4 | Version provenance (P1) | `docs/RELEASE_RUNBOOK.md:31-32` flags its own hardcoded-version split brain as live issue | `main.go:17` manual `var version = "0.1.1"`; no `ReadBuildInfo`/ldflags |
-| 5 | Default-rules single source of truth (P1) | `pkg/recommended` consumed by CLI + SDK + drift tests (ADR-0003) | open "HW-4 default posture" decision would be one line with this pattern |
-| 6 | Release runbook + auto-tag workflow (P2) | `docs/RELEASE_RUNBOOK.md`, `.github/workflows/auto-tag.yml`, GoReleaser `release.yml`; poisoned-tag history v0.2.0–v0.4.2 | only `ci.yml` in `.github/workflows/`; tag-only releases by hand |
-| 7 | ADR directory (P2) | `docs/adr/0001-0004` Context/Decision/Consequences | binding constraints live in AGENTS.md/README prose only |
-| 8 | API contract doc for cross-repo consumers (P2) | `pkg/sdk/sdk.go:1-31` documents integration contract built from consumer feedback | branching-flow imports `pkg/healthwash` directly (`analyzer_healthwash.go:34`) — no stated stability contract |
-| 9 | Issue/PR templates (P2) | `.github/ISSUE_TEMPLATE/` (4), `pull_request_template.md` | none |
-| — | Explicitly rejected as non-transferable | rollback/snapshot/gitStager, FailureCache, compile gate, RequiredModules (rewrite-safety machinery; samber-linter never mutates user code; baseline writes already atomic at `driver.go:545`) | — |
-| — | Where samber-linter is already ahead | — | go-output formats, samber/do drift matrix, plugin integration tests, suppression-with-reason |
+| # | Lesson (rank)                                   | Evidence (go-auto-upgrade side)                                                                                                                                                               | Gap verified on samber-linter side                                                                                      |
+| - | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| 1 | Binary-level e2e check in nix (P0)              | `flake.nix:296-319` runs freshly built CLI on `testdata/e2e/` fixture offline (`GOPROXY=off`), then `go build && go vet`                                                                      | `cmd/samber-linter/` contains ONLY `main.go` — zero test files; flag-parse→`os.Exit` boundary untested at process level |
+| 2 | README/help drift tests pinned to registry (P0) | `cmd/go-auto-upgrade/help_drift_test.go:20-71` (born from a real drift bug)                                                                                                                   | samber-linter drift tests cover samber/do mechanisms only; flags table, rule table §3, install commands drift by hand   |
+| 3 | Panic isolation per unit of work (P1)           | `safeProcessSingleFile` + `panic_isolation_test.go:34`                                                                                                                                        | `grep recover(` → no hits in repo                                                                                       |
+| 4 | Version provenance (P1)                         | `docs/RELEASE_RUNBOOK.md:31-32` flags its own hardcoded-version split brain as live issue                                                                                                     | `main.go:17` manual `var version = "0.1.1"`; no `ReadBuildInfo`/ldflags                                                 |
+| 5 | Default-rules single source of truth (P1)       | `pkg/recommended` consumed by CLI + SDK + drift tests (ADR-0003)                                                                                                                              | open "HW-4 default posture" decision would be one line with this pattern                                                |
+| 6 | Release runbook + auto-tag workflow (P2)        | `docs/RELEASE_RUNBOOK.md`, `.github/workflows/auto-tag.yml`, GoReleaser `release.yml`; poisoned-tag history v0.2.0–v0.4.2                                                                     | only `ci.yml` in `.github/workflows/`; tag-only releases by hand                                                        |
+| 7 | ADR directory (P2)                              | `docs/adr/0001-0004` Context/Decision/Consequences                                                                                                                                            | binding constraints live in AGENTS.md/README prose only                                                                 |
+| 8 | API contract doc for cross-repo consumers (P2)  | `pkg/sdk/sdk.go:1-31` documents integration contract built from consumer feedback                                                                                                             | branching-flow imports `pkg/healthwash` directly (`analyzer_healthwash.go:34`) — no stated stability contract           |
+| 9 | Issue/PR templates (P2)                         | `.github/ISSUE_TEMPLATE/` (4), `pull_request_template.md`                                                                                                                                     | none                                                                                                                    |
+| — | Explicitly rejected as non-transferable         | rollback/snapshot/gitStager, FailureCache, compile gate, RequiredModules (rewrite-safety machinery; samber-linter never mutates user code; baseline writes already atomic at `driver.go:545`) | —                                                                                                                       |
+| — | Where samber-linter is already ahead            | —                                                                                                                                                                                             | go-output formats, samber/do drift matrix, plugin integration tests, suppression-with-reason                            |
 
 ---
 
@@ -107,13 +107,14 @@ Nothing destructive. Two real failures of discipline:
 ## f) Up to 50 things to get done next
 
 Ordered by impact; items 1–3 are the missed-headline corrections. Items marked
-*(existing TODO)* are pre-session entries that this analysis touches.
+_(existing TODO)_ are pre-session entries that this analysis touches.
 
 **CI gate repair (highest impact, from the missed lesson):**
+
 1. Read `go-auto-upgrade/docs/status/2026-08-16_13-44_lint-repair-session-closing-all-gates-green.md` and extract the recipe.
 2. Compare `go-auto-upgrade/.github/workflows/ci.yml` golangci-lint pinning vs samber-linter's `version: latest` failure mode; propose a pinned-version matrix.
 3. Compare both `.golangci.yml` configs; decide what of the ~141-finding burn-down go-auto-upgrade already solved structurally (exclusions, presets, treefmt interplay).
-4. *(existing TODO)* Pin one golangci version across CI / nixpkgs / `.custom-gcl.yml`.
+4. _(existing TODO)_ Pin one golangci version across CI / nixpkgs / `.custom-gcl.yml`.
 
 **P0 lessons (already ranked):**
 5. Implement `checks.cli-e2e` in samber-linter `flake.nix`: build binary, run against a stub module with a known HW-1, assert exit 1 + text; `--check` → 0; broken module → 2.
@@ -152,9 +153,9 @@ Ordered by impact; items 1–3 are the missed-headline corrections. Items marked
 
 **Housekeeping from this session:**
 32. HARVEST items 5–21 into `TODO_LIST.md` (bounded) and `ROADMAP.md` (ideas) per docs-health routing.
-33. *(existing TODO)* Dogfood `--output markdown` in CI dogfood job — same silent-flag-rot class as the drift tests above; implement together.
-34. *(existing TODO)* Baseline v2 per-rule counts — composes with the default-rules single source (14).
-35. *(existing TODO)* Suppress `--check` advisory line in `--json`/`--sarif`.
+33. _(existing TODO)_ Dogfood `--output markdown` in CI dogfood job — same silent-flag-rot class as the drift tests above; implement together.
+34. _(existing TODO)_ Baseline v2 per-rule counts — composes with the default-rules single source (14).
+35. _(existing TODO)_ Suppress `--check` advisory line in `--json`/`--sarif`.
 36. Re-run the analysis conclusion after reading the missed docs (1–3): re-rank lessons if the lint recipe changes the picture.
 
 ## g) Questions I cannot figure out myself
@@ -177,4 +178,4 @@ Ordered by impact; items 1–3 are the missed-headline corrections. Items marked
 **Format note:** written as `.md` per explicit user instruction — overrides
 the status-report skill's HTML default; flagged so the divergence is visible.
 
-*Point-in-time snapshot. Do not edit; annotate or supersede.*
+_Point-in-time snapshot. Do not edit; annotate or supersede._
