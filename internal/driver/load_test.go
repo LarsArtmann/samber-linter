@@ -62,8 +62,8 @@ func TestLoadEnvSanitizedEntryAlwaysPresent(t *testing.T) {
 
 	entry, found := "", false
 
-	for _, kv := range env {
-		if key, value, ok := strings.Cut(kv, "="); ok && key == "GOFLAGS" {
+	for _, entry := range env {
+		if key, value, ok := strings.Cut(entry, "="); ok && key == "GOFLAGS" {
 			entry, found = value, true
 		}
 	}

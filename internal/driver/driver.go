@@ -333,13 +333,13 @@ func loadEnv() []string {
 	env := make([]string, 0, len(inherited)+1)
 	goFlags := ""
 
-	for _, kv := range inherited {
-		if key, value, ok := strings.Cut(kv, "="); ok && key == "GOFLAGS" {
+	for _, entry := range inherited {
+		if key, value, ok := strings.Cut(entry, "="); ok && key == "GOFLAGS" {
 			goFlags = value
 			continue
 		}
 
-		env = append(env, kv)
+		env = append(env, entry)
 	}
 
 	return append(env, "GOFLAGS="+stripModTokens(goFlags))
