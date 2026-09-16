@@ -170,7 +170,12 @@ func Run(opts Options) int {
 
 	code := applyGates(out, report, records, pkgs, opts)
 	if opts.Check {
-		fmt.Fprintln(out, "--check: advisory run; exit code forced to 0")
+		// Machine consumers (--json/--sarif and the structured --output
+		// formats) get exactly one parseable shape; the advisory note is
+		// human UI and would corrupt their parsers.
+		if !opts.JSON && !opts.SARIF && !IsMachineFormat(opts.OutputFormat) {
+			fmt.Fprintln(out, "--check: advisory run; exit code forced to 0")
+		}
 
 		return 0
 	}

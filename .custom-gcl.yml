@@ -19,7 +19,7 @@
 #           type: module
 #
 # Then: ./custom-gcl run ./...
-version: v2.12.2
+version: v2.13.2
 plugins:
   - module: github.com/larsartmann/samber-linter
     import: github.com/larsartmann/samber-linter/plugin

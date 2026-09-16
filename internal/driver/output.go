@@ -69,6 +69,19 @@ func ParseOutputFormat(value string) (output.Format, error) {
 	return format, nil
 }
 
+// IsMachineFormat reports whether f is a structured format consumed by
+// programs rather than humans. table and markdown are human presentations;
+// csv, tsv, html, xml and asciidoc are parsed by other tools, which must
+// receive exactly one parseable shape with no appended human notes.
+func IsMachineFormat(f output.Format) bool {
+	switch f {
+	case output.FormatCSV, output.FormatTSV, output.FormatXML, output.FormatHTML, output.FormatAsciiDoc:
+		return true
+	default:
+		return false
+	}
+}
+
 // renderFindings writes the findings table in the requested presentation
 // format. The go-finding report (--json) and SARIF export are unaffected.
 func renderFindings(out io.Writer, findings []finding.Finding, format output.Format) error {

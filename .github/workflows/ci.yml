@@ -50,7 +50,11 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@55c2c1448f86e01eaae002a5a3a9624417608d84 # v6
         with:
-          version: latest
+          # v2.13.2 is built with go1.27 >= go.mod's 1.26.7 floor and reads the
+          # v2 config schema. `latest` resolves to a v1 binary that cannot load
+          # the config at all (run 35089293309); never loosen this pin without
+          # re-verifying `.custom-gcl.yml` and nixpkgs match it.
+          version: v2.13.2
 
   dogfood:
     runs-on: ubuntu-latest
