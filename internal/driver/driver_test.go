@@ -193,23 +193,6 @@ func TestSetBaselineAndRatchet(t *testing.T) {
 // and the baseline ratchet is the only gate that can fail the run.
 func hw4Module(t *testing.T) string {
 	t.Helper()
-	dir := t.TempDir()
-
-	stub := filepath.Join(dir, "dostub")
-	must(t, os.MkdirAll(stub, 0o755))
-	must(t, os.WriteFile(filepath.Join(stub, "go.mod"),
-		[]byte("module github.com/samber/do/v2\n\ngo 1.26\n"), 0o644))
-	src, err := os.ReadFile(filepath.Join("..", "..", "testdata", "src", "github.com", "samber", "do", "v2", "do.go"))
-	must(t, err)
-	must(t, os.WriteFile(filepath.Join(stub, "do.go"), src, 0o644))
-
-	app := filepath.Join(dir, "app")
-	must(t, os.MkdirAll(app, 0o755))
-
-	goMod := "module example.com/app\n\ngo 1.26\n\n" +
-		"require github.com/samber/do/v2 v2.1.0\n\n" +
-		"replace github.com/samber/do/v2 => ../dostub\n"
-	must(t, os.WriteFile(filepath.Join(app, "go.mod"), []byte(goMod), 0o644))
 
 	mainGo := `package main
 
@@ -238,9 +221,8 @@ func main() {
 	do.Provide(nil, NewOther)
 }
 `
-	must(t, os.WriteFile(filepath.Join(app, "main.go"), []byte(mainGo), 0o644))
 
-	return app
+	return writeConsumerModule(t, mainGo)
 }
 
 // TestBaselineV2PerRuleRatchet: --set-baseline records per-rule finding
