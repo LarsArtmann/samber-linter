@@ -12,6 +12,8 @@ import (
 	"go/token"
 	"go/types"
 	"io"
+	"maps"
+	"math"
 	"os"
 	"path"
 	"runtime"
@@ -122,12 +124,18 @@ type allowEntry struct {
 	Reason      string `json:"reason"`
 }
 
-// baseline is the committed ratchet floor.
+// baseline is the committed ratchet floor. Version 2 adds per-rule finding
+// counts (aggregate coverage alone can hide a single-rule regression);
+// validateBaseline rejects every other schema loudly — a ratchet that
+// silently degrades is worse than a failed run.
+const baselineSchemaVersion = 2
+
 type baseline struct {
-	Version    int     `json:"version"`
-	Checked    int     `json:"checked"`
-	Registered int     `json:"registered"`
-	Coverage   float64 `json:"coverage"`
+	Version    int          `json:"version"`
+	Checked    int          `json:"checked"`
+	Registered int          `json:"registered"`
+	Coverage   float64      `json:"coverage"`
+	Findings   map[string]int `json:"findings,omitempty"` // rule ID → count; absent rule means floor 0
 }
 
 // Run executes one analysis pass and returns the process exit code.
@@ -168,7 +176,7 @@ func Run(opts Options) int {
 		return 1
 	}
 
-	code := applyGates(out, report, records, pkgs, opts)
+	code := applyGates(out, report, findings, records, pkgs, opts)
 	if opts.Check {
 		// Machine consumers (--json/--sarif and the structured --output
 		// formats) get exactly one parseable shape; the advisory note is
@@ -267,11 +275,11 @@ func emitOutputs(
 // applyGates computes the HW-6 ratchet output, warns about the samber/do
 // version, and maps the outcome to the confidence exit contract.
 func applyGates(
-	out io.Writer, report *finding.Report, records []healthwash.ServiceRecord,
-	pkgs []*packages.Package, opts Options,
+	out io.Writer, report *finding.Report, findings []finding.Finding,
+	records []healthwash.ServiceRecord, pkgs []*packages.Package, opts Options,
 ) int {
 	gateFailed := false
-	coverage := reportCoverage(out, records, opts, &gateFailed)
+	coverage := reportCoverage(out, findings, records, opts, &gateFailed)
 	warnDover(out, pkgs)
 
 	code := linter.ExitCodeByConfidence(report, opts.MinConfidence)
@@ -489,8 +497,21 @@ func allowMatches(entry, rule string) bool {
 	return e == strings.ToLower(rule)
 }
 
+// ruleCounts counts the post-allowlist findings per rule ID: the same set
+// the confidence exit gate sees, so allowlist-accepted findings never
+// ratchet.
+func ruleCounts(findings []finding.Finding) map[string]int {
+	counts := make(map[string]int, len(findings))
+	for _, f := range findings {
+		counts[string(f.Rule)]++
+	}
+
+	return counts
+}
+
 func reportCoverage(
 	out io.Writer,
+	findings []finding.Finding,
 	records []healthwash.ServiceRecord,
 	opts Options,
 	gateFailed *bool,
@@ -524,10 +545,16 @@ func reportCoverage(
 		coverage = float64(checked) / float64(registered)
 	}
 
+	counts := ruleCounts(findings)
+
 	baselinePath := opts.BaselinePath
 	if opts.SetBaseline {
 		writeBaseline(out, opts.Stderr, baselinePath, baseline{
-			Version: 1, Checked: checked, Registered: registered, Coverage: coverage,
+			Version:    baselineSchemaVersion,
+			Checked:    checked,
+			Registered: registered,
+			Coverage:   coverage,
+			Findings:   counts,
 		}, gateFailed)
 
 		return coverage
@@ -539,7 +566,7 @@ func reportCoverage(
 		return coverage
 	}
 
-	enforceBaselineRatchet(out, opts.Stderr, baselinePath, checked, registered, coverage, gateFailed)
+	enforceBaselineRatchet(out, opts.Stderr, baselinePath, counts, checked, registered, coverage, gateFailed)
 
 	return coverage
 }
@@ -574,43 +601,149 @@ func enforceCoverageMin(
 	}
 }
 
-// enforceBaselineRatchet applies the committed-baseline regression gate.
+// enforceBaselineRatchet applies the committed-baseline regression gate:
+// coverage must not drop and no rule may exceed its committed finding count.
+// A missing baseline file only informs; a present-but-invalid one fails the
+// gate loudly (fail closed — a ratchet that quietly stops reading is worse
+// than a red build).
 func enforceBaselineRatchet(
-	out, errw io.Writer, baselinePath string, checked, registered int, coverage float64, gateFailed *bool,
+	out, errw io.Writer, baselinePath string, counts map[string]int,
+	checked, registered int, coverage float64, gateFailed *bool,
 ) {
-	if data, err := os.ReadFile(baselinePath); err == nil {
-		var b baseline
-		if json.Unmarshal(data, &b) == nil && b.Registered > 0 {
-			fmt.Fprintf(out, "health-coverage: %d/%d = %.0f%% (baseline: %.0f%%)\n",
-				checked, registered, coverage*100, b.Coverage*100)
+	data, err := os.ReadFile(baselinePath)
+	if err != nil {
+		if registered > 0 {
+			fmt.Fprintf(
+				out,
+				"health-coverage: %d/%d = %.0f%% (no baseline; use --set-baseline to start the ratchet)\n",
+				checked,
+				registered,
+				coverage*100,
+			)
+		}
 
-			if coverage < b.Coverage {
-				fmt.Fprintf(
-					errw,
-					"%s: coverage %.0f%% regressed below the committed baseline %.0f%%; "+
-						"fix the regressions or explicitly re-baseline with --set-baseline\n",
-					ToolName,
-					coverage*100,
-					b.Coverage*100,
-				)
+		return
+	}
 
-				*gateFailed = true
-			} else if coverage > b.Coverage {
-				fmt.Fprintln(out, "coverage improved; lock in the gain with --set-baseline")
-			}
+	var b baseline
+	if err := json.Unmarshal(data, &b); err != nil {
+		fmt.Fprintf(errw, "%s: baseline %s is not valid JSON: %v\n", ToolName, baselinePath, err)
+		*gateFailed = true
 
-			return
+		return
+	}
+
+	if b.Registered <= 0 {
+		if registered > 0 {
+			fmt.Fprintf(
+				out,
+				"health-coverage: %d/%d = %.0f%% (no baseline; use --set-baseline to start the ratchet)\n",
+				checked,
+				registered,
+				coverage*100,
+			)
+		}
+
+		return
+	}
+
+	if err := validateBaseline(b); err != nil {
+		fmt.Fprintf(errw, "%s: baseline %s: %v\n", ToolName, baselinePath, err)
+		*gateFailed = true
+
+		return
+	}
+
+	fmt.Fprintf(out, "health-coverage: %d/%d = %.0f%% (baseline: %.0f%%)\n",
+		checked, registered, coverage*100, b.Coverage*100)
+
+	if coverage < b.Coverage {
+		fmt.Fprintf(
+			errw,
+			"%s: coverage %.0f%% regressed below the committed baseline %.0f%%; "+
+				"fix the regressions or explicitly re-baseline with --set-baseline\n",
+			ToolName,
+			coverage*100,
+			b.Coverage*100,
+		)
+
+		*gateFailed = true
+	} else if coverage > b.Coverage {
+		fmt.Fprintln(out, "coverage improved; lock in the gain with --set-baseline")
+	}
+
+	enforceRuleRatchet(errw, b.Findings, counts, gateFailed)
+}
+
+// validateBaseline rejects baseline files this run cannot enforce honestly:
+// wrong schema generation, negative or inconsistent counters, out-of-range
+// coverage, or malformed per-rule counts.
+func validateBaseline(b baseline) error {
+	switch {
+	case b.Version < baselineSchemaVersion:
+		return fmt.Errorf(
+			"schema v%d predates v%d; re-run --set-baseline to migrate (v2 adds per-rule finding counts)",
+			b.Version, baselineSchemaVersion)
+	case b.Version > baselineSchemaVersion:
+		return fmt.Errorf(
+			"schema v%d is newer than this tool supports (v%d); upgrade samber-linter",
+			b.Version, baselineSchemaVersion)
+	}
+
+	if b.Checked < 0 || b.Registered < 0 {
+		return fmt.Errorf("negative service counts (checked=%d registered=%d)", b.Checked, b.Registered)
+	}
+
+	if b.Checked > b.Registered {
+		return fmt.Errorf("checked %d exceeds registered %d", b.Checked, b.Registered)
+	}
+
+	if b.Coverage < 0 || b.Coverage > 1 {
+		return fmt.Errorf("coverage %v outside [0,1]", b.Coverage)
+	}
+
+	if b.Registered > 0 {
+		want := float64(b.Checked) / float64(b.Registered)
+		if math.Abs(b.Coverage-want) > 1e-9 {
+			return fmt.Errorf(
+				"coverage %v does not match checked/registered = %d/%d = %v; the file is corrupt or hand-edited",
+				b.Coverage, b.Checked, b.Registered, want)
 		}
 	}
 
-	if registered > 0 {
+	for rule, count := range b.Findings {
+		if rule == "" {
+			return fmt.Errorf("findings map has an empty rule name")
+		}
+
+		if count < 0 {
+			return fmt.Errorf("findings[%q] = %d is negative", rule, count)
+		}
+	}
+
+	return nil
+}
+
+// enforceRuleRatchet fails the gate when any rule produces more findings than
+// its committed count: aggregate coverage can stay flat while a single rule
+// regresses. Improvements pass silently; --set-baseline locks them in.
+func enforceRuleRatchet(errw io.Writer, base, current map[string]int, gateFailed *bool) {
+	for _, rule := range slices.Sorted(maps.Keys(current)) {
+		if current[rule] <= base[rule] {
+			continue
+		}
+
 		fmt.Fprintf(
-			out,
-			"health-coverage: %d/%d = %.0f%% (no baseline; use --set-baseline to start the ratchet)\n",
-			checked,
-			registered,
-			coverage*100,
+			errw,
+			"%s: %s findings %d exceed the committed baseline %d; "+
+				"fix the regressions or explicitly re-baseline with --set-baseline\n",
+			ToolName,
+			rule,
+			current[rule],
+			base[rule],
 		)
+
+		*gateFailed = true
 	}
 }
 

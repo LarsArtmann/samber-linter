@@ -150,8 +150,11 @@ func TestSetBaselineAndRatchet(t *testing.T) {
 		t.Errorf("baseline coverage = %v, want in (0,1)", b.Coverage)
 	}
 
-	// Committed higher floor -> regression gate fails (exit 1).
+	// Committed higher floor -> regression gate fails (exit 1). The floor must
+	// stay internally consistent (coverage == checked/registered) or
+	// validateBaseline rejects it as corrupt before the ratchet is applied.
 	b.Coverage = 0.9
+	b.Checked, b.Registered = 9, 10
 	higher, _ := json.Marshal(b, jsontext.WithIndentPrefix(""), jsontext.WithIndent("  "))
 	must(t, os.WriteFile(baselinePath, append(higher, '\n'), 0o644))
 
@@ -334,6 +337,54 @@ func TestCheckAdvisoryMode(t *testing.T) {
 
 	if !strings.Contains(out.String(), "--check: advisory run; exit code forced to 0") {
 		t.Errorf("advisory run must say so; out:\n%s", out.String())
+	}
+}
+
+// TestCheckAdvisorySilentInMachineFormats: the --check advisory note is human
+// UI. --json/--sarif and the structured --output formats are parsed by
+// machines and must not carry a trailing unparseable line; only human-facing
+// presentations (plain text, table, markdown) keep the note.
+func TestCheckAdvisorySilentInMachineFormats(t *testing.T) {
+	t.Parallel()
+
+	app := e2eModule(t)
+
+	tests := []struct {
+		name      string
+		opts      Options
+		wantNote  bool
+	}{
+		{name: "plain text keeps the note", opts: Options{}, wantNote: true},
+		{name: "json suppresses the note", opts: Options{JSON: true}},
+		{name: "sarif suppresses the note", opts: Options{SARIF: true}},
+		{name: "csv suppresses the note", opts: Options{OutputFormat: "csv"}},
+		{name: "table keeps the note", opts: Options{OutputFormat: "table"}, wantNote: true},
+		{name: "markdown keeps the note", opts: Options{OutputFormat: "markdown"}, wantNote: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			opts := tt.opts
+			opts.Patterns = []string{"./..."}
+			opts.Dir = app
+			opts.Env = []string{"GOFLAGS=-mod=mod"}
+			opts.Version = "test"
+			opts.Check = true
+
+			var out, errOut bytes.Buffer
+			opts.Stdout, opts.Stderr = &out, &errOut
+
+			if code := Run(opts); code != 0 {
+				t.Fatalf("advisory exit = %d, want 0; stderr: %s", code, errOut.String())
+			}
+
+			got := strings.Contains(out.String(), "--check: advisory run; exit code forced to 0")
+			if got != tt.wantNote {
+				t.Errorf("advisory note present = %v, want %v; out:\n%s", got, tt.wantNote, out.String())
+			}
+		})
 	}
 }
 

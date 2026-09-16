@@ -47,6 +47,28 @@ func TestSupportedOutputFormats(t *testing.T) {
 	}
 }
 
+func TestIsMachineFormat(t *testing.T) {
+	t.Parallel()
+
+	for _, machine := range []output.Format{
+		output.FormatCSV, output.FormatTSV, output.FormatXML, output.FormatHTML, output.FormatAsciiDoc,
+	} {
+		if !IsMachineFormat(machine) {
+			t.Errorf("IsMachineFormat(%q) = false, want true", machine)
+		}
+	}
+
+	for _, human := range []output.Format{output.FormatTable, output.FormatMarkdown} {
+		if IsMachineFormat(human) {
+			t.Errorf("IsMachineFormat(%q) = true, want false", human)
+		}
+	}
+
+	if IsMachineFormat("") {
+		t.Error(`IsMachineFormat("") = true, want false (empty is the plain-text default)`)
+	}
+}
+
 func TestParseOutputFormat(t *testing.T) {
 	t.Parallel()
 
