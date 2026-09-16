@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/larsartmann/go-finding"
+	"golang.org/x/tools/go/packages"
 )
 
 // Analyze runs one analysis pass programmatically: load → analyze → allowlist.

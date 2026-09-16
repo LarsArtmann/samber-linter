@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Compile and run every Go snippet under docs/upstream.
+# Compile and run every Go snippet under docs/upstream and docs/status.
 #
 # Contract for markdown authors:
 #   - A ```go block that is a full self-contained program (starts with
@@ -9,6 +9,9 @@
 #     say so in the fence info string: ```go snippet-skip
 #   - Anything else fails: an unclassified snippet is exactly how a broken
 #     repro gets filed.
+#   - docs/status reports are point-in-time records, but the same contract
+#     applies: their Go blocks are either runnable repros or marked
+#     snippet-skip, so a pasted-in fragment can never silently rot.
 #
 # Network note: each snippet becomes a temp module requiring samber/do;
 # `go mod tidy` reads the local module cache first and only hits the proxy
@@ -24,10 +27,15 @@ trap 'rm -rf "$work"' EXIT
 checked=0
 failed=0
 
-for md in docs/upstream/*.md; do
+shopt -s globstar nullglob
+
+docidx=0
+
+for md in docs/upstream/*.md docs/status/**/*.md; do
 	[ -e "$md" ] || continue
 
-	base="$(basename "$md" .md)"
+	docidx=$((docidx + 1))
+	base="doc$(printf '%02d' "$docidx")"
 	awk -v dir="$work" -v base="$base" '
 		function flush(idx, startn,    f, i) {
 			f = sprintf("%s/%s.%03d.go", dir, base, idx)

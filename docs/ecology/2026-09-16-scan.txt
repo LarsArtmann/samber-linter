@@ -1,0 +1,100 @@
+building scanner...
+scanning 70 project(s) under /home/lars/projects...
+
+Ecology scan (2026-09-16) — root: /home/lars/projects
+
+rank project   registered  checked  unprotected  findings  rules
+1    p-4766            61        2           59         0  
+2    p-69fa            20        0           20         0  
+3    p-c49f            19        0           19         1  HW-1=1 
+4    p-7196            18        0           18         0  
+5    p-0a41            20        3           17        10  HW-1=3 HW-2=7 
+6    p-b344            18        2           16         3  HW-1=2 HW-2=1 
+7    p-b239            15        0           15         0  
+8    p-6d7b            16        3           13         3  HW-4=3 
+9    p-3af6            13        0           13         0  
+10   p-3c6b            11        0           11         0  
+11   p-b088            10        0           10         0  
+12   p-2ee5             9        0            9         0  
+13   p-c5d0             8        0            8         0  
+14   p-d9a9            20       12            8         0  
+15   p-1507             7        0            7         1  HW-1=1 
+16   p-6c47             6        0            6         1  HW-1=1 
+17   p-57ed            13        8            5         8  HW-1=5 HW-4=3 
+18   p-01be             6        1            5         4  HW-1=2 HW-2=1 HW-4=1 
+19   p-1fba             5        0            5         2  HW-1=2 
+20   p-b4bd             6        1            5         1  HW-4=1 
+21   p-e0a5             5        0            5         0  
+22   p-e91b             5        0            5         0  
+23   p-a2d9             5        1            4         2  HW-2=1 HW-4=1 
+24   p-dfc7             4        0            4         0  
+25   p-63c5            10        7            3        13  HW-2=7 HW-4=6 
+26   p-e62c             8        5            3         5  HW-4=5 
+27   p-6c93             3        0            3         0  
+28   p-46ae             3        1            2         1  HW-2=1 
+29   p-5e81             3        1            2         1  HW-2=1 
+30   p-87d8             3        1            2         1  HW-2=1 
+31   p-2717             2        0            2         0  
+32   p-89af             2        0            2         0  
+33   p-1002             1        0            1         0  
+34   p-402a             1        0            1         0  
+35   p-7ff6             1        0            1         0  
+36   p-9b64             1        0            1         0  
+37   p-a31b             2        1            1         0  
+38   p-dbec             1        0            1         0  
+39   p-e8a0             1        0            1         0  
+40   p-a32b             0        0            0         1  HW-2=1 
+41   p-dfd3             1        1            0         1  HW-4=1 
+42   p-05c2             0        0            0         0  
+43   p-08fb             0        0            0         0  
+44   p-138c             0        0            0         0  
+45   p-165e             0        0            0         0  
+46   p-16a9             0        0            0         0  
+47   p-1968             0        0            0         0  
+48   p-3dd1             0        0            0         0  
+49   p-5e87             0        0            0         0  
+50   p-6942             0        0            0         0  
+51   p-7414             0        0            0         0  
+52   p-7a08             0        0            0         0  
+53   p-8d8e             0        0            0         0  
+54   p-8fff             0        0            0         0  
+55   p-969e             0        0            0         0  
+56   p-97ce             0        0            0         0  
+57   p-b71e             0        0            0         0  
+58   p-bae3             0        0            0         0  
+59   p-bed7             0        0            0         0  
+60   p-cb16             0        0            0         0  
+61   p-cb47             0        0            0         0  
+62   p-d639             0        0            0         0  
+63   p-deaa             0        0            0         0  
+64   p-e487             0        0            0         0  
+65   p-fe3b             0        0            0         0  
+66   p-6f63             -        -            -         -  LOAD_ERROR
+67   p-8545             -        -            -         -  LOAD_ERROR
+68   p-93d3             -        -            -         -  LOAD_ERROR
+69   p-b6ff             -        -            -         -  LOAD_ERROR
+70   p-fbf5             -        -            -         -  LOAD_ERROR
+
+Aggregate: 65 analyzed · 47 clean · 18 with findings · 59 findings total · 5 load/timeout error(s)
+Keyfile updated: /home/lars/backups/ecology/keyfile.json
+
+load/timeout details:
+--- p-93d3 (/home/lars/projects/archived/experiment-100m-arr)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: updates to go.mod needed; to update it:
+    	go mod tidy
+    
+--- p-8545 (/home/lars/projects/archived/website-holger-hahn)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: updates to go.mod needed; to update it:
+    	go mod tidy
+    
+--- p-fbf5 (/home/lars/projects/Kernovia)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: module ../../forks/cordis/go listed in go.work file requires go >= 1.27, but go.work lists go 1.26.7; to update it:
+    	go work use
+    
+--- p-6f63 (/home/lars/projects/reports/app)
+    samber-linter: /home/lars/projects/reports/app/internal/auth/session.go:17:2: sessions redeclared in this block
+    samber-linter: /home/lars/projects/reports/app/internal/auth/session.go:15:2: 	other declaration of sessions
+    samber-linter: /home/lars/projects/reports/app/internal/auth/session.go:17:2: "github.com/gorilla/sessions" imported and not used
+--- p-b6ff (/home/lars/projects/Standup-Killer)
+    samber-linter: /mnt/buildcache/go-mod/github.com/!lars!artmann/go-github-kit@v0.3.0/etag.go:99:3: unknown field PreserveOn304 in struct literal of type etagclient.Options
+    samber-linter: 1 package error(s) during load; results may be incomplete

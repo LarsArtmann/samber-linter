@@ -3,6 +3,7 @@ package driver
 import (
 	"context"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -62,7 +63,7 @@ func TestLoadEnvSanitizedEntryAlwaysPresent(t *testing.T) {
 	entry, found := "", false
 
 	for _, kv := range env {
-		if key, value, ok := splitEnv(kv); ok && key == "GOFLAGS" {
+		if key, value, ok := strings.Cut(kv, "="); ok && key == "GOFLAGS" {
 			entry, found = value, true
 		}
 	}
@@ -78,14 +79,4 @@ func TestLoadEnvSanitizedEntryAlwaysPresent(t *testing.T) {
 	if slices.Contains(env, "GOFLAGS=-mod=vendor -count=1") {
 		t.Error("unsanitized inherited GOFLAGS survived in loadEnv output")
 	}
-}
-
-func splitEnv(kv string) (string, string, bool) {
-	for i := 0; i < len(kv); i++ {
-		if kv[i] == '=' {
-			return kv[:i], kv[i+1:], true
-		}
-	}
-
-	return kv, "", false
 }
