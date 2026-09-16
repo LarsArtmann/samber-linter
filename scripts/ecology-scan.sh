@@ -17,8 +17,11 @@
 # Notes:
 #   - Building the scanner requires GOEXPERIMENT=jsonv2 (go-finding imports
 #     encoding/json/v2); the built binary does not.
-#   - A project with a go.work is scanned with the workspace pattern `all`;
-#     `./...` silently skips workspace roots' sibling modules.
+#   - A project with a go.work is scanned per workspace module with `./...`:
+#     the workspace pattern `all` would expand to the full dependency
+#     closure, dragging dependency packages (and their own samber/do
+#     registrations) into a survey row the consumer cannot own. `./...`
+#     per module covers exactly the consumer's own packages.
 #   - Scans run under --check (advisory): baselines are read, never written.
 set -euo pipefail
 
@@ -61,11 +64,27 @@ load_errors=0
 
 for dir in "${candidates[@]}"; do
 	pseudo="p-$(printf %s "$dir" | sha256sum | cut -c1-4)"
-	pattern="./..."
-	[ -f "$dir/go.work" ] && pattern="all"
+	: >"$work/err-$pseudo.txt"
 
+	out=""
 	rc=0
-	out="$(cd "$dir" && timeout "$TIMEOUT_SECS" "$BIN" --check "$pattern" 2>"$work/err-$pseudo.txt")" || rc=$?
+	if [ -f "$dir/go.work" ]; then
+		mods="$(cd "$dir" && go work edit -json 2>>"$work/err-$pseudo.txt" | jq -r '.Use[].DiskDir' || true)"
+		if [ -z "$mods" ]; then
+			rc=2
+		else
+			while IFS= read -r mod; do
+				[ -n "$mod" ] || continue
+				part=""
+				part_rc=0
+				part="$(cd "$mod" && timeout "$TIMEOUT_SECS" "$BIN" --check ./... 2>>"$work/err-$pseudo.txt")" || part_rc=$?
+				out+="$part"$'\n'
+				[ "$part_rc" -ne 0 ] && rc=$part_rc
+				done <<<"$mods"
+		fi
+	else
+		out="$(cd "$dir" && timeout "$TIMEOUT_SECS" "$BIN" --check ./... 2>>"$work/err-$pseudo.txt")" || rc=$?
+	fi
 
 	# A module whose packages fail to load does not exit 2: the driver
 	# reports per-package errors on stderr and still exits 0 under --check.
@@ -95,12 +114,11 @@ for dir in "${candidates[@]}"; do
 		registered=0
 		checked=0
 
-		coverage_line="$(grep -o 'health-coverage: [0-9]*/[0-9]*' <<<"$out" | head -1 || true)"
-		if [ -n "$coverage_line" ]; then
-			counts="${coverage_line#health-coverage: }"
-			checked="${counts%/*}"
-			registered="${counts#*/}"
-		fi
+		while IFS= read -r counts; do
+			[ -n "$counts" ] || continue
+			checked=$((checked + ${counts%/*}))
+			registered=$((registered + ${counts#*/}))
+			done < <(grep -oE 'health-coverage: [0-9]+/[0-9]+' <<<"$out" | sed 's/health-coverage: //')
 
 		findings="$(grep -cE ': (HW-[0-9]|HW-unresolved):' <<<"$out" || true)"
 		if [ "$findings" -eq 0 ]; then
