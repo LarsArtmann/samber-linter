@@ -69,17 +69,24 @@ func ParseOutputFormat(value string) (output.Format, error) {
 	return format, nil
 }
 
+// machineFormats lists the --output formats consumed by programs rather than
+// humans. table and markdown are human presentations; csv, tsv, html, xml
+// and asciidoc are parsed by other tools, which must receive exactly one
+// parseable shape with no appended human notes.
+//
+//nolint:gochecknoglobals // read-only format classification (same pattern as ruleMetaByRule)
+var machineFormats = []output.Format{
+	output.FormatCSV,
+	output.FormatTSV,
+	output.FormatXML,
+	output.FormatHTML,
+	output.FormatAsciiDoc,
+}
+
 // IsMachineFormat reports whether f is a structured format consumed by
-// programs rather than humans. table and markdown are human presentations;
-// csv, tsv, html, xml and asciidoc are parsed by other tools, which must
-// receive exactly one parseable shape with no appended human notes.
+// programs rather than humans.
 func IsMachineFormat(f output.Format) bool {
-	switch f {
-	case output.FormatCSV, output.FormatTSV, output.FormatXML, output.FormatHTML, output.FormatAsciiDoc:
-		return true
-	default:
-		return false
-	}
+	return slices.Contains(machineFormats, f)
 }
 
 // renderFindings writes the findings table in the requested presentation

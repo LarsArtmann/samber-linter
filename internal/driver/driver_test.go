@@ -13,10 +13,10 @@ import (
 	"github.com/larsartmann/go-finding"
 )
 
-// e2eModule writes a self-contained module in dir: an app with one HW-1 site,
-// one honest checker, one clean handler, and a local samber/do v2 stub (via
-// replace) so loading works offline. Coverage: 1/3 checked.
-func e2eModule(t *testing.T) string {
+// writeConsumerModule scaffolds a self-contained consumer module under dir:
+// an "app" directory with the given main.go and a local samber/do v2 stub
+// (via replace) so loading works offline. Returns the app path.
+func writeConsumerModule(t *testing.T, mainGo string) string {
 	t.Helper()
 	dir := t.TempDir()
 
@@ -35,6 +35,16 @@ func e2eModule(t *testing.T) string {
 		"require github.com/samber/do/v2 v2.1.0\n\n" +
 		"replace github.com/samber/do/v2 => ../dostub\n"
 	must(t, os.WriteFile(filepath.Join(app, "go.mod"), []byte(goMod), 0o644))
+	must(t, os.WriteFile(filepath.Join(app, "main.go"), []byte(mainGo), 0o644))
+
+	return app
+}
+
+// e2eModule writes a self-contained module: an app with one HW-1 site,
+// one honest checker, one clean handler, and a local samber/do v2 stub (via
+// replace) so loading works offline. Coverage: 1/3 checked.
+func e2eModule(t *testing.T) string {
+	t.Helper()
 
 	mainGo := `package main
 
@@ -68,9 +78,8 @@ func main() {
 	do.Provide(nil, NewHandler)
 }
 `
-	must(t, os.WriteFile(filepath.Join(app, "main.go"), []byte(mainGo), 0o644))
 
-	return app
+	return writeConsumerModule(t, mainGo)
 }
 
 func must(t *testing.T, err error) {

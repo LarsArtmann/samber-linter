@@ -681,49 +681,84 @@ func enforceBaselineRatchet(
 	enforceRuleRatchet(errw, b.Findings, counts, gateFailed)
 }
 
+// Baseline validation failure classes. validateBaseline wraps these with the
+// specific numbers, so callers can errors.Is the class while the stderr line
+// stays precise.
+var (
+	ErrBaselineSchema  = errors.New("baseline schema version not supported")
+	ErrBaselineCount   = errors.New("baseline service counters are inconsistent")
+	ErrBaselineRules   = errors.New("baseline per-rule counts are malformed")
+	ErrBaselineFloated = errors.New("baseline coverage is out of range")
+)
+
+// coverageRatioTolerance is the float slack between stored coverage and
+// checked/registered: the file is tool-written, so anything beyond float
+// rounding means it was hand-edited or corrupted.
+const coverageRatioTolerance = 1e-9
+
 // validateBaseline rejects baseline files this run cannot enforce honestly:
 // wrong schema generation, negative or inconsistent counters, out-of-range
 // coverage, or malformed per-rule counts.
 func validateBaseline(b baseline) error {
-	switch {
-	case b.Version < baselineSchemaVersion:
-		return fmt.Errorf(
-			"schema v%d predates v%d; re-run --set-baseline to migrate (v2 adds per-rule finding counts)",
-			b.Version, baselineSchemaVersion)
-	case b.Version > baselineSchemaVersion:
-		return fmt.Errorf(
-			"schema v%d is newer than this tool supports (v%d); upgrade samber-linter",
-			b.Version, baselineSchemaVersion)
+	if err := validateBaselineSchema(b); err != nil {
+		return err
 	}
 
-	if b.Checked < 0 || b.Registered < 0 {
-		return fmt.Errorf("negative service counts (checked=%d registered=%d)", b.Checked, b.Registered)
-	}
-
-	if b.Checked > b.Registered {
-		return fmt.Errorf("checked %d exceeds registered %d", b.Checked, b.Registered)
-	}
-
-	if b.Coverage < 0 || b.Coverage > 1 {
-		return fmt.Errorf("coverage %v outside [0,1]", b.Coverage)
-	}
-
-	if b.Registered > 0 {
-		want := float64(b.Checked) / float64(b.Registered)
-		if math.Abs(b.Coverage-want) > 1e-9 {
-			return fmt.Errorf(
-				"coverage %v does not match checked/registered = %d/%d = %v; the file is corrupt or hand-edited",
-				b.Coverage, b.Checked, b.Registered, want)
-		}
+	if err := validateBaselineCounters(b); err != nil {
+		return err
 	}
 
 	for rule, count := range b.Findings {
 		if rule == "" {
-			return errors.New("findings map has an empty rule name")
+			return fmt.Errorf("%w: findings map has an empty rule name", ErrBaselineRules)
 		}
 
 		if count < 0 {
-			return fmt.Errorf("findings[%q] = %d is negative", rule, count)
+			return fmt.Errorf("%w: findings[%q] = %d is negative", ErrBaselineRules, rule, count)
+		}
+	}
+
+	return nil
+}
+
+// validateBaselineSchema rejects schema generations this binary cannot read
+// or enforce: older files lack the per-rule floors, newer files may enforce
+// rules this binary does not know.
+func validateBaselineSchema(b baseline) error {
+	switch {
+	case b.Version < baselineSchemaVersion:
+		return fmt.Errorf(
+			"%w: v%d predates v%d; re-run --set-baseline to migrate (v2 adds per-rule finding counts)",
+			ErrBaselineSchema, b.Version, baselineSchemaVersion)
+	case b.Version > baselineSchemaVersion:
+		return fmt.Errorf(
+			"%w: v%d is newer than this tool supports (v%d); upgrade samber-linter",
+			ErrBaselineSchema, b.Version, baselineSchemaVersion)
+	}
+
+	return nil
+}
+
+// validateBaselineCounters rejects impossible or hand-edited counter sets.
+func validateBaselineCounters(b baseline) error {
+	if b.Checked < 0 || b.Registered < 0 {
+		return fmt.Errorf("%w: negative counts (checked=%d registered=%d)", ErrBaselineCount, b.Checked, b.Registered)
+	}
+
+	if b.Checked > b.Registered {
+		return fmt.Errorf("%w: checked %d exceeds registered %d", ErrBaselineCount, b.Checked, b.Registered)
+	}
+
+	if b.Coverage < 0 || b.Coverage > 1 {
+		return fmt.Errorf("%w: coverage %v outside [0,1]", ErrBaselineFloated, b.Coverage)
+	}
+
+	if b.Registered > 0 {
+		want := float64(b.Checked) / float64(b.Registered)
+		if math.Abs(b.Coverage-want) > coverageRatioTolerance {
+			return fmt.Errorf(
+				"%w: coverage %v does not match checked/registered = %d/%d = %v; the file is corrupt or hand-edited",
+				ErrBaselineFloated, b.Coverage, b.Checked, b.Registered, want)
 		}
 	}
 
