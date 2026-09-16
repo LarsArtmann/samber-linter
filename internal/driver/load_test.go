@@ -15,6 +15,11 @@ func hostileGoFlags(t *testing.T) {
 	t.Setenv("GOFLAGS", "-mod=vendor")
 }
 
+// The Setenv-based load tests cannot run in parallel (t.Setenv panics under
+// t.Parallel because the env mutation is process-global), so the paralleltest
+// rule is intentionally suppressed here.
+//
+//nolint:paralleltest // t.Setenv is incompatible with t.Parallel
 func TestLoadSanitizesInheritedGoFlags(t *testing.T) {
 	hostileGoFlags(t)
 
@@ -32,6 +37,7 @@ func TestLoadSanitizesInheritedGoFlags(t *testing.T) {
 	}
 }
 
+//nolint:paralleltest // t.Setenv is incompatible with t.Parallel
 func TestLoadExplicitEnvOverridesHostileInherited(t *testing.T) {
 	hostileGoFlags(t)
 
@@ -62,8 +68,8 @@ func TestLoadEnvSanitizedEntryAlwaysPresent(t *testing.T) {
 
 	entry, found := "", false
 
-	for _, entry := range env {
-		if key, value, ok := strings.Cut(entry, "="); ok && key == "GOFLAGS" {
+	for _, pair := range env {
+		if key, value, ok := strings.Cut(pair, "="); ok && key == "GOFLAGS" {
 			entry, found = value, true
 		}
 	}

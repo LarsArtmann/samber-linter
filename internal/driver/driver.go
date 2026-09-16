@@ -336,6 +336,7 @@ func loadEnv() []string {
 	for _, entry := range inherited {
 		if key, value, ok := strings.Cut(entry, "="); ok && key == "GOFLAGS" {
 			goFlags = value
+
 			continue
 		}
 
