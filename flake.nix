@@ -67,7 +67,6 @@
       # GOEXPERIMENT; run the CI-equivalent suite instead.
       perSystem =
         {
-          self,
           pkgs,
           lib,
           ...

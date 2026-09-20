@@ -46,7 +46,11 @@ while IFS= read -r gomod; do
 	grep -q "github.com/samber/do" "$gomod" || continue
 	nested=0
 	for accepted in ${candidates[@]:-}; do
-		case "$dir/" in "$accepted"/*) nested=1; break ;; esac
+		case "$dir/" in "$accepted"/*)
+			nested=1
+			break
+			;;
+		esac
 	done
 	[ "$nested" = 0 ] && candidates+=("$dir")
 done < <(find "$SCAN_ROOT" -maxdepth 3 -name go.mod -type f 2>/dev/null | sort)
@@ -69,8 +73,8 @@ for dir in "${candidates[@]}"; do
 	out=""
 	rc=0
 	if [ -f "$dir/go.work" ]; then
-		mods="$(cd "$dir" && go work edit -json 2>>"$work/err-$pseudo.txt" \
-			| jq -r --arg dir "$dir" '.Use[].DiskPath | if startswith("/") then . else $dir + "/" + . end' || true)"
+		mods="$(cd "$dir" && go work edit -json 2>>"$work/err-$pseudo.txt" |
+			jq -r --arg dir "$dir" '.Use[].DiskPath | if startswith("/") then . else $dir + "/" + . end' || true)"
 		if [ -z "$mods" ]; then
 			rc=2
 		else
@@ -81,7 +85,7 @@ for dir in "${candidates[@]}"; do
 				part="$(cd "$mod" && timeout "$TIMEOUT_SECS" "$BIN" --check ./... 2>>"$work/err-$pseudo.txt")" || part_rc=$?
 				out+="$part"$'\n'
 				[ "$part_rc" -ne 0 ] && rc=$part_rc
-				done <<<"$mods"
+			done <<<"$mods"
 		fi
 	else
 		out="$(cd "$dir" && timeout "$TIMEOUT_SECS" "$BIN" --check ./... 2>>"$work/err-$pseudo.txt")" || rc=$?
@@ -119,15 +123,15 @@ for dir in "${candidates[@]}"; do
 			[ -n "$counts" ] || continue
 			checked=$((checked + ${counts%/*}))
 			registered=$((registered + ${counts#*/}))
-			done < <(grep -oE 'health-coverage: [0-9]+/[0-9]+' <<<"$out" | sed 's/health-coverage: //')
+		done < <(grep -oE 'health-coverage: [0-9]+/[0-9]+' <<<"$out" | sed 's/health-coverage: //')
 
 		findings="$(grep -cE ': (HW-[0-9]|HW-unresolved):' <<<"$out" || true)"
 		if [ "$findings" -eq 0 ]; then
 			status="CLEAN"
 			rule_summary=""
 		else
-			rule_summary="$(grep -oE ': HW-[0-9a-z-]+:' <<<"$out" | tr -d ' :' | sort | uniq -c \
-				| awk '{printf "%s=%s ", $2, $1}')"
+			rule_summary="$(grep -oE ': HW-[0-9a-z-]+:' <<<"$out" | tr -d ' :' | sort | uniq -c |
+				awk '{printf "%s=%s ", $2, $1}')"
 		fi
 	fi
 
