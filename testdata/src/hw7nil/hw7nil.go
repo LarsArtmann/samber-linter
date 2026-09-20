@@ -16,7 +16,7 @@ import (
 // canonical HW-7 site.
 type NilEager struct{}
 
-func (n *NilEager) HealthCheck(context.Context) error { return nil } // want fact:`nil-body health check`
+func (n *NilEager) HealthCheck(context.Context) error { return nil } // want HealthCheck:`nil-body health check`
 
 func NewNilEager() *NilEager { return &NilEager{} }
 
@@ -29,7 +29,7 @@ var _ = func() bool {
 // resolution) AND HW-7 (green forever after) — two diseases, two fixes.
 type NilLazy struct{}
 
-func (n *NilLazy) HealthCheck(context.Context) error { return nil } // want fact:`nil-body health check`
+func (n *NilLazy) HealthCheck(context.Context) error { return nil } // want HealthCheck:`nil-body health check`
 
 func NewNilLazy(i do.Injector) (*NilLazy, error) { return &NilLazy{}, nil }
 
@@ -41,7 +41,7 @@ var _ = func() bool {
 // NilBare: bare variant on a value registration — HW-2 and HW-7 compose.
 type NilBare struct{}
 
-func (n NilBare) HealthCheck() error { return nil } // want fact:`nil-body health check`
+func (n NilBare) HealthCheck() error { return nil } // want HealthCheck:`nil-body health check`
 
 var _ = func() bool {
 	do.ProvideValue(nil, NilBare{}) // want `HW-2: .*` `HW-7: .*`
@@ -77,7 +77,7 @@ var _ = func() bool {
 // the sweep never reaches that body, so HW-7 must stay silent.
 type PointerOnlyNil struct{}
 
-func (p *PointerOnlyNil) HealthCheck(context.Context) error { return nil } // want fact:`nil-body health check`
+func (p *PointerOnlyNil) HealthCheck(context.Context) error { return nil } // want HealthCheck:`nil-body health check`
 
 var _ = func() bool {
 	do.ProvideValue(nil, PointerOnlyNil{}) // want `HW-5: .*`
@@ -88,4 +88,4 @@ var _ = func() bool {
 // the linter detects container health-washing, not style.
 type Unregistered struct{}
 
-func (u *Unregistered) HealthCheck(context.Context) error { return nil } // want fact:`nil-body health check`
+func (u *Unregistered) HealthCheck(context.Context) error { return nil } // want HealthCheck:`nil-body health check`

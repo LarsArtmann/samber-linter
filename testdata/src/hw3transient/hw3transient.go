@@ -12,7 +12,7 @@ import (
 
 type PerRequest struct{}
 
-func (p *PerRequest) HealthCheck(context.Context) error { return nil } // want fact:`nil-body health check`
+func (p *PerRequest) HealthCheck(context.Context) error { return nil } // want HealthCheck:`nil-body health check`
 
 func NewPerRequest(i do.Injector) (*PerRequest, error) { return &PerRequest{}, nil }
 

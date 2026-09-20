@@ -19,6 +19,7 @@ func TestGoldenCorpus(t *testing.T) {
 	analysistest.Run(t, testdataDir(), New(),
 		"golden", "hw5value", "hw3transient", "hw4lazy", "hw2bare", "hw7nil",
 		"suppress", "suppressspan", "edges", "overr", "unresolvable",
+		"hw7cross/lib", "hw7cross/main",
 	)
 }
 
