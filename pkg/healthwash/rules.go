@@ -18,6 +18,7 @@ import (
 //	HW-3  transient wrapper: the check can never execute             (warn)
 //	HW-1  shutdown-without-check: green by construction              (warn)
 //	HW-4  lazy wrapper: green until first resolution                 (info)
+//	HW-7  check body is exactly `return nil`: green forever          (warn)
 //	HW-2  bare check: uncancellable, degrades the sweep              (info)
 func evalSite(
 	pass *analysis.Pass,
@@ -26,6 +27,7 @@ func evalSite(
 	call *ast.CallExpr,
 	doIfaces ifaces,
 	strict bool,
+	methodDecls map[*types.Func]*ast.FuncDecl,
 ) (ServiceRecord, []siteReport) {
 	if kind == KindAlias {
 		return evalAlias(pass, call), nil
@@ -74,6 +76,14 @@ func evalSite(
 	valueReg := !isPointer(stored)
 	ptrToBase := types.NewPointer(stored) // for value regs this is *T
 
+	// HW-7 reads the reachable check's body, which only exists for
+	// sweep-dispatched kinds: transients never dispatch (HW-3 owns the whole
+	// story) and aliases delegate to their target.
+	var nilBody bool
+	if kind == KindLazy || kind == KindEager {
+		nilBody = hasSoleNilReturnCheck(pass, stored, methodDecls)
+	}
+
 	facts := typeFacts{
 		anyCheck:  doIfaces.typeImplementsAnyCheck(stored),
 		bareCheck: doIfaces.typeImplementsBareCheck(stored),
@@ -81,6 +91,7 @@ func evalSite(
 		anyCheckP: doIfaces.typeImplementsAnyCheck(ptrToBase),
 		shutdown:  doIfaces.typeImplementsAnyShutdown(stored),
 		valueReg:  valueReg,
+		nilBody:   nilBody,
 	}
 
 	rec.ImplementsCheck = facts.anyCheck
@@ -147,7 +158,7 @@ func resolveStoredType(
 
 // typeFacts is what the sweep can see about the stored instance. All fields
 // derive from interface satisfaction of the stored type (and its pointer for
-// value registrations).
+// value registrations); nilBody is the one syntactic fact (HW-7).
 type typeFacts struct {
 	anyCheck  bool // any Healthchecker variant on the stored type
 	bareCheck bool // bare HealthCheck() on the stored type
@@ -155,6 +166,7 @@ type typeFacts struct {
 	anyCheckP bool // any Healthchecker variant on *T (value registrations)
 	shutdown  bool // any Shutdowner variant on the stored type
 	valueReg  bool // registered as a value, not a pointer
+	nilBody   bool // the reachable check body is exactly `return nil`
 }
 
 // reportTransientRules fires for transient registrations: the upstream
@@ -178,7 +190,6 @@ func reportTransientRules(add func(rule, msg string), rel, fnName string, facts 
 		addBareCheckRule(add, rel)
 	}
 }
-
 // reportSweepRules fires for lazy and eager registrations in precedence
 // order. HW-5 short-circuits: it and HW-1 share the single remedy (register
 // the pointer), so reporting both would double-count one fixable cause.
@@ -225,6 +236,17 @@ func reportSweepRules(add func(rule, msg string), rel, fnName string, kind Servi
 		if facts.bareCheck && !facts.ctxCheck {
 			addBareCheckRule(add, rel)
 		}
+
+		if facts.nilBody {
+			add(RuleHW7, fmt.Sprintf(
+				"%s's health check body is exactly \"return nil\"; "+
+					"the check can never fail and always renders \"pass\" on health dashboards. "+
+					"Implement a real check or suppress with a reason: "+
+					"//samber-linter:allow %s <reason>",
+				rel,
+				RuleCodeHW7,
+			))
+		}
 	}
 }
 
@@ -260,6 +282,92 @@ func isPointer(t types.Type) bool {
 	_, ok := t.(*types.Pointer)
 
 	return ok
+}
+
+// collectMethodDecls maps every method declared in the analyzed package to
+// its AST declaration, keyed by the checker's method object. HW-7 resolves
+// the stored type's HealthCheck through this map; a check declared in another
+// package has no entry (the body is not visible from here) and is silently
+// skipped — the same doctrine as unresolvable registrations.
+func collectMethodDecls(pass *analysis.Pass) map[*types.Func]*ast.FuncDecl {
+	out := map[*types.Func]*ast.FuncDecl{}
+
+	for _, file := range pass.Files {
+		for _, decl := range file.Decls {
+			fn, ok := decl.(*ast.FuncDecl)
+			if !ok || fn.Recv == nil || fn.Body == nil {
+				continue
+			}
+
+			obj, ok := pass.TypesInfo.Defs[fn.Name].(*types.Func)
+			if !ok {
+				continue
+			}
+
+			out[obj] = fn
+		}
+	}
+
+	return out
+}
+
+// hasSoleNilReturnCheck is HW-7's predicate: the stored type's reachable
+// HealthCheck method is declared in this package and its body's only
+// statement is `return nil`. The method is resolved by interface-method
+// lookup (promoted methods included) — never by name heuristics on the AST.
+func hasSoleNilReturnCheck(
+	pass *analysis.Pass, stored types.Type, methodDecls map[*types.Func]*ast.FuncDecl,
+) bool {
+	named := baseNamed(stored)
+	if named == nil {
+		return false
+	}
+
+	// addressable=true: for a stored *T the method set includes both receiver
+	// forms; for a stored T the reachable check is a value-receiver method.
+	obj, _, _ := types.LookupFieldOrMethod(named, true, pass.Pkg, "HealthCheck")
+	fn, ok := obj.(*types.Func)
+	if !ok {
+		return false
+	}
+
+	decl, ok := methodDecls[fn]
+	if !ok {
+		return false
+	}
+
+	return isSoleNilReturn(decl.Body)
+}
+
+// baseNamed unwraps a stored type to its named base: *T → T. Method sets and
+// declarations live on the named type.
+func baseNamed(t types.Type) *types.Named {
+	if p, ok := t.(*types.Pointer); ok {
+		t = p.Elem()
+	}
+
+	named, _ := t.(*types.Named)
+
+	return named
+}
+
+// isSoleNilReturn reports whether the block's only statement is a single
+// `return nil`. Comments are ignored (a commented body is still nil); naked
+// returns on named results and multi-result returns are not HW-7 — they can
+// carry a real error value.
+func isSoleNilReturn(body *ast.BlockStmt) bool {
+	if body == nil || len(body.List) != 1 {
+		return false
+	}
+
+	ret, ok := body.List[0].(*ast.ReturnStmt)
+	if !ok || len(ret.Results) != 1 {
+		return false
+	}
+
+	nilIdent, ok := ret.Results[0].(*ast.Ident)
+
+	return ok && nilIdent.Name == "nil"
 }
 
 func orDash(s string) string {

@@ -33,6 +33,7 @@ grow the budget.
 | HW-3          | 1                  | none known                                                                                                                                                            | **0** — the transient healthcheck is an upstream TODO that always returns nil; a check on a transient _never executes_.                                                                                         | reasoned suppression                                                    |
 | HW-4          | 24                 | **Judgment calls only.** A lazily-built service that is in fact constructed during boot reports green "until first resolution" for microseconds; HW-4 still flags it. | **Soft ceiling ≈ 20% of findings per project.** HW-4 is `info`/Medium (never fails CI by default) precisely because the "when is it actually built" answer is not statically knowable.                          | `--disable HW-4`, allowlist, or register boot-critical services eagerly |
 | HW-5          | 0                  | none known                                                                                                                                                            | **0** — pointer-receiver/value-registration is a compile-time fact.                                                                                                                                             | reasoned suppression                                                    |
+| HW-7          | pending next scan  | "It's a stub while I bring the service up" — a real intent disagreement, but the shipped body still cannot fail                                                       | **0** — a body whose only statement is `return nil` is a syntactic fact: the check cannot fail regardless of intent. Stubs-in-progress are expressed via a reasoned suppression, not a budget exception.         | reasoned suppression, or implement the real check                        |
 | HW-0          | 0                  | none known                                                                                                                                                            | **0** — malformed directive is a syntactic fact; also fires orphaned (no matching finding) since v0.1.1.                                                                                                        | write the reason                                                        |
 | HW-unresolved | 0 (off)            | Interface-typed closure results are statically unknowable — reporting them as violations would be the FP.                                                             | **0 while off**; in `--strict` the finding is explicitly "unresolved", never a guessed rule.                                                                                                                    | keep `--strict` off, or resolve the concrete type                       |
 
@@ -43,8 +44,18 @@ grow the budget.
   (register the pointer). One finding per fixable cause.
 - **Closure providers returning interfaces** resolve to `Unresolved`, never to
   a guessed HW-N, because the sweep type-asserts the stored concrete instance.
-- **Transients with a check** report HW-3 and never HW-2/HW-4: the check can
-  never execute, so wrapper-level nuance is moot.
+- **Transients with a check** report HW-3 and never HW-2/HW-4/HW-7: the check can
+  never execute, so wrapper-level and body-level nuance is moot.
+- **HW-7 evaluates only the reachable check.** A value registration whose check
+  sits on `*T` reports HW-5 and never HW-7 (the sweep never sees that body —
+  one finding per fixable cause). Registering the pointer makes the body
+  reachable and HW-7 becomes visible, which is correct: the check now runs and
+  still cannot fail.
+- **HW-7 v1 narrowness (documented, not FPs):** multi-statement bodies
+  (log-then-nil), delegation (`return s.db.Ping()`), and naked returns on named
+  results are negative — they can fail, or their verdict needs flow data. Also
+  invisible: check methods declared outside the analyzed package (no body to
+  read — same silent-skip doctrine as unresolved registrations).
 - **Duplicate registrations** each report at their own site (each instance is
   separately sweep-visible) but count once in the HW-6 coverage denominator.
 

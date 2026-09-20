@@ -23,6 +23,7 @@ const (
 	RuleHW3        = "HW-3"
 	RuleHW4        = "HW-4"
 	RuleHW5        = "HW-5"
+	RuleHW7        = "HW-7"
 	RuleUnresolved = "HW-unresolved"
 
 	RuleCodeHW0     = "hw-0"
@@ -31,6 +32,7 @@ const (
 	RuleCodeHW3     = "hw-3"
 	RuleCodeHW4     = "hw-4"
 	RuleCodeHW5     = "hw-5"
+	RuleCodeHW7     = "hw-7"
 	RuleCodeUnres   = "hw-unresolved"
 	RuleCodeAll     = "all"
 	RuleMessageHW0  = "suppression directive without a reason; unexplained suppressions rot into permanent darkness"
@@ -124,9 +126,11 @@ func run(pass *analysis.Pass) (any, error) {
 		reports []siteReport
 	)
 
+	methodDecls := collectMethodDecls(pass)
+
 	for _, file := range pass.Files {
 		ast.Inspect(file, func(n ast.Node) bool {
-			rec, reps, isReg := inspectRegistration(pass, n, ifaces, strict)
+			rec, reps, isReg := inspectRegistration(pass, n, ifaces, strict, methodDecls)
 			if isReg {
 				records = append(records, rec)
 				reports = append(reports, reps...)
@@ -167,6 +171,7 @@ func parseDisabledRules(pass *analysis.Pass) map[string]bool {
 // node is a samber/do registration call.
 func inspectRegistration(
 	pass *analysis.Pass, n ast.Node, doIfaces ifaces, strict bool,
+	methodDecls map[*types.Func]*ast.FuncDecl,
 ) (ServiceRecord, []siteReport, bool) {
 	call, isCall := n.(*ast.CallExpr)
 	if !isCall {
@@ -188,7 +193,7 @@ func inspectRegistration(
 		return ServiceRecord{}, nil, false
 	}
 
-	rec, reps := evalSite(pass, fn.Name(), kind, call, doIfaces, strict)
+	rec, reps := evalSite(pass, fn.Name(), kind, call, doIfaces, strict, methodDecls)
 
 	return rec, reps, true
 }
