@@ -38,6 +38,18 @@ Keep a Changelog; versioning: SemVer.
   tests — replacing four hand-maintained lists. A posture flip (e.g. the
   pending HW-4 default decision) is now a one-line change, wired through
   `DefaultDisabledRules` in both the driver and the plugin.
+- **Toolchain realignment.** go.mod's floor moved to 1.27.1; the flake now
+  pins `go_1_27` (locked nixpkgs ships exactly 1.27.1) and CI pins
+  `go-version: "1.27"` — the local nix build was silently broken at the old
+  `go_1_26` pin (GOTOOLCHAIN=local).
+- **Ecosystem wiring.** Consumer ratchet gates live and green at `@v0.2.2`
+  (samber-do-auditlog `healthwash` job — its go-version drift guard fixed to
+  1.27.1 across ci/flake/golangci in the same change; standard-bug-tracking-schema
+  `healthwash` job + baseline path trigger). CV's `scripts/healthwash.sh`
+  pin bumped v0.2.1 → v0.2.2 (version-gated, gate PASS at 32%) with the pin
+  bump runbook recorded in CV's `docs/operations/healthwash-gate-runbook.md`.
+  The pseudonymous triage queue now reflects the 2026-09-20 scan
+  (40 analyzed, 19 findings, 32-consumer go ≥ 1.27.1 load-error wave).
 
 ## [0.2.2] - 2026-09-20
 

@@ -19,37 +19,16 @@ execution plan is historical:
 
 ## Short-term work queue (bounded, actionable)
 
-- [ ] **Wire consumer ratchet jobs onto v0.2.2** (source: "tag the schema-v2
-      release" — the tagging half is done, v0.2.2 shipped 2026-09-20):
-      `samber-do-auditlog` and `standard-bug-tracking-schema` pin `@v0.2.2`
-      in their healthwash CI jobs; both already carry committed v2 baselines
-      (auditlog 12/20 = 60%, standard-bug 2/61 = 3%).
-- [ ] **CV runbook note** (source: plan T5.8): CV's healthwash gate can now
-      version-gate the analyzer (`go run …@v0.2.2 -version` → `v0.2.2`,
-      verified via the module proxy 2026-09-20). Draft the runbook paragraph
-      for CV's `scripts/healthwash.sh` pin bump — the v0.2.1 pin still
-      carries both driver defects fixed in v0.2.2.
-- [ ] **Renumber the stale-directive rule candidate to HW-9+** (source:
-      "HW-7 stale directive" — the HW-7 ID is now taken by
-      `unconditional-nil-check`, released v0.2.2). Valid-but-orphaned
-      suppressions with `until` expiry resurface for cleanup; design noted in
-      `docs/FP-BUDGETS.md`. Assign the next free ID before designing.
-- [ ] **Default-rules single source** (source: lessons report item 14,
-      `docs/status/2026-09-16_13-27_cross-project-lessons-go-auto-upgrade.md`):
-      one `defaultRules` definition consumed by the driver, the plugin, and
-      the README rule-table drift test, so posture changes are one-line.
-- [ ] **Wrapper-indirection false negative** (source: 2026-09-20 consumer fix
-      round): `inspectRegistration` matches only direct `do.*` calls
-      (`pkg/healthwash/healthwash.go` ~L197), so registrations hidden behind
-      repo-local helper functions/generics (e.g. a `provideNamed[T]` wrapper
-      around `do.ProvideNamed`) are invisible to EVERY rule. Verified case: a
-      service implementing `HealthcheckerWithContext`, lazily registered
-      through such a wrapper, produced zero findings. Fix idea: resolve
-      one-level local wrappers (param→arg mapping into the wrapped `do.*`
-      call); start with a testdata fixture reproducing the shape.
-- [ ] Refresh the pseudonymous triage doc with the post-fix ecology numbers
-      (`docs/ecology/2026-09-20-scan.txt` supersedes both 2026-09-16 scans;
-      note the load-error wave — 32 consumers require go ≥ 1.27.1).
+- [ ] **Release the post-v0.2.2 batch** (HW-8 + wrapper-indirection
+      detection + single-source rule table are in Unreleased): cut v0.3.0
+      with the README §12 release flow, then evaluate whether the wrapper
+      channel surfaces new findings in the ecology (re-scan needs a
+      go ≥ 1.27.1 scanner toolchain — 32 consumers are in the load-error
+      wave until then).
+- [ ] **Mutant-proof the wrapper channel further** (optional hardening):
+      the `hwwrap` fixture proves the channel via HW-1; consider a dedicated
+      negative fixture for wrapper chains (wrapper-calling-wrapper) once a
+      real consumer shape is observed.
 
 ## Open decisions (user)
 
@@ -62,3 +41,6 @@ execution plan is historical:
 - [ ] **Upstream ownership:** who watches samber/do#317 and #318 (both OPEN,
       no maintainer response as of 2026-09-10), on what response SLA, and
       whether design notes beyond #318 wait for a maintainer ask.
+- [ ] **HW-9 `stale-directive` go-ahead:** design + FP budget recorded in
+      `docs/FP-BUDGETS.md` (2026-09-20); ships only on explicit user
+      approval.
