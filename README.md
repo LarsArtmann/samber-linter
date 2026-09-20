@@ -478,10 +478,30 @@ tree within hours of the incident analysis — live references rot.
 
 - Not a general DI style linter. DO-1..DO-8 already exist; do not duplicate.
 - Not runtime monitoring. Dashboards and auditlog own that.
-- Not a judge of check **quality** (a check that always returns nil is
-  statically indistinguishable from an honest one; §7 is the answer there).
+- Not a judge of check **quality beyond the syntactic fact**. HW-7 covers the
+  statically decidable slice — a body whose only statement is `return nil` —
+  but a check that reaches nil through tautological conditions or constant
+  propagation is beyond static analysis; §7 (the runtime companion) is the
+  answer there.
 - No support for samber/do v1 (different registration API; assess demand
   first).
+
+### Scope adjudications (2026-09-20, rule-candidate review)
+
+- **Alias-over-eager double shutdown — rejected as a rule.** An alias over an
+  eager target can shut the target down twice (`service_alias.go` delegation
+  plus the target's own scope pop; `serviceEager` has no built-guard). It is
+  a shutdown-side reliability trap, not health-washing, and whether it is
+  harmful depends on the target `Shutdown`'s idempotence — not statically
+  decidable, so the rule would guess. Documented as a consumer trap instead.
+- **DO-1..DO-8 boundary.** Usage-shape rules stay in branching-flow's
+  `doanalyzerv2`; this analyzer owns the health-contract family (HW-*), and
+  DO-9a–e remain its delegation layer into that family. Neither side grows
+  into the other's scope — no split brain.
+- **Value-receiver `HealthCheck` — non-candidate.** Pointer method sets
+  include value receivers, so a value-receiver check is already found by the
+  interface-satisfaction facts behind HW-1..HW-7; a separate rule would only
+  double-report.
 
 ## 11. Verification ledger
 
@@ -507,6 +527,7 @@ Claims in this document and their sources:
 | CV registration sites: 61 today (53 `Provide`, 8 `ProvideValue`) — counts drift                                                                                                                | `~/projects/CV` grep 2026-09-09                                                                                                                                                       |
 | go-finding / go-linter-sdk / go-atomic-write APIs                                                                                                                                              | local source reads 2026-09-09 (`analysis/analysis.go`, `registry.go:358`, `atomicwrite.go:66-140`)                                                                                    |
 | HW-7 coverage-variant matrix: bare/ctx/value-receiver/promoted/cross-package nil bodies all fire; duck-typed non-do `Check`, naked returns, delegation, and HW-5's unreachable body stay clean | scratch-module audit + `testdata/src/hw7nil` + `testdata/src/hw7cross` (2026-09-20) — the cross-package gap this audit found is what forced the `NilBodyFact` two-sweep driver design |
+| Ecology 2026-09-20: 40 analyzed, 32 LOAD_ERROR (consumer `go.mod`/`go.work` now require go ≥ 1.27.1; local toolchain 1.26.7, GOTOOLCHAIN=local), 8 with findings, 19 findings, 0 HW-7 in the wild | `docs/ecology/2026-09-20-scan.txt` + `-stderr.txt`; NOT directly comparable to the 2026-09-16 scan (45 discovered then vs 72 now; the load-error wave is environmental, never read as clean) |
 
 Upstream drift guard: pin the analyzed samber/do version in CI and re-run the
 mechanism assertions (§2) against new releases; a behavior change upstream

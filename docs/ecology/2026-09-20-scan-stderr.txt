@@ -1,0 +1,108 @@
+building scanner...
+scanning 72 project(s) under /home/lars/projects...
+
+load/timeout details:
+--- p-7196 (/home/lars/projects/accountability-system)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: go.mod requires go >= 1.27.1 (running go 1.26.7; GOTOOLCHAIN=local)
+    
+--- p-e91b (/home/lars/projects/AI-von-Art-Bench)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: go.mod requires go >= 1.27.1 (running go 1.26.7; GOTOOLCHAIN=local)
+    
+--- p-93d3 (/home/lars/projects/archived/experiment-100m-arr)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: updates to go.mod needed; to update it:
+    	go mod tidy
+    
+--- p-8545 (/home/lars/projects/archived/website-holger-hahn)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: updates to go.mod needed; to update it:
+    	go mod tidy
+    
+--- p-cb16 (/home/lars/projects/BuildFlow/execution)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: ../go.work requires go >= 1.27.1 (running go 1.26.7; GOTOOLCHAIN=local)
+    
+--- p-b344 (/home/lars/projects/BuildFlow)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: go.work requires go >= 1.27.1 (running go 1.26.7; GOTOOLCHAIN=local)
+    
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: ../go.work requires go >= 1.27.1 (running go 1.26.7; GOTOOLCHAIN=local)
+--- p-6c93 (/home/lars/projects/clean-wizard)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: go.mod requires go >= 1.27.1 (running go 1.26.7; GOTOOLCHAIN=local)
+    
+--- p-2ee5 (/home/lars/projects/Code-Quality-Agent)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: go.mod requires go >= 1.27.1 (running go 1.26.7; GOTOOLCHAIN=local)
+    
+--- p-cb47 (/home/lars/projects/cqrs-htmx/auditlog)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: ../go.work requires go >= 1.27.1 (running go 1.26.7; GOTOOLCHAIN=local)
+    
+--- p-d639 (/home/lars/projects/cqrs-htmx/health)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: ../go.work requires go >= 1.27.1 (running go 1.26.7; GOTOOLCHAIN=local)
+    
+--- p-7414 (/home/lars/projects/cqrs-htmx/integration_test)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: ../go.work requires go >= 1.27.1 (running go 1.26.7; GOTOOLCHAIN=local)
+    
+--- p-57ed (/home/lars/projects/DiscordSync)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: go.mod requires go >= 1.27.1 (running go 1.26.7; GOTOOLCHAIN=local)
+    
+--- p-05c2 (/home/lars/projects/dnsblockd)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: go.mod requires go >= 1.27.1 (running go 1.26.7; GOTOOLCHAIN=local)
+    
+--- p-7a08 (/home/lars/projects/file-and-image-renamer/bench)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: go.mod requires go >= 1.27.1 (running go 1.26.7; GOTOOLCHAIN=local)
+    
+--- p-e62c (/home/lars/projects/file-and-image-renamer)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: go.mod requires go >= 1.27.1 (running go 1.26.7; GOTOOLCHAIN=local)
+    
+--- p-e487 (/home/lars/projects/go-auto-upgrade)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: go.mod requires go >= 1.27.1 (running go 1.26.7; GOTOOLCHAIN=local)
+    
+--- p-a31b (/home/lars/projects/go-health-dashboard)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: go.mod requires go >= 1.27.1 (running go 1.26.7; GOTOOLCHAIN=local)
+    
+--- p-5e87 (/home/lars/projects/go-health)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: go.mod requires go >= 1.27.1 (running go 1.26.7; GOTOOLCHAIN=local)
+    
+--- p-08fb (/home/lars/projects/go-taskqueue)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: go.mod requires go >= 1.27.1 (running go 1.26.7; GOTOOLCHAIN=local)
+    
+--- p-fbf5 (/home/lars/projects/Kernovia)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: module ../../forks/cordis/go listed in go.work file requires go >= 1.27, but go.work lists go 1.26.7; to update it:
+    	go work use
+    
+--- p-6d7b (/home/lars/projects/KeyHolderAI)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: go.mod requires go >= 1.27.1 (running go 1.26.7; GOTOOLCHAIN=local)
+    
+--- p-e0a5 (/home/lars/projects/library-policy)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: go.mod requires go >= 1.27 (running go 1.26.7; GOTOOLCHAIN=local)
+    
+--- p-138c (/home/lars/projects/mr-sync)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: go.mod requires go >= 1.27.1 (running go 1.26.7; GOTOOLCHAIN=local)
+    
+--- p-01be (/home/lars/projects/nsfw-classifier)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: go.mod requires go >= 1.27.1 (running go 1.26.7; GOTOOLCHAIN=local)
+    
+--- p-63c5 (/home/lars/projects/PapDashboard)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: go.mod requires go >= 1.27.1 (running go 1.26.7; GOTOOLCHAIN=local)
+    
+--- p-5e81 (/home/lars/projects/project-dependency-graph)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: inconsistent vendoring in /home/lars/projects/project-dependency-graph:
+    	github.com/LarsArtmann/gogenfilter/v3@v3.6.1: is explicitly required in go.mod, but not marked as explicit in vendor/modules.txt
+    
+--- p-6f63 (/home/lars/projects/reports/app)
+    samber-linter: /home/lars/projects/reports/app/internal/auth/session.go:17:2: sessions redeclared in this block
+    samber-linter: /home/lars/projects/reports/app/internal/auth/session.go:15:2: 	other declaration of sessions
+    samber-linter: /home/lars/projects/reports/app/internal/auth/session.go:17:2: "github.com/gorilla/sessions" imported and not used
+--- p-b088 (/home/lars/projects/Rolls-Royce-mtuGoHelpCenter-golang)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: go.mod requires go >= 1.27.1 (running go 1.26.7; GOTOOLCHAIN=local)
+    
+--- p-d9a9 (/home/lars/projects/samber-do-auditlog)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: go.mod requires go >= 1.27.1 (running go 1.26.7; GOTOOLCHAIN=local)
+    
+--- p-b6ff (/home/lars/projects/Standup-Killer)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: module . listed in go.work file requires go >= 1.27.1, but go.work lists go 1.26.7; to update it:
+    	go work use
+    go: module ../cqrs-htmx/adminui listed in go.work file requires go >= 1.27.1, but go.work lists go 1.26.7; to update it:
+--- p-b239 (/home/lars/projects/testing)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: downloading github.com/LarsArtmann/go-business-rules/v2 v2.1.0
+    verifying github.com/LarsArtmann/go-business-rules/v2@v2.1.0: checksum mismatch
+    	downloaded: h1:qAZFkyFcwVgmZrfFcPsjsepdubfsmXzGbRB7zoTfxGw=
+--- p-52ff (/home/lars/projects/webphone)
+    samber-linter: load failed: load packages: err: exit status 1: stderr: go: go.mod requires go >= 1.27.1 (running go 1.26.7; GOTOOLCHAIN=local)
+    
