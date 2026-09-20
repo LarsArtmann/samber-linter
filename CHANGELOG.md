@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. Format based on
 Keep a Changelog; versioning: SemVer.
 
-## [Unreleased]
+## [0.2.2] - 2026-09-20
 
 ### Added
 
@@ -106,6 +106,44 @@ Keep a Changelog; versioning: SemVer.
   plugins are prefetched by hash and injected as store paths, with a drift
   guard that fails when dprint.json references a version the flake does not
   pin.
+
+## [0.2.1] - 2026-09-16
+
+### Fixed
+
+- **Package loading strips `-mod` tokens from inherited GOFLAGS.** A caller's
+  `-mod=vendor` failed repos without a vendor directory, `-mod=mod` is
+  illegal in workspace mode, and both broke `go run …@vX` consumers whose
+  shells exported GOFLAGS. The sanitized entry is always present (the go
+  command dedupes env with the last occurrence winning) and explicit `Env`
+  entries shadow it, so callers always win.
+
+## [0.2.0] - 2026-09-16
+
+Quality-gate round: first fully green CI run (all five jobs incl. `lint`),
+burned down ~141 golangci findings, baseline schema v2, and the programmatic
+Analyze API.
+
+### Added
+
+- **Programmatic Analyze API** (`pkg/sdk`): one call returning go-finding
+  findings for in-process consumers, which own presentation, confidence
+  policy, and gating. A run that cannot load every package aborts with an
+  error — reporting the remainder as clean would be the false green this
+  linter exists to kill.
+- **Baseline schema v2**: the committed ratchet floor records per-rule
+  finding counts, so a single-rule regression fails the gate even while
+  aggregate coverage stays flat. Validation fails closed and loudly — older
+  or newer schema versions, counters inconsistent with the stored coverage,
+  negative counts, unparseable JSON — never silently degrades to
+  "no baseline".
+- `IsMachineFormat` classification for structured `--output` presentations.
+
+### Fixed
+
+- The CI `lint` job is real now: golangci-lint pinned to **v2.13.2
+  everywhere** (CI action v7, `.custom-gcl.yml`, nixpkgs), ~141 findings
+  burned down; first all-green run landed 2026-09-16.
 
 ## [0.1.1] - 2026-09-10
 

@@ -518,7 +518,7 @@ when it falls outside the verified set.
 
 ## 12. Status, license, upstream
 
-- Latest tagged release: **v0.2.1** (2026-09-16; `CHANGELOG.md` tracks
+- Latest tagged release: **v0.2.2** (2026-09-20; `CHANGELOG.md` tracks
   releases per version). The mechanism matrix covers
   samber/do v2.0.0 + v2.1.0; upstream findings are filed as
   [samber/do#317](https://github.com/samber/do/issues/317) and
