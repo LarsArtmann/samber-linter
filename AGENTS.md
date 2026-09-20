@@ -250,6 +250,20 @@ Non-obvious, easy to break:
   poisons it ("directory prefix . does not contain modules listed in
   go.work"), and `replace` paths are relative — moving fixture dirs breaks
   them. Used as the post-change regression proof.
+- **Survey toolchain traps (2026-09-20 full ~/.mrconfig sweep, 167 Go
+  projects):** the devshell exports `GOTOOLCHAIN=local`, so every consumer
+  whose go.mod floor exceeds the nix go fails to load with "go.mod requires
+  go >= X" — and `GOTOOLCHAIN=auto` does NOT switch for replace-target
+  floors ("module ../ requires go >= X"). Fix: build the scanner with the
+  newest consumer toolchain (`GOTOOLCHAIN=go1.27.1 go build`) so
+  go/packages' "application built with goY" version gate never rejects, and
+  export the same `GOTOOLCHAIN=go1.27.1` (not auto) for scans. Two more:
+  `GOWORK=off` also disables `go work edit -json` — run member discovery
+  via `env -u GOWORK` — and piping scanner output through `2>&1 | tail`
+  makes PARTIAL loads (per-package "package requires newer Go version"
+  errors on stderr) look like successful scans; always inspect stderr and
+  the exit path separately. Sweep artifacts (real names, outside the repo):
+  `~/backups/ecology/mrconfig-scan-<date>.{tsv,report.txt}` + `errs-<date>/`.
 - **Self-dogfood ratchet (since 2026-09-20):** the committed
   `.samber-linter-baseline.json` (schema v2, 0 registered — this repo
   registers nothing) is enforced by the CI `dogfood` job's third leg
