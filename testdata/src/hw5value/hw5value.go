@@ -12,7 +12,7 @@ import (
 
 type DeadCheck struct{}
 
-func (d *DeadCheck) HealthCheck(context.Context) error { return nil }
+func (d *DeadCheck) HealthCheck(context.Context) error { return nil } // want fact:`nil-body health check`
 
 var _ = func() bool {
 	do.ProvideValue(nil, DeadCheck{}) // want `HW-5: .*registered as value`
@@ -21,7 +21,7 @@ var _ = func() bool {
 
 type ClosureCreated struct{}
 
-func (c *ClosureCreated) HealthCheck(context.Context) error { return nil }
+func (c *ClosureCreated) HealthCheck(context.Context) error { return nil } // want fact:`nil-body health check`
 
 var _ = func() bool {
 	do.Provide(nil, func(i do.Injector) (ClosureCreated, error) { // want `HW-5: .*`

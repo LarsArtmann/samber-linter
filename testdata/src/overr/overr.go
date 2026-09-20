@@ -40,7 +40,7 @@ var _ = func() bool {
 type HonestEager struct{}
 
 func (h *HonestEager) Shutdown(context.Context)          {}
-func (h *HonestEager) HealthCheck(context.Context) error { return nil }
+func (h *HonestEager) HealthCheck(context.Context) error { return nil } // want fact:`nil-body health check`
 
 var _ = func() bool {
 	do.OverrideValue(nil, &HonestEager{}) // want `HW-7: .*`

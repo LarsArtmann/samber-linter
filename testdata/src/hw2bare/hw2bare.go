@@ -8,7 +8,7 @@ import do "github.com/samber/do/v2"
 
 type NoCtx struct{}
 
-func (n NoCtx) HealthCheck() error { return nil }
+func (n NoCtx) HealthCheck() error { return nil } // want fact:`nil-body health check`
 
 var _ = func() bool {
 	do.ProvideValue(nil, NoCtx{}) // want `HW-2: .*` `HW-7: .*`

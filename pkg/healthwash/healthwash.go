@@ -133,7 +133,7 @@ func run(pass *analysis.Pass) (any, error) {
 	// the fact at the registration site.
 	for obj, decl := range methodDecls {
 		if decl.Name.Name == "HealthCheck" && isSoleNilReturn(decl.Body) {
-			pass.ExportObjectFact(obj, NilBodyFact{})
+			pass.ExportObjectFact(obj, &NilBodyFact{})
 		}
 	}
 

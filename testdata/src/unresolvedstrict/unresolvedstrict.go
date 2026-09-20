@@ -11,7 +11,7 @@ type Checker interface {
 
 type real struct{}
 
-func (real) HealthCheck() error { return nil }
+func (real) HealthCheck() error { return nil } // want fact:`nil-body health check`
 
 func newReal(i do.Injector) (Checker, error) { return real{}, nil }
 
