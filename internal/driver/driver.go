@@ -613,10 +613,14 @@ func reportCoverage(
 		return coverage
 	}
 
+	// The gates compose, never short-circuit: --coverage-min is an absolute
+	// floor, and a baseline file that exists is still validated and enforced
+	// as a ratchet. A 2026-09-20 consumer incident (CV) sailed a stale v1
+	// baseline through a -coverage-min gate because the early return here
+	// skipped every baseline check — a gate that reads its own instrument
+	// must also validate that instrument.
 	if opts.CoverageMin > 0 {
 		enforceCoverageMin(out, opts.Stderr, checked, registered, coverage, opts.CoverageMin, gateFailed)
-
-		return coverage
 	}
 
 	enforceBaselineRatchet(out, opts.Stderr, baselinePath, counts, checked, registered, coverage, gateFailed)

@@ -411,6 +411,67 @@ func TestCoverageMinGate(t *testing.T) {
 	}
 }
 
+// TestCoverageMinComposesWithBaseline: passing --coverage-min must not
+// short-circuit baseline validation or the per-rule ratchet — the gates
+// compose. Discrimination: both scenarios below exit 2 (triage-only) on the
+// old early-return shape, where the baseline file was never read.
+func TestCoverageMinComposesWithBaseline(t *testing.T) {
+	t.Parallel()
+
+	app := hw4Module(t)
+	baselinePath := filepath.Join(app, DefaultBaselinePath)
+
+	var out, errOut bytes.Buffer
+
+	// The absolute floor passes (2/2 = 100% >= 50%), but a v1 baseline is
+	// corrupt by generation: validation must fail the gate anyway.
+	must(t, os.WriteFile(baselinePath,
+		[]byte(`{"version":1,"checked":2,"registered":2,"coverage":1}`), 0o644))
+
+	code := Run(Options{
+		Patterns: []string{"./..."}, Dir: app, Version: "test",
+		Env:          []string{"GOFLAGS=-mod=mod"},
+		CoverageMin:  0.5,
+		BaselinePath: baselinePath,
+		Stdout:       &out, Stderr: &errOut,
+	})
+	if code != 1 {
+		t.Fatalf("coverage-min + v1 baseline exit = %d, want 1 (baseline must still be validated); stderr: %s",
+			code, errOut.String())
+	}
+
+	if !strings.Contains(errOut.String(), "predates v2") {
+		t.Errorf("stderr missing v1 migration message: %s", errOut.String())
+	}
+
+	// The rule floor is part of the committed baseline too: one committed
+	// HW-4 site against two scanned regresses the gate even under
+	// coverage-min with flat coverage.
+	regressed, _ := json.Marshal(baseline{
+		Version: 2, Checked: 2, Registered: 2, Coverage: 1,
+		Findings: map[string]int{"HW-4": 1},
+	}, jsontext.WithIndentPrefix(""), jsontext.WithIndent("  "))
+	must(t, os.WriteFile(baselinePath, append(regressed, '\n'), 0o644))
+
+	out.Reset()
+	errOut.Reset()
+
+	code = Run(Options{
+		Patterns: []string{"./..."}, Dir: app, Version: "test",
+		Env:          []string{"GOFLAGS=-mod=mod"},
+		CoverageMin:  0.5,
+		BaselinePath: baselinePath,
+		Stdout:       &out, Stderr: &errOut,
+	})
+	if code != 1 {
+		t.Fatalf("coverage-min + rule regression exit = %d, want 1; stderr: %s", code, errOut.String())
+	}
+
+	if !strings.Contains(errOut.String(), "HW-4 findings 2 exceed the committed baseline 1") {
+		t.Errorf("stderr missing per-rule regression message: %s", errOut.String())
+	}
+}
+
 // TestJSONAndSARIF: machine outputs are produced on demand.
 func TestJSONAndSARIF(t *testing.T) {
 	t.Parallel()
