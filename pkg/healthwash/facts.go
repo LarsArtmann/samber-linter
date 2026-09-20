@@ -10,6 +10,7 @@
 //	HW-3  transient-health-washing (transient registration implementing a check)
 //	HW-4  lazy-never-built-pass (lazy registration implementing a check)
 //	HW-5  pointer-receiver-value-registration (check on *T, registered as T)
+//	HW-7  unconditional-nil-check (the reachable check body is `return nil`)
 //	HW-unresolved  strict-mode placeholder for unresolvable service types
 //
 // Detection is type-based: a plain *analysis.Analyzer over registration call

@@ -11,6 +11,6 @@ type NoCtx struct{}
 func (n NoCtx) HealthCheck() error { return nil }
 
 var _ = func() bool {
-	do.ProvideValue(nil, NoCtx{}) // want `HW-2: .*`
+	do.ProvideValue(nil, NoCtx{}) // want `HW-2: .*` `HW-7: .*`
 	return true
 }()

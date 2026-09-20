@@ -15,7 +15,11 @@ import (
 
 type Clean struct{}
 
-func (c *Clean) HealthCheck(_ context.Context) error { return nil }
+// The body delegates (can fail): this fixture pins the orphaned-directive
+// rule; body shape is hw7nil's contract.
+func (c *Clean) HealthCheck(_ context.Context) error { return c.probe() }
+
+func (c *Clean) probe() error { return nil }
 
 func NewClean(i do.Injector) (*Clean, error) { return &Clean{}, nil }
 

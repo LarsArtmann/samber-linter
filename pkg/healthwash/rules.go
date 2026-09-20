@@ -190,6 +190,7 @@ func reportTransientRules(add func(rule, msg string), rel, fnName string, facts 
 		addBareCheckRule(add, rel)
 	}
 }
+
 // reportSweepRules fires for lazy and eager registrations in precedence
 // order. HW-5 short-circuits: it and HW-1 share the single remedy (register
 // the pointer), so reporting both would double-count one fixable cause.

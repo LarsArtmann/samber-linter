@@ -30,8 +30,9 @@ var _ = func() bool {
 	return true
 }()
 
-// The fix: register the pointer — clean.
+// The fix: register the pointer — HW-5 goes away, and HW-7 becomes visible:
+// the check now RUNS and still cannot fail. Exactly the right complaint.
 var _ = func() bool {
-	do.ProvideValue(nil, &DeadCheck{})
+	do.ProvideValue(nil, &DeadCheck{}) // want `HW-7: .*`
 	return true
 }()

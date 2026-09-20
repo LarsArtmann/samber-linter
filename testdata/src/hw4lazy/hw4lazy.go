@@ -12,7 +12,11 @@ import (
 
 type BootCritical struct{}
 
-func (b *BootCritical) HealthCheck(context.Context) error { return nil }
+// The body delegates (can fail): this fixture pins the lazy-timing rule;
+// body shape is hw7nil's contract.
+func (b *BootCritical) HealthCheck(context.Context) error { return b.probe() }
+
+func (b *BootCritical) probe() error { return nil }
 
 func NewBootCritical(i do.Injector) (*BootCritical, error) { return &BootCritical{}, nil }
 

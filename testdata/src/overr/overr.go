@@ -35,14 +35,15 @@ var _ = func() bool {
 	return true
 }()
 
-// Honest eager override with both interfaces: clean.
+// Honest eager override with both interfaces — but the body is `return nil`:
+// honest shapes, dishonest body. HW-7 fires where HW-1/4/5 cannot.
 type HonestEager struct{}
 
 func (h *HonestEager) Shutdown(context.Context)          {}
 func (h *HonestEager) HealthCheck(context.Context) error { return nil }
 
 var _ = func() bool {
-	do.OverrideValue(nil, &HonestEager{})
+	do.OverrideValue(nil, &HonestEager{}) // want `HW-7: .*`
 	return true
 }()
 

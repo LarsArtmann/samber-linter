@@ -87,8 +87,8 @@ func (p *healthwashPlugin) BuildDocs() string {
 		"render green `pass` on health dashboards but cannot actually fail. " +
 		"Rules: HW-1 unchecked-resource-holder, HW-2 contextless-check, " +
 		"HW-3 transient-health-washing, HW-4 lazy-never-built-pass, " +
-		"HW-5 pointer-receiver-value-registration. See " +
-		"https://github.com/LarsArtmann/samber-linter"
+		"HW-5 pointer-receiver-value-registration, HW-7 unconditional-nil-check. " +
+		"See https://github.com/LarsArtmann/samber-linter"
 }
 
 // GetName is required by the register API.

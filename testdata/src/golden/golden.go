@@ -31,10 +31,14 @@ var _ = func() bool {
 	return true
 }()
 
-// GroqChat mirrors a real CV checker: context variant, eager — clean.
+// GroqChat mirrors a real CV checker: context variant, eager, a body that
+// can actually fail — clean. (The incident corpus pins the has-a-check
+// contract; HW-7 owns the body shape and would flag a `return nil` here.)
 type GroqChat struct{}
 
-func (g *GroqChat) HealthCheck(context.Context) error { return nil }
+func (g *GroqChat) HealthCheck(ctx context.Context) error { return g.probe(ctx) }
+
+func (g *GroqChat) probe(context.Context) error { return nil }
 
 func NewGroqChat() *GroqChat { return &GroqChat{} }
 
