@@ -264,6 +264,12 @@ Non-obvious, easy to break:
   errors on stderr) look like successful scans; always inspect stderr and
   the exit path separately. Sweep artifacts (real names, outside the repo):
   `~/backups/ecology/mrconfig-scan-<date>.{tsv,report.txt}` + `errs-<date>/`.
+- **Known false-negative class (2026-09-20):** registration matching is
+  direct-call only — a consumer's repo-local helper wrapping `do.Provide*`
+  (e.g. a generic `provideNamed`) hides the registration from EVERY rule. A
+  clean scan is therefore "no direct registrations found", not "provably no
+  health-washing"; wrapper resolution is queued in TODO_LIST. When auditing a
+  consumer by hand, grep for local wrappers around `do.Provide*`.
 - **Self-dogfood ratchet (since 2026-09-20):** the committed
   `.samber-linter-baseline.json` (schema v2, 0 registered — this repo
   registers nothing) is enforced by the CI `dogfood` job's third leg

@@ -38,6 +38,15 @@ execution plan is historical:
       `docs/status/2026-09-16_13-27_cross-project-lessons-go-auto-upgrade.md`):
       one `defaultRules` definition consumed by the driver, the plugin, and
       the README rule-table drift test, so posture changes are one-line.
+- [ ] **Wrapper-indirection false negative** (source: 2026-09-20 consumer fix
+      round): `inspectRegistration` matches only direct `do.*` calls
+      (`pkg/healthwash/healthwash.go` ~L197), so registrations hidden behind
+      repo-local helper functions/generics (e.g. a `provideNamed[T]` wrapper
+      around `do.ProvideNamed`) are invisible to EVERY rule. Verified case: a
+      service implementing `HealthcheckerWithContext`, lazily registered
+      through such a wrapper, produced zero findings. Fix idea: resolve
+      one-level local wrappers (param→arg mapping into the wrapped `do.*`
+      call); start with a testdata fixture reproducing the shape.
 - [ ] Refresh the pseudonymous triage doc with the post-fix ecology numbers
       (`docs/ecology/2026-09-20-scan.txt` supersedes both 2026-09-16 scans;
       note the load-error wave — 32 consumers require go ≥ 1.27.1).
