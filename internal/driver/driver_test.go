@@ -648,10 +648,10 @@ func TestMachineOutputStaysPureUnderGates(t *testing.T) {
 
 	code := Run(Options{
 		Patterns: []string{"./..."}, Dir: app, Version: "test",
-		Env:          []string{"GOFLAGS=-mod=mod"},
-		CoverageMin:  0.99,
-		Stdout:       &out, Stderr: &errOut,
-		JSON:         true,
+		Env:         []string{"GOFLAGS=-mod=mod"},
+		CoverageMin: 0.99,
+		Stdout:      &out, Stderr: &errOut,
+		JSON:          true,
 		MinConfidence: finding.ConfidenceHigh,
 	})
 	if code != 1 {

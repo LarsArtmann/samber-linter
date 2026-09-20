@@ -700,17 +700,23 @@ func reportStrictUnresolved(out io.Writer, records []healthwash.ServiceRecord, o
 	}
 
 	unresolved := 0
+
 	for _, record := range records {
 		if record.Unresolved {
 			unresolved++
 		}
 	}
 
-	if unresolved > 0 {
-		fmt.Fprintf(out,
-			"strict: %d registration(s) could not be resolved statically; analyze the concrete type or suppress with //samber-linter:allow hw-unresolved <reason>\n",
-			unresolved)
+	if unresolved == 0 {
+		return
 	}
+
+	fmt.Fprintf(
+		out,
+		"strict: %d registration(s) could not be resolved statically; "+
+			"analyze the concrete type or suppress with //samber-linter:allow hw-unresolved <reason>\n",
+		unresolved,
+	)
 }
 
 // writeBaseline persists the current coverage as the ratchet floor.

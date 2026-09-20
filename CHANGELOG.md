@@ -7,6 +7,13 @@ Keep a Changelog; versioning: SemVer.
 
 ### Added
 
+- **Max-recall profile (opt-in) + `--strict` unresolved summary.** The
+  documented `--min-confidence 0.5 --strict` profile surfaces HW-4 and
+  unresolved registrations without flipping any default; the threshold
+  decision is recorded as profile-first pending one release of measured FP
+  data. With `--strict`, human output carries a summary line counting
+  statically unresolvable registrations (the findings themselves stay
+  Medium/triage-only).
 - **HW-7 `unconditional-nil-check`**: a new detection rule for the founding
   incident in syntactic form — a health check whose body is exactly
   `return nil` can never fail and always renders green. Fires on lazy/eager
@@ -21,6 +28,12 @@ Keep a Changelog; versioning: SemVer.
 
 ### Fixed
 
+- **Machine output no longer carries human gate lines.** The coverage line
+  (`health-coverage: …`), baseline acknowledgement, and the `--strict`
+  summary were appended to stdout in every mode, corrupting `--json`/
+  `--sarif`/structured `--output` whenever a gate ran (same defect class as
+  the `--check` advisory line). Gate verdicts now travel via the exit code
+  and stderr; human lines print only on human-facing presentations.
 - **`--coverage-min` no longer bypasses the baseline gate.** The absolute
   coverage floor used to short-circuit the baseline ratchet entirely: a
   baseline file that existed was never read, so a stale or corrupt one (e.g.
