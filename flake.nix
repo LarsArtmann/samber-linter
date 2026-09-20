@@ -100,11 +100,10 @@
           # lives in go-nix-helpers' go-standard module — drop this local copy
           # once that input update is pulled. Both treefmt-nix's own
           # checks.treefmt and go-standard's checks.format need it.
-          hermeticTreefmtCheck =
-            (config.treefmt.build.check inputs.self).overrideAttrs (old: {
-              nativeBuildInputs = [ pkgs.go_1_27 ] ++ (old.nativeBuildInputs or [ ]);
-              GOTOOLCHAIN = "local";
-            });
+          hermeticTreefmtCheck = (config.treefmt.build.check inputs.self).overrideAttrs (old: {
+            nativeBuildInputs = [ pkgs.go_1_27 ] ++ (old.nativeBuildInputs or [ ]);
+            GOTOOLCHAIN = "local";
+          });
         in
         {
           checks.format = lib.mkForce hermeticTreefmtCheck;
