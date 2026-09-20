@@ -53,7 +53,8 @@ then the recall increase ships as an opt-in, not as a default flip.
 Rules: **HW-1** Shutdowner-without-Healthchecker (the headline), **HW-2**
 contextless check, **HW-3** transient health-washing, **HW-4** lazy
 never-built pass, **HW-5** pointer-receiver-value registration, **HW-7**
-unconditional-nil check body, **HW-0** suppression without a reason. Suppress
+unconditional-nil check body, **HW-8** naked-return check body, **HW-0**
+suppression without a reason. Suppress
 with `//samber-linter:allow hw-1 <reason>` directly above the registration (or
 anywhere inside a multi-line registration call).
 
@@ -292,6 +293,14 @@ internal/di/checkers.go:18:9: HW-7: *health.GroqChat's health check body is
     //samber-linter:allow hw-7 <reason>
 ```
 
+### HW-8 `empty-check-body` (severity: warn)
+
+The reachable check's body is a single naked `return` on a named result — the
+implicit zero value is nil, so the check cannot fail. Same reachability, same
+lazy/eager scope, same cross-package fact plumbing, and same v1 narrowness as
+HW-7; the two predicates are disjoint (one result vs none), so a site reports
+at most one of them.
+
 ### HW-6 `health-coverage-ratchet` (severity: none; CI gate mode)
 
 Not a per-line finding. Reports the module-tree ratio:
@@ -459,6 +468,7 @@ delivers most of the value.
 | Lazy registration implementing `HealthcheckerWithContext`        | HW-4 fires (info)      |
 | Contextless `HealthCheck() error` implementer                    | HW-2 fires (info)      |
 | Checker whose body is exactly `return nil`                       | HW-7 fires             |
+| Checker whose body is a lone naked `return`                      | HW-8 fires             |
 | `internal/database/connection.go` (real checker)                 | clean                  |
 | `chat/groq` ChatService (real checker)                           | clean                  |
 | Handler struct, no Shutdowner, no Healthchecker                  | clean (rule precision) |

@@ -19,12 +19,6 @@ execution plan is historical:
 
 ## Short-term work queue (bounded, actionable)
 
-- [ ] **HW-8 `no-op-body` rule** (source: max-recall plan T7,
-      `docs/planning/2026-09-20_12-18_max-recall-pareto-execution-plan.md`):
-      flag empty or comment-only check bodies on sweep-dispatched
-      registrations; shares HW-7's method visitor and `NilBodyFact` plumbing
-      (`pkg/healthwash/rules.go`). Adjudicate `panic` bodies in the FP budget
-      first (budget-before-ship), then fixtures + discrimination proof.
 - [ ] **Wire consumer ratchet jobs onto v0.2.2** (source: "tag the schema-v2
       release" — the tagging half is done, v0.2.2 shipped 2026-09-20):
       `samber-do-auditlog` and `standard-bug-tracking-schema` pin `@v0.2.2`
@@ -35,7 +29,7 @@ execution plan is historical:
       verified via the module proxy 2026-09-20). Draft the runbook paragraph
       for CV's `scripts/healthwash.sh` pin bump — the v0.2.1 pin still
       carries both driver defects fixed in v0.2.2.
-- [ ] **Renumber the stale-directive rule candidate to HW-8+** (source:
+- [ ] **Renumber the stale-directive rule candidate to HW-9+** (source:
       "HW-7 stale directive" — the HW-7 ID is now taken by
       `unconditional-nil-check`, released v0.2.2). Valid-but-orphaned
       suppressions with `until` expiry resurface for cleanup; design noted in

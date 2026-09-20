@@ -86,14 +86,14 @@ func evalSite(
 	}
 
 	facts := typeFacts{
-		anyCheck:   doIfaces.typeImplementsAnyCheck(stored),
-		bareCheck:  doIfaces.typeImplementsBareCheck(stored),
-		ctxCheck:   doIfaces.typeImplementsCtxCheck(stored),
-		anyCheckP:  doIfaces.typeImplementsAnyCheck(ptrToBase),
-		shutdown:   doIfaces.typeImplementsAnyShutdown(stored),
-		valueReg:   valueReg,
-		nilBody:    nilBody,
-		emptyBody:  emptyBody,
+		anyCheck:  doIfaces.typeImplementsAnyCheck(stored),
+		bareCheck: doIfaces.typeImplementsBareCheck(stored),
+		ctxCheck:  doIfaces.typeImplementsCtxCheck(stored),
+		anyCheckP: doIfaces.typeImplementsAnyCheck(ptrToBase),
+		shutdown:  doIfaces.typeImplementsAnyShutdown(stored),
+		valueReg:  valueReg,
+		nilBody:   nilBody,
+		emptyBody: emptyBody,
 	}
 
 	rec.ImplementsCheck = facts.anyCheck
