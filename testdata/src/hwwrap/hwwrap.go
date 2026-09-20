@@ -17,11 +17,11 @@ type CheckedStore struct{}
 
 func (s *CheckedStore) HealthCheck(context.Context) error { return s.probe() }
 func (s *CheckedStore) probe() error                      { return nil }
-func NewCheckedStore(do.Injector) (*CheckedStore, error) { return &CheckedStore{}, nil }
+func NewCheckedStore(do.Injector) (*CheckedStore, error)  { return &CheckedStore{}, nil }
 
 type ShutStore struct{ conn int }
 
-func (s *ShutStore) Shutdown(context.Context)       {}
+func (s *ShutStore) Shutdown(context.Context)      {}
 func NewShutStore(do.Injector) (*ShutStore, error) { return &ShutStore{}, nil }
 
 type PtrStore struct{}
@@ -52,8 +52,8 @@ func provideValue[T any](i do.Injector, value T) {
 
 var _ = func() bool {
 	provideNamed[*CheckedStore](nil, "checked", NewCheckedStore) // want `HW-4: .*registered lazily`
-	provide(nil, NewShutStore)                                  // want `HW-1: .*implements do.Shutdowner`
-	provideValue(nil, PtrStore{})                               // want `HW-5: .*declares its health check on receiver`
+	provide(nil, NewShutStore)                                   // want `HW-1: .*implements do.Shutdowner`
+	provideValue(nil, PtrStore{})                                // want `HW-5: .*declares its health check on receiver`
 
 	//samber-linter:allow hw-4 checked store is resolved during boot
 	provideNamed(nil, "checked-allowed", NewCheckedStore)

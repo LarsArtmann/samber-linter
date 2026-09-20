@@ -71,6 +71,7 @@
         {
           pkgs,
           lib,
+          config,
           ...
         }:
         let
@@ -94,6 +95,18 @@
           ) dprintPluginHashes;
         in
         {
+          # goimports shells out to `go` for module metadata; the check
+          # sandbox has no network, so the PATH go must match go.mod's floor
+          # (1.27.1) and never auto-switch (GOTOOLCHAIN=local). Same override
+          # lives in go-nix-helpers' go-standard module — drop this local copy
+          # once that input update is pulled.
+          checks.format = lib.mkForce (
+            (config.treefmt.build.check inputs.self).overrideAttrs (old: {
+              nativeBuildInputs = [ pkgs.go_1_27 ] ++ (old.nativeBuildInputs or [ ]);
+              GOTOOLCHAIN = "local";
+            })
+          );
+
           apps.test = {
             type = "app";
             program = lib.mkForce (

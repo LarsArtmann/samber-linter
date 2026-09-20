@@ -28,13 +28,13 @@ baseline ratchet only moves down.
 | rank | project | registered | checked | unprotected | findings | HW-1 | HW-2 | HW-3 | HW-4 | first action                             |
 | ---- | ------- | ---------- | ------- | ----------- | -------- | ---- | ---- | ---- | ---- | ---------------------------------------- |
 | 1    | p-c49f  | 19         | 0       | 19          | 1        | 1    | 0    | 0    | 0    | implement checks / fix registration kind |
-| 2    | p-0a41  | 20         | 3       | 17         | 10       | 3    | 7    | 0    | 0    | add ctx variant + implement checks       |
-| 3    | p-1507  | 7          | 0       | 7          | 1        | 1    | 0    | 0    | 0    | implement checks / fix registration kind |
-| 4    | p-6c47  | 6          | 0       | 6          | 1        | 1    | 0    | 0    | 0    | implement checks / fix registration kind |
-| 5    | p-1fba  | 5          | 0       | 5          | 2        | 2    | 0    | 0    | 0    | implement checks / fix registration kind |
-| 6    | p-b4bd  | 6          | 1       | 5          | 1        | 0    | 0    | 0    | 1    | HW-4: eager-or-suppress per service      |
-| 7    | p-a2d9  | 5          | 1       | 4          | 2        | 0    | 1    | 0    | 1    | add ctx variant                          |
-| 8    | p-46ae  | 3          | 1       | 2          | 1        | 0    | 1    | 0    | 0    | add ctx variant                          |
+| 2    | p-0a41  | 20         | 3       | 17          | 10       | 3    | 7    | 0    | 0    | add ctx variant + implement checks       |
+| 3    | p-1507  | 7          | 0       | 7           | 1        | 1    | 0    | 0    | 0    | implement checks / fix registration kind |
+| 4    | p-6c47  | 6          | 0       | 6           | 1        | 1    | 0    | 0    | 0    | implement checks / fix registration kind |
+| 5    | p-1fba  | 5          | 0       | 5           | 2        | 2    | 0    | 0    | 0    | implement checks / fix registration kind |
+| 6    | p-b4bd  | 6          | 1       | 5           | 1        | 0    | 0    | 0    | 1    | HW-4: eager-or-suppress per service      |
+| 7    | p-a2d9  | 5          | 1       | 4           | 2        | 0    | 1    | 0    | 1    | add ctx variant                          |
+| 8    | p-46ae  | 3          | 1       | 2           | 1        | 0    | 1    | 0    | 0    | add ctx variant                          |
 
 ## What changed since 2026-09-10 (post-v0.2.2 driver fixes)
 
