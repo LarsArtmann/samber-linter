@@ -2,6 +2,7 @@ package driver
 
 import (
 	"context"
+	"go/token"
 	"os"
 	"os/exec"
 	"regexp"
@@ -9,36 +10,35 @@ import (
 	"testing"
 
 	"github.com/larsartmann/samber-linter/pkg/healthwash"
+	"golang.org/x/tools/go/analysis"
 )
 
-// TestRuleMetaCoversEveryRule: the driver's severity/confidence table must
-// have an explicit entry for every analyzer rule. A missing entry silently
-// falls back to warning/Medium, which would quietly de-gate a Full-confidence
-// rule.
-func TestRuleMetaCoversEveryRule(t *testing.T) {
+// TestToFindingHonorsRuleTable: the driver's severity/confidence mapping is
+// consumed from healthwash.RuleTable (the single source). This test pins the
+// wiring: every table entry's severity and confidence must reach the finding
+// unchanged — a regression to a hand-maintained map or a broken lookup would
+// silently re-tier a rule's exit code.
+func TestToFindingHonorsRuleTable(t *testing.T) {
 	t.Parallel()
 
-	allRules := []string{
-		healthwash.RuleHW0,
-		healthwash.RuleHW1,
-		healthwash.RuleHW2,
-		healthwash.RuleHW3,
-		healthwash.RuleHW4,
-		healthwash.RuleHW5,
-		healthwash.RuleHW7,
-		healthwash.RuleHW8,
-		healthwash.RuleUnresolved,
-	}
+	analyzer := &analysis.Analyzer{Name: "healthwash"}
+	fset := token.NewFileSet()
+	file := fset.AddFile("fixture.go", -1, 100)
 
-	for _, ruleID := range allRules {
-		if _, ok := ruleMetaByRule[ruleID]; !ok {
-			t.Errorf("ruleMetaByRule has no entry for %s (falls back to warning/Medium)", ruleID)
+	for _, rule := range healthwash.RuleTable {
+		fnd := toFinding(analyzer, analysis.Diagnostic{
+			Pos:      file.Pos(10),
+			Category: rule.ID,
+			Message:  rule.ID + ": fixture",
+		}, fset)
+
+		if fnd.Severity != rule.Severity {
+			t.Errorf("%s: severity = %q, want %q", rule.ID, fnd.Severity, rule.Severity)
 		}
-	}
 
-	if len(ruleMetaByRule) != len(allRules) {
-		t.Errorf("ruleMetaByRule has %d entries, want %d (stale entry for a retired rule?)",
-			len(ruleMetaByRule), len(allRules))
+		if fnd.Confidence != rule.Confidence {
+			t.Errorf("%s: confidence = %v, want %v", rule.ID, fnd.Confidence, rule.Confidence)
+		}
 	}
 }
 

@@ -7,11 +7,12 @@ import (
 	"testing"
 )
 
-// TestReadmeRuleTableMatchesRegistry pins README §3 to the analyzer: every
-// rule section in the README must correspond to a real rule ID in this
-// package, so documentation can no longer silently drift from detection.
-// HW-6 is whitelisted: it is the documented CI gate mode, not an
-// analyzer-emitted diagnostic.
+// TestReadmeRuleTableMatchesRegistry pins README §3 to healthwash.RuleTable:
+// every rule section in the README must correspond to a real rule in the
+// single-source table, and every table entry with a slug must carry that
+// exact slug in its README heading, so documentation can no longer silently
+// drift from detection. HW-6 is whitelisted: it is the documented CI gate
+// mode, not an analyzer-emitted diagnostic.
 func TestReadmeRuleTableMatchesRegistry(t *testing.T) {
 	t.Parallel()
 
@@ -20,10 +21,7 @@ func TestReadmeRuleTableMatchesRegistry(t *testing.T) {
 		t.Fatalf("read README: %v", err)
 	}
 
-	registry := []string{
-		RuleHW0, RuleHW1, RuleHW2, RuleHW3, RuleHW4, RuleHW5, RuleHW7,
-		RuleHW8, RuleUnresolved,
-	}
+	registry := RuleIDs()
 
 	sectionRe := regexp.MustCompile(`(?m)^### (HW-[0-9A-Za-z-]+) `)
 
@@ -53,6 +51,20 @@ func TestReadmeRuleTableMatchesRegistry(t *testing.T) {
 		ruleMention := regexp.MustCompile(`\*\*` + regexp.QuoteMeta(ruleID) + `\*\*`)
 		if !ruleMention.Match(readme) {
 			t.Errorf("analyzer rule %s missing from the README rules line", ruleID)
+		}
+	}
+
+	// Every §3-heading rule must carry the table's slug verbatim — the slug
+	// is part of the rule's public identity, not prose.
+	for _, rule := range RuleTable {
+		if rule.Slug == "" {
+			continue
+		}
+
+		heading := regexp.MustCompile(
+			`(?m)^### ` + regexp.QuoteMeta(rule.ID) + " `" + regexp.QuoteMeta(rule.Slug) + "`")
+		if !heading.Match(readme) {
+			t.Errorf("README §3 heading for %s does not carry the table slug %q", rule.ID, rule.Slug)
 		}
 	}
 }
