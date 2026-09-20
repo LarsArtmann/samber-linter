@@ -9,7 +9,11 @@ import (
 )
 
 // evalSite classifies one registration call site. It returns the HW-6 record
-// for the site plus any rule violations found there.
+// for the site plus any rule violations found there. call is the attributed
+// site (a direct do.* call, or a local-wrapper call site whose registration
+// the wrapper performs); arg, when non-nil, overrides the provider argument
+// taken from call.Args — the wrapper path substitutes the parameter-mapped
+// call-site argument, evaluated in the caller's scope.
 //
 // Rule precedence, all evaluated on the STORED instance (the value the sweep
 // actually type-asserts — service_eager.go:88,94, service_lazy.go:136):
@@ -25,6 +29,7 @@ func evalSite(
 	fnName string,
 	kind ServiceKind,
 	call *ast.CallExpr,
+	arg ast.Expr,
 	doIfaces ifaces,
 	strict bool,
 	methodDecls map[*types.Func]*ast.FuncDecl,
@@ -34,11 +39,20 @@ func evalSite(
 	}
 
 	idx, ok := providerArgIndex(fnName)
-	if !ok || idx >= len(call.Args) {
+	if !ok {
 		return ServiceRecord{Kind: kind}, nil
 	}
 
-	serviceType, unresolved := resolveStoredType(pass, kind, call.Args[idx])
+	provider := arg
+	if provider == nil {
+		if idx >= len(call.Args) {
+			return ServiceRecord{Kind: kind}, nil
+		}
+
+		provider = call.Args[idx]
+	}
+
+	serviceType, unresolved := resolveStoredType(pass, kind, provider)
 
 	rel := types.TypeString(serviceType, types.RelativeTo(pass.Pkg))
 	full := types.TypeString(serviceType, nil)

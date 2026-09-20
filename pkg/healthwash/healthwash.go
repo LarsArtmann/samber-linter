@@ -139,6 +139,7 @@ func run(pass *analysis.Pass) (any, error) {
 
 	directives := collectDirectives(pass.Fset, pass.Files)
 	disabled := parseDisabledRules(pass)
+	wrappers, innerSkips := collectWrappers(pass)
 
 	var (
 		records []ServiceRecord
@@ -147,7 +148,7 @@ func run(pass *analysis.Pass) (any, error) {
 
 	for _, file := range pass.Files {
 		ast.Inspect(file, func(n ast.Node) bool {
-			rec, reps, isReg := inspectRegistration(pass, n, ifaces, strict, methodDecls)
+			rec, reps, isReg := inspectRegistration(pass, n, ifaces, strict, methodDecls, wrappers, innerSkips)
 			if isReg {
 				records = append(records, rec)
 				reports = append(reports, reps...)
@@ -185,32 +186,46 @@ func parseDisabledRules(pass *analysis.Pass) map[string]bool {
 }
 
 // inspectRegistration classifies one AST node; isReg is true only when the
-// node is a samber/do registration call.
+// node is a samber/do registration call — directly, or through one level of
+// repo-local wrapper (a package-level function whose single do.* call takes
+// its provider argument from a parameter; see wrapper.go).
 func inspectRegistration(
 	pass *analysis.Pass, n ast.Node, doIfaces ifaces, strict bool,
 	methodDecls map[*types.Func]*ast.FuncDecl,
+	wrappers map[*types.Func]*wrapperInfo, innerSkips map[*ast.CallExpr]bool,
 ) (ServiceRecord, []siteReport, bool) {
 	call, isCall := n.(*ast.CallExpr)
-	if !isCall {
+	if !isCall || innerSkips[call] {
 		return ServiceRecord{}, nil, false
 	}
 
-	sel, isSel := call.Fun.(*ast.SelectorExpr)
-	if !isSel {
+	if fnName, kind, known := doRegistrationCall(pass, call); known {
+		rec, reps := evalSite(pass, fnName, kind, call, nil, doIfaces, strict, methodDecls)
+
+		return rec, reps, true
+	}
+
+	// Wrapper call site: attribute at THIS call (where the fix lands), with
+	// the parameter-mapped argument substituted for the wrapper's provider.
+	ident, isIdent := calleeIdent(call.Fun)
+	if !isIdent {
 		return ServiceRecord{}, nil, false
 	}
 
-	fn, isFn := pass.TypesInfo.Uses[sel.Sel].(*types.Func)
-	if !isFn || fn.Pkg() == nil || fn.Pkg().Path() != DoPath {
+	fn, isFn := pass.TypesInfo.Uses[ident].(*types.Func)
+	if !isFn {
 		return ServiceRecord{}, nil, false
 	}
 
-	kind, known := regKindOf(fn.Name())
-	if !known {
+	wrapper, isWrapper := wrappers[fn]
+	if !isWrapper || wrapper.paramIdx >= len(call.Args) {
 		return ServiceRecord{}, nil, false
 	}
 
-	rec, reps := evalSite(pass, fn.Name(), kind, call, doIfaces, strict, methodDecls)
+	rec, reps := evalSite(
+		pass, wrapper.innerFnName, wrapper.kind, call, call.Args[wrapper.paramIdx],
+		doIfaces, strict, methodDecls,
+	)
 
 	return rec, reps, true
 }

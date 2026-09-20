@@ -18,7 +18,7 @@ func TestGoldenCorpus(t *testing.T) {
 
 	analysistest.Run(t, testdataDir(), New(),
 		"golden", "hw5value", "hw3transient", "hw4lazy", "hw2bare", "hw7nil",
-		"hw8empty",
+		"hw8empty", "hwwrap",
 		"suppress", "suppressspan", "edges", "overr", "unresolvable",
 		"hw7cross/lib", "hw7cross/main",
 	)
@@ -87,6 +87,7 @@ func TestDiscriminationProofs(t *testing.T) {
 		mutant string // the disabled rule of the mutant
 	}{
 		{RuleHW1, "golden", "HW-1"},
+		{RuleHW1, "hwwrap", "HW-1"}, // wrapper channel: the rule must survive indirection
 		{RuleHW5, "hw5value", "HW-5"},
 		{RuleHW3, "hw3transient", "HW-3"},
 		{RuleHW4, "hw4lazy", "HW-4"},
