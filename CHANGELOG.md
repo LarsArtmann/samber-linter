@@ -3,6 +3,16 @@
 All notable changes to this project are documented here. Format based on
 Keep a Changelog; versioning: SemVer.
 
+## [Unreleased]
+
+### Added
+
+- **HW-8 `empty-check-body`**: the sibling of HW-7 — a reachable check whose
+  body is a lone naked `return` on a named result (implicit nil, cannot
+  fail). Disjoint from HW-7 by statement shape (one return value vs none), so
+  a site reports at most one of them; same lazy/eager scope, cross-package
+  `NakedReturnFact` plumbing, and v1 narrowness. Shipped after v0.2.2.
+
 ## [0.2.2] - 2026-09-20
 
 ### Added
@@ -14,19 +24,17 @@ Keep a Changelog; versioning: SemVer.
   data. With `--strict`, human output carries a summary line counting
   statically unresolvable registrations (the findings themselves stay
   Medium/triage-only).
-- **HW-7 `unconditional-nil-check` and HW-8 `empty-check-body`**: two new
-  detection rules for the founding incident in syntactic form — a health
-  check that cannot fail always renders green. HW-7 catches a body of
-  exactly `return nil`; HW-8 its sibling, a lone naked `return` on a named
-  result (implicit nil). Both fire on lazy/eager registrations whose stored
-  type satisfies a `Healthchecker` variant; warn severity, Full confidence
-  (gates by default, like HW-1/3/5). Deliberately narrow in v1: delegation,
-  multi-statement bodies, and panics can fail and stay negative; transients
-  stay HW-3's, unreachable `*T` bodies stay HW-5's. Bodies are read where
-  they are declared and shipped across package boundaries as object facts
-  (`NilBodyFact`/`NakedReturnFact`), so the standard declare-here/
-  register-there architecture is covered. Budget and boundary cases in
-  `docs/FP-BUDGETS.md`.
+- **HW-7 `unconditional-nil-check`**: a new detection rule for the founding
+  incident in syntactic form — a health check whose body is exactly
+  `return nil` can never fail and always renders green. Fires on lazy/eager
+  registrations whose stored type satisfies a `Healthchecker` variant;
+  warn severity, Full confidence (gates by default, like HW-1/3/5).
+  Deliberately narrow in v1: delegation, multi-statement bodies, and naked
+  returns can fail and stay negative; transients stay HW-3's, unreachable
+  `*T` bodies stay HW-5's. Bodies are read where they are declared and
+  shipped across package boundaries as a `NilBodyFact` object fact, so the
+  standard declare-here/register-there architecture is covered. Budget and
+  boundary cases in `docs/FP-BUDGETS.md`.
 
 ### Fixed
 
