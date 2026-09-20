@@ -39,6 +39,13 @@
             GOEXPERIMENT = "jsonv2";
             CGO_ENABLED = "0";
           };
+          # Honest version in nix-built binaries: the binary would otherwise
+          # report the bare fallback ("devel") because store builds carry no
+          # VCS metadata. dirtyShortRev wins when the tree is dirty, matching
+          # the resolveVersion source-build convention (devel+<rev>[.dirty]).
+          ldflags = [
+            "-X main.version=devel+${inputs.self.dirtyShortRev or inputs.self.shortRev or "unknown"}"
+          ];
           # buildGoModule's default checkPhase tests only the built
           # subPackages (cmd/samber-linter has no test files). Test the whole
           # module so the golden corpus actually gates every nix build.

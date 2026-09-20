@@ -1,0 +1,80 @@
+
+Ecology scan (2026-09-20) — root: /home/lars/projects
+
+rank project   registered  checked  unprotected  findings  rules
+1    p-4766            61        2           59         0  
+2    p-a32b            31       10           21         0  
+3    p-69fa            20        0           20         0  
+4    p-c49f            19        0           19         1  HW-1=1 
+5    p-0a41            20        3           17        10  HW-1=3 HW-2=7 
+6    p-3af6            14        0           14         0  
+7    p-3c6b            11        0           11         0  
+8    p-c5d0             8        0            8         0  
+9    p-1507             7        0            7         1  HW-1=1 
+10   p-6c47             6        0            6         1  HW-1=1 
+11   p-1fba             5        0            5         2  HW-1=2 
+12   p-b4bd             6        1            5         1  HW-4=1 
+13   p-a2d9             5        1            4         2  HW-2=1 HW-4=1 
+14   p-dfc7             4        0            4         0  
+15   p-2717             3        0            3         0  
+16   p-46ae             3        1            2         1  HW-2=1 
+17   p-89af             2        0            2         0  
+18   p-1002             1        0            1         0  
+19   p-402a             1        0            1         0  
+20   p-7ff6             1        0            1         0  
+21   p-9b64             1        0            1         0  
+22   p-dbec             1        0            1         0  
+23   p-e8a0             1        0            1         0  
+24   p-165e             0        0            0         0  
+25   p-16a9             0        0            0         0  
+26   p-1968             0        0            0         0  
+27   p-1abd             0        0            0         0  
+28   p-3dd1             0        0            0         0  
+29   p-6942             0        0            0         0  
+30   p-87d8             0        0            0         0  
+31   p-8d8e             0        0            0         0  
+32   p-8fff             0        0            0         0  
+33   p-969e             0        0            0         0  
+34   p-97ce             0        0            0         0  
+35   p-b71e             0        0            0         0  
+36   p-bae3             0        0            0         0  
+37   p-bed7             0        0            0         0  
+38   p-deaa             0        0            0         0  
+39   p-dfd3             1        1            0         0  
+40   p-fe3b             0        0            0         0  
+41   p-01be             -        -            -         -  LOAD_ERROR
+42   p-05c2             -        -            -         -  LOAD_ERROR
+43   p-08fb             -        -            -         -  LOAD_ERROR
+44   p-138c             -        -            -         -  LOAD_ERROR
+45   p-2ee5             -        -            -         -  LOAD_ERROR
+46   p-52ff             -        -            -         -  LOAD_ERROR
+47   p-57ed             -        -            -         -  LOAD_ERROR
+48   p-5e81             -        -            -         -  LOAD_ERROR
+49   p-5e87             -        -            -         -  LOAD_ERROR
+50   p-63c5             -        -            -         -  LOAD_ERROR
+51   p-6c93             -        -            -         -  LOAD_ERROR
+52   p-6d7b             -        -            -         -  LOAD_ERROR
+53   p-6f63             -        -            -         -  LOAD_ERROR
+54   p-7196             -        -            -         -  LOAD_ERROR
+55   p-7414             -        -            -         -  LOAD_ERROR
+56   p-7a08             -        -            -         -  LOAD_ERROR
+57   p-8545             -        -            -         -  LOAD_ERROR
+58   p-93d3             -        -            -         -  LOAD_ERROR
+59   p-a31b             -        -            -         -  LOAD_ERROR
+60   p-b088             -        -            -         -  LOAD_ERROR
+61   p-b239             -        -            -         -  LOAD_ERROR
+62   p-b344             -        -            -         -  LOAD_ERROR
+63   p-b6ff             -        -            -         -  LOAD_ERROR
+64   p-cb16             -        -            -         -  LOAD_ERROR
+65   p-cb47             -        -            -         -  LOAD_ERROR
+66   p-d639             -        -            -         -  LOAD_ERROR
+67   p-d9a9             -        -            -         -  LOAD_ERROR
+68   p-e0a5             -        -            -         -  LOAD_ERROR
+69   p-e487             -        -            -         -  LOAD_ERROR
+70   p-e62c             -        -            -         -  LOAD_ERROR
+71   p-e91b             -        -            -         -  LOAD_ERROR
+72   p-fbf5             -        -            -         -  LOAD_ERROR
+
+Aggregate: 40 analyzed · 32 clean · 8 with findings · 19 findings total · 32 load/timeout error(s)
+Keyfile updated: /home/lars/backups/ecology/keyfile.json
+scan exit: 0
