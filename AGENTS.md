@@ -214,9 +214,14 @@ Non-obvious, easy to break:
   every package build fails — this is exactly what red-lined all 2026-09-10
   CI runs; the workflow now sets `env: GOEXPERIMENT: jsonv2`. Any new Go
   entry point (scripts, snippet builds, future CI jobs) must inherit it.
-- **nixpkgs `go_1_26` is exactly 1.26.7 = go.mod floor** (verified 2026-09-10).
-  Bumping the go.mod floor past nixpkgs' toolchain requires
-  `goTarballVersion`/`goTarballHash` in go-standard.
+- **nixpkgs toolchain tracks the go.mod floor** (updated 2026-09-20): the
+  floor was auto-committed to 1.27.1, so the flake pins
+  `go-standard.goPkgAttr = "go_1_27"` (locked nixpkgs ships exactly 1.27.1)
+  and `apps.test` runtimeInputs use `go_1_27`; CI pins `go-version: "1.27"`.
+  When the floor moves again, move goPkgAttr + apps.test + CI together and
+  re-run `nix run .#lint` — a golangci binary built with go < floor refuses
+  the whole config. If nixpkgs lags the floor, use
+  goTarballVersion/goTarballHash in go-standard.
 - **go-output v0.38.0 sibling tags are misaligned**: markdown/markup@v0.38.0
   compile against `escape@v0.38.0` (`escape.MarkdownCell`) but their published
   go.mod pins v0.37.0. go.mod must keep the explicit
@@ -264,12 +269,15 @@ Non-obvious, easy to break:
   errors on stderr) look like successful scans; always inspect stderr and
   the exit path separately. Sweep artifacts (real names, outside the repo):
   `~/backups/ecology/mrconfig-scan-<date>.{tsv,report.txt}` + `errs-<date>/`.
-- **Known false-negative class (2026-09-20):** registration matching is
-  direct-call only — a consumer's repo-local helper wrapping `do.Provide*`
-  (e.g. a generic `provideNamed`) hides the registration from EVERY rule. A
-  clean scan is therefore "no direct registrations found", not "provably no
-  health-washing"; wrapper resolution is queued in TODO_LIST. When auditing a
-  consumer by hand, grep for local wrappers around `do.Provide*`.
+- **Known false-negative classes (updated 2026-09-20):** registration
+  matching resolves ONE level of package-local wrapper (a function whose
+  body holds exactly one `do.*` call with a bare param in the provider slot
+  — `pkg/healthwash/wrapper.go`, fixture `testdata/src/hwwrap`; shipped
+  after v0.2.2). Still invisible: chains deeper than one level, wrappers
+  declared in other packages, wrapper methods, closures, and wrapper bodies
+  with multiple registrations. A clean scan is "no direct or
+  one-level-wrapped registrations found", not "provably no health-washing";
+  when auditing by hand, grep for indirect wrappers the resolver cannot see.
 - **Self-dogfood ratchet (since 2026-09-20):** the committed
   `.samber-linter-baseline.json` (schema v2, 0 registered — this repo
   registers nothing) is enforced by the CI `dogfood` job's third leg

@@ -22,6 +22,12 @@ Keep a Changelog; versioning: SemVer.
   valid-but-orphaned-suppression cleanup rule, renumbered from its old "HW-7
   candidate" sketch after that ID shipped as `unconditional-nil-check`;
   design and FP budget in `docs/FP-BUDGETS.md`.
+- **HW-8 `empty-check-body`** (carried from v0.2.2 development): the sibling
+  of HW-7 — a reachable check whose body is a lone naked `return` on a named
+  result (implicit nil, cannot fail). Disjoint from HW-7 by statement shape
+  (one return value vs none), so a site reports at most one of them; same
+  lazy/eager scope, cross-package `NakedReturnFact` plumbing, and v1
+  narrowness. Shipped after v0.2.2.
 
 ### Changed
 
@@ -32,14 +38,6 @@ Keep a Changelog; versioning: SemVer.
   tests — replacing four hand-maintained lists. A posture flip (e.g. the
   pending HW-4 default decision) is now a one-line change, wired through
   `DefaultDisabledRules` in both the driver and the plugin.
-
-### Added (HW-8, carried from v0.2.2 development)
-
-- **HW-8 `empty-check-body`**: the sibling of HW-7 — a reachable check whose
-  body is a lone naked `return` on a named result (implicit nil, cannot
-  fail). Disjoint from HW-7 by statement shape (one return value vs none), so
-  a site reports at most one of them; same lazy/eager scope, cross-package
-  `NakedReturnFact` plumbing, and v1 narrowness. Shipped after v0.2.2.
 
 ## [0.2.2] - 2026-09-20
 
