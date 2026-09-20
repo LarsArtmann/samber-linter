@@ -10,7 +10,7 @@ import (
 // doRegistrationCall classifies one call node as a direct samber/do
 // registration: a selector whose callee is a known registration function of
 // the do package (package-path match, resilient to dot-imports and renames).
-func doRegistrationCall(pass *analysis.Pass, call *ast.CallExpr) (fnName string, kind ServiceKind, ok bool) {
+func doRegistrationCall(pass *analysis.Pass, call *ast.CallExpr) (string, ServiceKind, bool) {
 	sel, isSel := call.Fun.(*ast.SelectorExpr)
 	if !isSel {
 		return "", "", false
@@ -21,12 +21,12 @@ func doRegistrationCall(pass *analysis.Pass, call *ast.CallExpr) (fnName string,
 		return "", "", false
 	}
 
-	k, known := regKindOf(fn.Name())
+	kind, known := regKindOf(fn.Name())
 	if !known {
 		return "", "", false
 	}
 
-	return fn.Name(), k, true
+	return fn.Name(), kind, true
 }
 
 // wrapperInfo describes one resolvable repo-local wrapper: a package-level
@@ -54,69 +54,12 @@ func collectWrappers(pass *analysis.Pass) (
 
 	for _, file := range pass.Files {
 		for _, decl := range file.Decls {
-			fnDecl, isFn := decl.(*ast.FuncDecl)
-			if !isFn || fnDecl.Body == nil {
+			obj, info, inner := wrapperOfDecl(pass, decl)
+			if info == nil {
 				continue
 			}
 
-			obj, isFunc := pass.TypesInfo.Defs[fnDecl.Name].(*types.Func)
-			if !isFunc {
-				continue
-			}
-
-			sig, isSig := obj.Type().(*types.Signature)
-			if !isSig {
-				continue
-			}
-
-			var regCalls []*ast.CallExpr
-
-			ast.Inspect(fnDecl.Body, func(n ast.Node) bool {
-				if call, isCall := n.(*ast.CallExpr); isCall {
-					if _, _, known := doRegistrationCall(pass, call); known {
-						regCalls = append(regCalls, call)
-					}
-				}
-
-				return true
-			})
-
-			if len(regCalls) != 1 {
-				continue
-			}
-
-			inner := regCalls[0]
-			innerName, kind, _ := doRegistrationCall(pass, inner)
-
-			idx, hasProvider := providerArgIndex(innerName)
-			if !hasProvider || idx >= len(inner.Args) {
-				continue // As/AsNamed aliases carry no provider argument to map
-			}
-
-			paramIdent, isIdent := inner.Args[idx].(*ast.Ident)
-			if !isIdent {
-				continue // concrete provider: the body call IS the registration
-			}
-
-			paramVar, isVar := pass.TypesInfo.Uses[paramIdent].(*types.Var)
-			if !isVar {
-				continue
-			}
-
-			paramIdx := -1
-			for k := range sig.Params().Len() {
-				if sig.Params().At(k) == paramVar {
-					paramIdx = k
-
-					break
-				}
-			}
-
-			if paramIdx < 0 {
-				continue // parameter of a nested closure, not this wrapper
-			}
-
-			wrappers[obj] = &wrapperInfo{innerFnName: innerName, kind: kind, paramIdx: paramIdx}
+			wrappers[obj] = info
 			innerSkips[inner] = true
 		}
 	}
@@ -124,18 +67,104 @@ func collectWrappers(pass *analysis.Pass) (
 	return wrappers, innerSkips
 }
 
+// wrapperOfDecl decides whether one top-level declaration is a resolvable
+// wrapper. A nil info means it is not (with the reason documented at each
+// guard); the returned inner call is the body registration to skip.
+func wrapperOfDecl(pass *analysis.Pass, decl ast.Decl) (*types.Func, *wrapperInfo, *ast.CallExpr) {
+	fnDecl, isFn := decl.(*ast.FuncDecl)
+	if !isFn || fnDecl.Body == nil {
+		return nil, nil, nil
+	}
+
+	obj, isFunc := pass.TypesInfo.Defs[fnDecl.Name].(*types.Func)
+	if !isFunc {
+		return nil, nil, nil
+	}
+
+	sig, isSig := obj.Type().(*types.Signature)
+	if !isSig {
+		return nil, nil, nil
+	}
+
+	inner := soleRegistrationCall(pass, fnDecl.Body)
+	if inner == nil {
+		return nil, nil, nil // zero or multiple registrations: not a wrapper
+	}
+
+	innerName, kind, _ := doRegistrationCall(pass, inner)
+
+	idx, hasProvider := providerArgIndex(innerName)
+	if !hasProvider || idx >= len(inner.Args) {
+		// As/AsNamed aliases carry no provider argument to map.
+		return nil, nil, nil
+	}
+
+	paramIdent, isIdent := inner.Args[idx].(*ast.Ident)
+	if !isIdent {
+		// Concrete provider: the body call IS the registration.
+		return nil, nil, nil
+	}
+
+	paramVar, isVar := pass.TypesInfo.Uses[paramIdent].(*types.Var)
+	if !isVar {
+		return nil, nil, nil
+	}
+
+	paramIdx := paramIndex(sig, paramVar)
+	if paramIdx < 0 {
+		// Parameter of a nested closure, not this wrapper.
+		return nil, nil, nil
+	}
+
+	return obj, &wrapperInfo{innerFnName: innerName, kind: kind, paramIdx: paramIdx}, inner
+}
+
+// soleRegistrationCall returns the single samber/do registration call in
+// body, or nil when there are none or several.
+func soleRegistrationCall(pass *analysis.Pass, body *ast.BlockStmt) *ast.CallExpr {
+	var calls []*ast.CallExpr
+
+	ast.Inspect(body, func(n ast.Node) bool {
+		if call, isCall := n.(*ast.CallExpr); isCall {
+			if _, _, known := doRegistrationCall(pass, call); known {
+				calls = append(calls, call)
+			}
+		}
+
+		return true
+	})
+
+	if len(calls) != 1 {
+		return nil
+	}
+
+	return calls[0]
+}
+
+// paramIndex locates variable v in sig's parameter tuple by object identity;
+// -1 when v is not a parameter of this signature.
+func paramIndex(sig *types.Signature, v *types.Var) int {
+	for k := range sig.Params().Len() {
+		if sig.Params().At(k) == v {
+			return k
+		}
+	}
+
+	return -1
+}
+
 // calleeIdent extracts the plain function identifier from a call expression,
 // unwrapping explicit generic instantiation (f[T] and f[T1, T2]; inference
 // sites are plain idents already). Selector callees (other packages, local
 // methods) are not wrapper candidates in v1.
 func calleeIdent(fun ast.Expr) (*ast.Ident, bool) {
-	switch f := fun.(type) {
+	switch candidate := fun.(type) {
 	case *ast.Ident:
-		return f, true
+		return candidate, true
 	case *ast.IndexExpr:
-		return calleeIdent(f.X)
+		return calleeIdent(candidate.X)
 	case *ast.IndexListExpr:
-		return calleeIdent(f.X)
+		return calleeIdent(candidate.X)
 	}
 
 	return nil, false

@@ -125,6 +125,7 @@ func LookupRule(id string) (RuleDescriptor, bool) {
 // RuleIDs returns every rule ID in RuleTable, in table order.
 func RuleIDs() []string {
 	ids := make([]string, 0, len(RuleTable))
+
 	for _, rule := range RuleTable {
 		ids = append(ids, rule.ID)
 	}
@@ -138,6 +139,7 @@ func RuleIDs() []string {
 // ships enabled.
 func DefaultDisabledRules() []string {
 	var disabled []string
+
 	for _, rule := range RuleTable {
 		if !rule.DefaultEnabled {
 			disabled = append(disabled, rule.ID)

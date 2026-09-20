@@ -48,6 +48,7 @@ func TestRuleTableWellFormed(t *testing.T) {
 		if seenIDs[rule.ID] {
 			t.Errorf("duplicate RuleTable ID %s", rule.ID)
 		}
+
 		seenIDs[rule.ID] = true
 
 		if rule.Slug == "" && rule.ID != RuleHW0 && rule.ID != RuleUnresolved {
@@ -58,6 +59,7 @@ func TestRuleTableWellFormed(t *testing.T) {
 			if seenSlugs[rule.Slug] {
 				t.Errorf("duplicate RuleTable slug %q", rule.Slug)
 			}
+
 			seenSlugs[rule.Slug] = true
 		}
 

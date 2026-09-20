@@ -94,12 +94,12 @@ func (p *healthwashPlugin) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 func (p *healthwashPlugin) BuildDocs() string {
 	parts := make([]string, 0, len(healthwash.RuleTable))
 	for _, rule := range healthwash.RuleTable {
-		if rule.Slug == "" {
-			parts = append(parts, rule.ID)
-			continue
+		name := rule.ID
+		if rule.Slug != "" {
+			name += " " + rule.Slug
 		}
 
-		parts = append(parts, rule.ID+" "+rule.Slug)
+		parts = append(parts, name)
 	}
 
 	return "Detects health-washing in samber/do v2 DI containers: services that " +

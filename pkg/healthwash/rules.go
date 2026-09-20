@@ -38,18 +38,9 @@ func evalSite(
 		return evalAlias(pass, call), nil
 	}
 
-	idx, ok := providerArgIndex(fnName)
-	if !ok {
+	provider, hasProvider := registrationProvider(fnName, call, arg)
+	if !hasProvider {
 		return ServiceRecord{Kind: kind}, nil
-	}
-
-	provider := arg
-	if provider == nil {
-		if idx >= len(call.Args) {
-			return ServiceRecord{Kind: kind}, nil
-		}
-
-		provider = call.Args[idx]
 	}
 
 	serviceType, unresolved := resolveStoredType(pass, kind, provider)
@@ -136,6 +127,22 @@ func evalSite(
 	}
 
 	return rec, reps
+}
+
+// registrationProvider picks the provider/value argument for one site: the
+// wrapper-substituted expression when given, otherwise the direct call
+// argument at the registration function's provider index.
+func registrationProvider(fnName string, call *ast.CallExpr, substitute ast.Expr) (ast.Expr, bool) {
+	if substitute != nil {
+		return substitute, true
+	}
+
+	idx, ok := providerArgIndex(fnName)
+	if !ok || idx >= len(call.Args) {
+		return nil, false
+	}
+
+	return call.Args[idx], true
 }
 
 // resolveStoredType extracts the type the sweep will store for one

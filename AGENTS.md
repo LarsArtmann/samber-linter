@@ -278,6 +278,15 @@ Non-obvious, easy to break:
   with multiple registrations. A clean scan is "no direct or
   one-level-wrapped registrations found", not "provably no health-washing";
   when auditing by hand, grep for indirect wrappers the resolver cannot see.
+- **treefmt check needs a floor-matching `go` (2026-09-20):** goimports
+  shells out to `go` for module metadata; in the `nix flake check` sandbox
+  (no network) a `go` older than the go.mod floor dies with
+  "go: downloading goX" DNS errors. treefmt-nix registers its check TWICE
+  (`checks.treefmt` and go-standard's `checks.format`) — both need the
+  override. samber-linter's flake.nix carries a local
+  `hermeticTreefmtCheck` override (go_1_27 + GOTOOLCHAIN=local); the same
+  fix landed in go-nix-helpers' go-standard module but is UNPUSHED — drop
+  the local copy when that input update is pulled.
 - **Self-dogfood ratchet (since 2026-09-20):** the committed
   `.samber-linter-baseline.json` (schema v2, 0 registered — this repo
   registers nothing) is enforced by the CI `dogfood` job's third leg
