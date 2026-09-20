@@ -76,51 +76,10 @@ type Options struct {
 	Stderr io.Writer
 }
 
-type ruleMeta struct {
-	severity   finding.Severity
-	confidence finding.Confidence
-}
-
 // severity != confidence: HW-1/3/5 are type facts (Full), HW-2 a strong
 // convention (High), HW-4 a judgment call (Medium). Exit codes key on
-// confidence only.
-//
-//nolint:gochecknoglobals // read-only rule metadata table (severity/confidence per rule)
-var ruleMetaByRule = map[string]ruleMeta{
-	healthwash.RuleHW1: {
-		severity:   finding.SeverityWarning,
-		confidence: finding.ConfidenceFull,
-	},
-	healthwash.RuleHW2: {severity: finding.SeverityInfo, confidence: finding.ConfidenceHigh},
-	healthwash.RuleHW3: {
-		severity:   finding.SeverityWarning,
-		confidence: finding.ConfidenceFull,
-	},
-	healthwash.RuleHW4: {
-		severity:   finding.SeverityInfo,
-		confidence: finding.ConfidenceMedium,
-	},
-	healthwash.RuleHW5: {
-		severity:   finding.SeverityWarning,
-		confidence: finding.ConfidenceFull,
-	},
-	healthwash.RuleHW7: {
-		severity:   finding.SeverityWarning,
-		confidence: finding.ConfidenceFull,
-	},
-	healthwash.RuleHW8: {
-		severity:   finding.SeverityWarning,
-		confidence: finding.ConfidenceFull,
-	},
-	healthwash.RuleHW0: {
-		severity:   finding.SeverityWarning,
-		confidence: finding.ConfidenceFull,
-	},
-	healthwash.RuleUnresolved: {
-		severity:   finding.SeverityInfo,
-		confidence: finding.ConfidenceMedium,
-	},
-}
+// confidence only. The values live in healthwash.RuleTable — the single
+// source consumed here, by the plugin's docs, and by the README drift tests.
 
 // allowlistConfig is the --config file: recurring suppression categories,
 // kept separate from inline directives. Reasons are mandatory here too.
@@ -202,14 +161,26 @@ func Run(opts Options) int {
 }
 
 // buildAnalyzer constructs the analyzer with the driver-level flags applied.
+// Rules whose default posture is off in healthwash.RuleTable are merged into
+// the disable set, so a posture flip there is effective here without further
+// wiring; an explicit opts.DisableRules stacks on top.
 func buildAnalyzer(opts Options) *analysis.Analyzer {
 	analyzer := healthwash.New()
 	if opts.Strict {
 		_ = analyzer.Flags.Set("strict", "true")
 	}
 
-	if opts.DisableRules != "" {
-		_ = analyzer.Flags.Set("disable", opts.DisableRules)
+	disable := opts.DisableRules
+	if defaults := healthwash.DefaultDisabledRules(); len(defaults) > 0 {
+		if disable == "" {
+			disable = strings.Join(defaults, ",")
+		} else {
+			disable = strings.Join(defaults, ",") + "," + disable
+		}
+	}
+
+	if disable != "" {
+		_ = analyzer.Flags.Set("disable", disable)
 	}
 
 	return analyzer
@@ -468,9 +439,9 @@ func toFinding(
 		rule = analyzer.Name
 	}
 
-	meta, ok := ruleMetaByRule[rule]
-	if !ok {
-		meta = ruleMeta{severity: finding.SeverityWarning, confidence: finding.ConfidenceMedium}
+	severity, confidence := finding.SeverityWarning, finding.ConfidenceMedium
+	if desc, ok := healthwash.LookupRule(rule); ok {
+		severity, confidence = desc.Severity, desc.Confidence
 	}
 
 	pos := fset.Position(diag.Pos)
@@ -479,14 +450,14 @@ func toFinding(
 		finding.RuleName(rule),
 		finding.ToolName(ToolName),
 		diag.Message,
-		meta.severity,
+		severity,
 		finding.Position{
 			File:   finding.FilePath(pos.Filename),
 			Line:   pos.Line,
 			Column: pos.Column,
 			Offset: pos.Offset,
 		},
-	).WithConfidence(meta.confidence).MustBuild()
+	).WithConfidence(confidence).MustBuild()
 }
 
 func applyAllowlist(

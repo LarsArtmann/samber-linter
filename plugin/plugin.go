@@ -72,8 +72,15 @@ func (p *healthwashPlugin) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 		}
 	}
 
+	// Rules whose default posture is off in healthwash.RuleTable are merged
+	// into the disable set; an explicit settings.Disable stacks on top.
+	disable := strings.Join(healthwash.DefaultDisabledRules(), ",")
 	if d := strings.TrimSpace(p.settings.Disable); d != "" {
-		if err := a.Flags.Set("disable", d); err != nil {
+		disable = strings.TrimPrefix(disable+",", ",") + d
+	}
+
+	if disable != "" {
+		if err := a.Flags.Set("disable", disable); err != nil {
 			return nil, fmt.Errorf("set disable flag: %w", err)
 		}
 	}
@@ -81,14 +88,23 @@ func (p *healthwashPlugin) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 	return []*analysis.Analyzer{a}, nil
 }
 
-// BuildDocs is required by the register API.
+// BuildDocs is required by the register API. The rule list is generated
+// from healthwash.RuleTable — the same single source the driver and the
+// README drift tests consume — so it cannot drift from the shipped rules.
 func (p *healthwashPlugin) BuildDocs() string {
+	parts := make([]string, 0, len(healthwash.RuleTable))
+	for _, rule := range healthwash.RuleTable {
+		if rule.Slug == "" {
+			parts = append(parts, rule.ID)
+			continue
+		}
+
+		parts = append(parts, rule.ID+" "+rule.Slug)
+	}
+
 	return "Detects health-washing in samber/do v2 DI containers: services that " +
 		"render green `pass` on health dashboards but cannot actually fail. " +
-		"Rules: HW-1 unchecked-resource-holder, HW-2 contextless-check, " +
-		"HW-3 transient-health-washing, HW-4 lazy-never-built-pass, " +
-		"HW-5 pointer-receiver-value-registration, HW-7 unconditional-nil-check, " +
-		"HW-8 empty-check-body. See " +
+		"Rules: " + strings.Join(parts, ", ") + ". See " +
 		"https://github.com/LarsArtmann/samber-linter"
 }
 

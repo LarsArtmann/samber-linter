@@ -88,7 +88,7 @@ Honest inventory by status. Last updated: 2026-09-10.
 
 ## WORTH CONSIDERING
 
-- **HW-7 "stale directive"**: valid-but-orphaned directives with an `until`
+- **HW-9 "stale directive"**: valid-but-orphaned directives with an `until`
   expiry resurface for cleanup (design notes in docs/FP-BUDGETS.md).
 - `--fix` for HW-5 (rewrite `Provide(i, T{})` → `Provide(i, &T{})`) —
   mechanical; everything else must stay report-only (a generated

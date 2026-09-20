@@ -38,6 +38,18 @@ grow the budget.
 | HW-0          | 0                  | none known                                                                                                                                                             | **0** — malformed directive is a syntactic fact; also fires orphaned (no matching finding) since v0.1.1.                                                                                                        | write the reason                                                        |
 | HW-unresolved | 0 (off)            | Interface-typed closure results are statically unknowable — reporting them as violations would be the FP.                                                              | **0 while off**; in `--strict` the finding is explicitly "unresolved", never a guessed rule.                                                                                                                    | keep `--strict` off, or resolve the concrete type                       |
 
+## Rule candidates (budgeted, not yet shipped)
+
+- **HW-9 `stale-directive`** — valid-but-orphaned `//samber-linter:allow`
+  directives (the directive is well-formed, but no finding at that site
+  matches its rule token) resurface for cleanup; directives whose `until`
+  expiry has passed re-enter review on the same channel. FP budget **0**: the
+  verdict is a syntactic fact about the directive, never about the code
+  (malformed directives stay HW-0's). Originally sketched as "HW-7 stale
+  directive" before that ID shipped as `unconditional-nil-check` (v0.2.2);
+  renumbered to the next free ID, HW-9, on 2026-09-20. Not scheduled — ships
+  only on an explicit go-ahead (decision open since 2026-09-16).
+
 ## Known boundary cases (documented, not bugs)
 
 - **HW-5 with Shutdowner on T:** when a value-registered type carries its check
