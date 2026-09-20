@@ -250,6 +250,18 @@ Non-obvious, easy to break:
   poisons it ("directory prefix . does not contain modules listed in
   go.work"), and `replace` paths are relative — moving fixture dirs breaks
   them. Used as the post-change regression proof.
+- **Self-dogfood ratchet (since 2026-09-20):** the committed
+  `.samber-linter-baseline.json` (schema v2, 0 registered — this repo
+  registers nothing) is enforced by the CI `dogfood` job's third leg
+  (`go run ./cmd/samber-linter ./...`). Any self finding above a rule's
+  committed floor fails CI even below the confidence gate. Re-cut it with
+  `--set-baseline` ONLY as a deliberate, reviewed act.
+- **Release flow:** bump README §12 "Latest tagged release" FIRST, then tag —
+  the drift test (readme_drift_test.go) compares the line against max
+  `git tag` and fails the suite when they diverge (skips where git is
+  unavailable, e.g. the nix sandbox). Nix-built binaries report
+  `devel+<shortRev>` via flake ldflags injection, so source and store builds
+  both carry honest versions.
 
 ## Ecosystem references (local, on this machine)
 

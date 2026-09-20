@@ -70,6 +70,7 @@ jobs:
         run: |
           go run ./cmd/samber-linter --coverage-min 0.0 ./... >/dev/null
           go run ./cmd/samber-linter --output markdown --coverage-min 0.0 ./... >/dev/null
+          go run ./cmd/samber-linter ./...
           echo "dogfood ok"
 
   upstream-snippets:
