@@ -13,13 +13,14 @@ import (
 	"github.com/larsartmann/samber-linter/internal/driver"
 )
 
-// version is the tool version reported in findings and SARIF exports.
-var version = "0.1.1"
-
 // defaultMinConfidence is the exit-1 threshold for the confidence gate.
 const defaultMinConfidence = 0.75
 
 func main() {
+	if version == "" {
+		version = resolveVersion()
+	}
+
 	flagSet := flag.NewFlagSet("samber-linter", flag.ExitOnError)
 	jsonOut := flagSet.Bool("json", false, "emit the go-finding JSON report")
 	sarifOut := flagSet.Bool("sarif", false, "emit a SARIF 2.1 report for code scanning")

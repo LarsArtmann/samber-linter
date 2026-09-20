@@ -27,17 +27,27 @@ func resolveVersion() string {
 	return buildVersion(bi)
 }
 
+// shortRevisionLength keeps version strings scannable; full SHAs are noise
+// in a SARIF tool field.
+const shortRevisionLength = 7
+
 // buildVersion maps build info to a version string. Pure so the version
 // contract is testable without building a release.
-func buildVersion(bi *debug.BuildInfo) string {
-	if v := bi.Main.Version; v != "" && v != "(devel)" && v != "devel" {
+func buildVersion(info *debug.BuildInfo) string {
+	if info == nil {
+		return fallbackVersion
+	}
+
+	if v := info.Main.Version; v != "" && v != "(devel)" && v != "devel" {
 		return v
 	}
 
-	var revision string
-	dirty := false
+	var (
+		revision string
+		dirty    bool
+	)
 
-	for _, setting := range bi.Settings {
+	for _, setting := range info.Settings {
 		switch setting.Key {
 		case "vcs.revision":
 			revision = setting.Value
@@ -50,8 +60,8 @@ func buildVersion(bi *debug.BuildInfo) string {
 		return fallbackVersion
 	}
 
-	if len(revision) > 7 {
-		revision = revision[:7]
+	if len(revision) > shortRevisionLength {
+		revision = revision[:shortRevisionLength]
 	}
 
 	if dirty {
