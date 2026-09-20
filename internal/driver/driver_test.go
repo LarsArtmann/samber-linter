@@ -61,11 +61,14 @@ func (s *Store) Shutdown(context.Context) {}
 
 func NewStore(i do.Injector) (*Store, error) { return &Store{}, nil }
 
-// Honest: both interfaces -> clean.
+// Honest: both interfaces, a body that can fail -> clean.
 type Honest struct{}
 
-func (h *Honest) Shutdown(context.Context)          {}
-func (h *Honest) HealthCheck(context.Context) error { return nil }
+func (h *Honest) Shutdown(context.Context) {}
+
+func (h *Honest) HealthCheck(context.Context) error { return h.probe() }
+
+func (h *Honest) probe() error { return nil }
 
 // Handler: nothing -> clean.
 type Handler struct{}
@@ -204,15 +207,22 @@ import (
 
 // Lazy and Other are healthcheckers registered without an eager option, so
 // each site is HW-4 (lazy + check) — advisory, never a confidence-gate exit.
+// Their bodies delegate (can fail): body shape is HW-7's contract, and a
+// Full-confidence finding here would break the triage-only exit this module
+// exists to pin.
 type Lazy struct{}
 
-func (l *Lazy) HealthCheck(context.Context) error { return nil }
+func (l *Lazy) HealthCheck(context.Context) error { return l.probe() }
+
+func (l *Lazy) probe() error { return nil }
 
 func NewLazy(i do.Injector) (*Lazy, error) { return &Lazy{}, nil }
 
 type Other struct{}
 
-func (o *Other) HealthCheck(context.Context) error { return nil }
+func (o *Other) HealthCheck(context.Context) error { return o.probe() }
+
+func (o *Other) probe() error { return nil }
 
 func NewOther(i do.Injector) (*Other, error) { return &Other{}, nil }
 
@@ -546,8 +556,11 @@ import (
 
 type DB struct{}
 
-func (d *DB) Shutdown(context.Context)          {}
-func (d *DB) HealthCheck(context.Context) error { return nil }
+func (d *DB) Shutdown(context.Context) {}
+
+func (d *DB) HealthCheck(context.Context) error { return d.probe() }
+
+func (d *DB) probe() error { return nil }
 
 type Cfg struct{ Addr string }
 

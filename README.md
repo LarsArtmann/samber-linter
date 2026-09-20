@@ -39,9 +39,9 @@ cannot load anything has no findings to report).
 
 Rules: **HW-1** Shutdowner-without-Healthchecker (the headline), **HW-2**
 contextless check, **HW-3** transient health-washing, **HW-4** lazy
-never-built pass, **HW-5** pointer-receiver-value registration, **HW-0**
-suppression without a reason. Suppress with
-`//samber-linter:allow hw-1 <reason>` directly above the registration (or
+never-built pass, **HW-5** pointer-receiver-value registration, **HW-7**
+unconditional-nil check body, **HW-0** suppression without a reason. Suppress
+with `//samber-linter:allow hw-1 <reason>` directly above the registration (or
 anywhere inside a multi-line registration call).
 
 As a golangci-lint v2 plugin, see `plugin/` and `.custom-gcl.yml`.
@@ -249,6 +249,28 @@ Rationale: §2.7. The implementation exists, the sweep never sees it. Fix:
 register `*T` (or move the receiver to `T`). This is the nastiest variant
 because reading the source shows a plausible implementation.
 
+### HW-7 `unconditional-nil-check` (severity: warn)
+
+The reachable check's body is exactly one statement: `return nil`. The check
+can never fail, so the dashboard renders an unconditional `pass` — health-
+washing in its purest syntactic form. Fires for lazy and eager registrations
+whose stored type satisfies a `Healthchecker` variant; a check method declared
+outside the analyzed package (no visible body) is silently skipped.
+
+Rationale: a type that satisfies the health-check contract but whose
+implementation is a stub renders green forever — statically indistinguishable
+from a service that cannot fail, because it is one. v1 is deliberately
+narrow: delegation (`return s.db.Ping()`), multi-statement bodies, and naked
+returns on named results can fail and are negative; budget in
+`docs/FP-BUDGETS.md`.
+
+```
+internal/di/checkers.go:18:9: HW-7: *health.GroqChat's health check body is
+    exactly "return nil"; the check can never fail and always renders "pass"
+    on health dashboards. Implement a real check or suppress with a reason:
+    //samber-linter:allow hw-7 <reason>
+```
+
 ### HW-6 `health-coverage-ratchet` (severity: none; CI gate mode)
 
 Not a per-line finding. Reports the module-tree ratio:
@@ -408,6 +430,7 @@ delivers most of the value.
 | Transient registration implementing `HealthcheckerWithContext`   | HW-3 fires             |
 | Lazy registration implementing `HealthcheckerWithContext`        | HW-4 fires (info)      |
 | Contextless `HealthCheck() error` implementer                    | HW-2 fires (info)      |
+| Checker whose body is exactly `return nil`                       | HW-7 fires             |
 | `internal/database/connection.go` (real checker)                 | clean                  |
 | `chat/groq` ChatService (real checker)                           | clean                  |
 | Handler struct, no Shutdowner, no Healthchecker                  | clean (rule precision) |

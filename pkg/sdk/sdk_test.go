@@ -49,11 +49,14 @@ func (s *Store) Shutdown(context.Context) {}
 
 func NewStore(i do.Injector) (*Store, error) { return &Store{}, nil }
 
-// Honest: both interfaces -> clean.
+// Honest: both interfaces, a body that can fail -> clean.
 type Honest struct{}
 
-func (h *Honest) Shutdown(context.Context)          {}
-func (h *Honest) HealthCheck(context.Context) error { return nil }
+func (h *Honest) Shutdown(context.Context) {}
+
+func (h *Honest) HealthCheck(context.Context) error { return h.probe() }
+
+func (h *Honest) probe() error { return nil }
 
 // Handler: nothing -> clean.
 type Handler struct{}

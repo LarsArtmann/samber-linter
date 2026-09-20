@@ -15,6 +15,10 @@ Honest inventory by status. Last updated: 2026-09-10.
   registration implementing a `Healthchecker*` variant.
 - **HW-5 `pointer-receiver-value-registration`** (warn, confidence full):
   check reachable only on `*T` while the registration stores value `T`.
+- **HW-7 `unconditional-nil-check`** (warn, confidence full): the reachable
+  check's body is exactly `return nil` — the check cannot fail. Lazy/eager
+  only (transients are HW-3's; the HW-5 site stays HW-5's); bodies outside
+  the analyzed package are invisible and silently skipped.
 - **HW-0** (meta): suppression directive without a reason, attributed to the
   suppressible site. Not disable-able (it audits the auditor).
 - **Suppression model**: `//samber-linter:allow hw-N <reason>` (line above,
