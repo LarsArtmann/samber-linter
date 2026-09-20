@@ -1,6 +1,6 @@
 module github.com/larsartmann/samber-linter
 
-go 1.27.1
+go 1.27
 
 require (
 	github.com/golangci/plugin-module-register v0.1.2
