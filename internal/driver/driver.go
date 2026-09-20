@@ -323,7 +323,8 @@ func applyGates(
 	records []healthwash.ServiceRecord, pkgs []*packages.Package, opts Options,
 ) int {
 	gateFailed := false
-	coverage := reportCoverage(out, findings, records, opts, &gateFailed)
+	human := opts.humanPresentation()
+	coverage := reportCoverage(out, findings, records, opts, &gateFailed, human)
 	warnDover(out, pkgs)
 
 	code := linter.ExitCodeByConfidence(report, opts.MinConfidence)
@@ -608,12 +609,25 @@ func ruleCounts(findings []finding.Finding) map[string]int {
 	return counts
 }
 
+// humanPresentation reports whether stdout is carrying human UI (plain text
+// or a human-oriented --output table). Machine consumers --json/--sarif and
+// the structured formats get exactly one parseable shape: gate VERDICTS
+// travel via the exit code and stderr, never as trailing stdout lines.
+func (o Options) humanPresentation() bool {
+	return !o.JSON && !o.SARIF && !IsMachineFormat(o.OutputFormat)
+}
+
+// reportCoverage prints the HW-6 coverage picture and applies its gates.
+// Human-only lines (coverage, baseline acknowledgement, the --strict
+// unresolved summary) are suppressed on machine presentations; failures
+// always reach stderr and always flip gateFailed.
 func reportCoverage(
 	out io.Writer,
 	findings []finding.Finding,
 	records []healthwash.ServiceRecord,
 	opts Options,
 	gateFailed *bool,
+	human bool,
 ) float64 {
 	uniq := map[string]healthwash.ServiceRecord{}
 
@@ -654,7 +668,7 @@ func reportCoverage(
 			Registered: registered,
 			Coverage:   coverage,
 			Findings:   counts,
-		}, gateFailed)
+		}, gateFailed, human)
 
 		return coverage
 	}
@@ -666,16 +680,41 @@ func reportCoverage(
 	// skipped every baseline check — a gate that reads its own instrument
 	// must also validate that instrument.
 	if opts.CoverageMin > 0 {
-		enforceCoverageMin(out, opts.Stderr, checked, registered, coverage, opts.CoverageMin, gateFailed)
+		enforceCoverageMin(out, opts.Stderr, checked, registered, coverage, opts.CoverageMin, gateFailed, human)
 	}
 
-	enforceBaselineRatchet(out, opts.Stderr, baselinePath, counts, checked, registered, coverage, gateFailed)
+	enforceBaselineRatchet(out, opts.Stderr, baselinePath, counts, checked, registered, coverage, gateFailed, human)
+
+	reportStrictUnresolved(out, records, opts, human)
 
 	return coverage
 }
 
+// reportStrictUnresolved surfaces the silent-by-default unresolved
+// registrations when --strict is on: recall the max-recall profile can see
+// without a single new detection rule. Human presentations only — machines
+// see HW-unresolved findings through the normal finding stream.
+func reportStrictUnresolved(out io.Writer, records []healthwash.ServiceRecord, opts Options, human bool) {
+	if !opts.Strict || !human {
+		return
+	}
+
+	unresolved := 0
+	for _, record := range records {
+		if record.Unresolved {
+			unresolved++
+		}
+	}
+
+	if unresolved > 0 {
+		fmt.Fprintf(out,
+			"strict: %d registration(s) could not be resolved statically; analyze the concrete type or suppress with //samber-linter:allow hw-unresolved <reason>\n",
+			unresolved)
+	}
+}
+
 // writeBaseline persists the current coverage as the ratchet floor.
-func writeBaseline(out, errw io.Writer, path string, b baseline, gateFailed *bool) {
+func writeBaseline(out, errw io.Writer, path string, b baseline, gateFailed *bool, human bool) {
 	data, _ := json.Marshal(b, jsontext.WithIndentPrefix(""), jsontext.WithIndent("  "))
 	if _, err := atomicwrite.WriteIfChanged(path, append(data, '\n')); err != nil {
 		fmt.Fprintf(errw, "%s: baseline write failed: %v\n", ToolName, err)
@@ -685,16 +724,21 @@ func writeBaseline(out, errw io.Writer, path string, b baseline, gateFailed *boo
 		return
 	}
 
-	fmt.Fprintf(out, "baseline written: %s (coverage %d/%d = %.0f%%)\n",
-		path, b.Checked, b.Registered, b.Coverage*100)
+	if human {
+		fmt.Fprintf(out, "baseline written: %s (coverage %d/%d = %.0f%%)\n",
+			path, b.Checked, b.Registered, b.Coverage*100)
+	}
 }
 
 // enforceCoverageMin applies the absolute --coverage-min gate.
 func enforceCoverageMin(
-	out, errw io.Writer, checked, registered int, coverage, minCoverage float64, gateFailed *bool,
+	out, errw io.Writer, checked, registered int, coverage, minCoverage float64,
+	gateFailed *bool, human bool,
 ) {
-	fmt.Fprintf(out, "health-coverage: %d/%d = %.0f%% (threshold: %.0f%%)\n",
-		checked, registered, coverage*100, minCoverage*100)
+	if human {
+		fmt.Fprintf(out, "health-coverage: %d/%d = %.0f%% (threshold: %.0f%%)\n",
+			checked, registered, coverage*100, minCoverage*100)
+	}
 
 	if registered > 0 && coverage < minCoverage {
 		fmt.Fprintf(errw, "%s: coverage %.0f%% is below the required minimum %.0f%%\n",
@@ -711,11 +755,11 @@ func enforceCoverageMin(
 // than a red build).
 func enforceBaselineRatchet(
 	out, errw io.Writer, baselinePath string, counts map[string]int,
-	checked, registered int, coverage float64, gateFailed *bool,
+	checked, registered int, coverage float64, gateFailed *bool, human bool,
 ) {
 	data, err := os.ReadFile(baselinePath)
 	if err != nil {
-		if registered > 0 {
+		if registered > 0 && human {
 			fmt.Fprintf(
 				out,
 				"health-coverage: %d/%d = %.0f%% (no baseline; use --set-baseline to start the ratchet)\n",
@@ -738,7 +782,7 @@ func enforceBaselineRatchet(
 	}
 
 	if b.Registered <= 0 {
-		if registered > 0 {
+		if registered > 0 && human {
 			fmt.Fprintf(
 				out,
 				"health-coverage: %d/%d = %.0f%% (no baseline; use --set-baseline to start the ratchet)\n",
@@ -759,8 +803,10 @@ func enforceBaselineRatchet(
 		return
 	}
 
-	fmt.Fprintf(out, "health-coverage: %d/%d = %.0f%% (baseline: %.0f%%)\n",
-		checked, registered, coverage*100, b.Coverage*100)
+	if human {
+		fmt.Fprintf(out, "health-coverage: %d/%d = %.0f%% (baseline: %.0f%%)\n",
+			checked, registered, coverage*100, b.Coverage*100)
+	}
 
 	if coverage < b.Coverage {
 		fmt.Fprintf(

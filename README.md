@@ -31,11 +31,24 @@ samber-linter --output markdown ./...   # also: table, csv, tsv, html, xml, asci
 # Coverage ratchet (HW-6)
 samber-linter --set-baseline ./...       # lock current coverage as the floor
 samber-linter --coverage-min 0.6 ./...   # fail below 60%
+
+# Max-recall profile (opt-in; see "Threshold policy" below)
+samber-linter --min-confidence 0.5 --strict ./...   # HW-4 + unresolved surface, triage-only
 ```
 
 Exit codes: `0` clean, `1` high-confidence findings (or a coverage gate
 failure), `2` findings that need triage only — or a load failure (a run that
 cannot load anything has no findings to report).
+
+### Threshold policy (recorded 2026-09-20)
+
+The default `--min-confidence 0.75` keeps `--check`-style signal high: HW-1/3/5/7
+(type facts and sole-`return nil` bodies, confidence Full) gate CI; HW-4
+(judgment call, Medium) reports as triage-only. **Profile-first is the
+recorded decision**: the max-recall profile above (`--min-confidence 0.5
+--strict`) surfaces HW-4 and unresolved registrations today; the default
+flips only after one release of measured FP data from that profile. Until
+then the recall increase ships as an opt-in, not as a default flip.
 
 Rules: **HW-1** Shutdowner-without-Healthchecker (the headline), **HW-2**
 contextless check, **HW-3** transient health-washing, **HW-4** lazy
@@ -370,8 +383,12 @@ per-rule floors) and enforced, so a stale or corrupt baseline fails the
 gate even in an absolute-floor run.
 
 `--output` renders the findings as a go-output table (Rule, Severity,
-Confidence, Location, Message); the coverage and summary lines stay plain
-text in every mode. JSON-family and diagram formats are deliberately not
+Confidence, Location, Message). The coverage, baseline-acknowledgement, and
+`--strict` summary lines are human UI: they print on plain text and human-
+oriented tables only. `--json`/`--sarif` and the structured `--output`
+formats stay one parseable shape under every flag combination — gate verdicts
+reach machines via the exit code and stderr, never as trailing stdout lines.
+JSON-family and diagram formats are deliberately not
 offered here: `--json` (go-finding report) and `--sarif` own the
 machine-readable contract, so there is exactly one shape per consumer.
 Passing e.g. `--output json` fails at flag validation with the supported
@@ -379,8 +396,11 @@ list. An invalid `--output` value exits 2 (flag-parse convention).
 
 Exit codes follow the confidence ternary (`go-linter-sdk`'s
 `ExitCodeByConfidence`): `0` clean, `1` high-confidence findings, `2` needs
-triage. Severity ≠ confidence: HW-1/3/5 are type facts (confidence Full),
-HW-2 High, HW-4 Medium — a judgment call by design.
+triage. Severity ≠ confidence: HW-1/3/5/7 are facts (confidence Full — type
+facts for 1/3/5, a sole-`return nil` body for 7), HW-2 High, HW-4 Medium — a
+judgment call by design. With `--strict`, statically unresolvable
+registrations additionally surface as a human-readable count line (the
+HW-unresolved findings themselves stay Medium/triage-only).
 
 Stack: detection is a plain `*analysis.Analyzer` (golangci plugin contract);
 findings, confidence, suppression, JSON/SARIF, and the HW-6 ratchet (a

@@ -40,6 +40,12 @@ Honest inventory by status. Last updated: 2026-09-10.
   mandatory; empty pathPattern = project-wide), `--disable` rule mute,
   `--check` advisory mode (always exit 0; the advisory note stays off
   machine formats).
+- **Max-recall profile** (opt-in, documented): `--min-confidence 0.5 --strict`
+  surfaces HW-4 and unresolved registrations without flipping defaults; the
+  default threshold flip is recorded as profile-first pending one release of
+  FP data. With `--strict`, a human-readable summary counts statically
+  unresolvable registrations (machine output stays pure — gate and summary
+  lines never append to `--json`/`--sarif`/structured stdout).
 - **Drift matrix**: mechanism assertions executed against REAL samber/do
   v2.0.0 and v2.1.0 sources from the module cache.
 - **Discrimination proofs**: every P0 rule demonstrated to fail on a mutant

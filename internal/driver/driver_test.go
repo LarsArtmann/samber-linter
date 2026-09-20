@@ -540,6 +540,138 @@ func TestCheckForcesZeroThroughFailedGates(t *testing.T) {
 	}
 }
 
+// unresolvedModule writes a module whose only registration resolves to an
+// interface-typed closure result — the silent-by-default unresolved shape.
+func unresolvedModule(t *testing.T) string {
+	t.Helper()
+
+	mainGo := `package main
+
+import (
+	"context"
+
+	do "github.com/samber/do/v2"
+)
+
+type Checker interface {
+	HealthCheck(context.Context) error
+}
+
+type real struct{}
+
+func (real) HealthCheck(context.Context) error { return nil }
+
+func newReal(i do.Injector) (Checker, error) { return real{}, nil }
+
+func main() {
+	do.Provide(nil, newReal)
+}
+`
+
+	return writeConsumerModule(t, mainGo)
+}
+
+// TestStrictUnresolvedSummary: --strict surfaces the count of statically
+// unresolvable registrations on human output only — recall the max-recall
+// profile gains without a single new detection rule. Machines see
+// HW-unresolved findings through the normal finding stream instead, and the
+// summary line must never corrupt their stdout.
+func TestStrictUnresolvedSummary(t *testing.T) {
+	t.Parallel()
+
+	app := unresolvedModule(t)
+
+	var out, errOut bytes.Buffer
+
+	code := Run(Options{
+		Patterns: []string{"./..."}, Dir: app, Version: "test",
+		Env:    []string{"GOFLAGS=-mod=mod"},
+		Strict: true,
+		Stdout: &out, Stderr: &errOut,
+	})
+	if code != 2 {
+		t.Fatalf("strict summary exit = %d, want 2 (HW-unresolved is Medium, triage-only); stderr: %s",
+			code, errOut.String())
+	}
+
+	if !strings.Contains(out.String(), "strict: 1 registration(s) could not be resolved") {
+		t.Errorf("plain output missing strict summary:\n%s", out.String())
+	}
+
+	out.Reset()
+
+	code = Run(Options{
+		Patterns: []string{"./..."}, Dir: app, Version: "test",
+		Env:    []string{"GOFLAGS=-mod=mod"},
+		Stdout: &out, Stderr: &errOut,
+	})
+	if code != 0 {
+		t.Fatalf("non-strict exit = %d, want 0", code)
+	}
+
+	if strings.Contains(out.String(), "strict:") {
+		t.Errorf("summary must require --strict:\n%s", out.String())
+	}
+
+	out.Reset()
+
+	code = Run(Options{
+		Patterns: []string{"./..."}, Dir: app, Version: "test",
+		Env:    []string{"GOFLAGS=-mod=mod"},
+		Strict: true, JSON: true,
+		Stdout: &out, Stderr: &errOut,
+	})
+	if code != 2 {
+		t.Fatalf("strict+json exit = %d, want 2", code)
+	}
+
+	if strings.Contains(out.String(), "strict:") {
+		t.Errorf("summary must stay off machine output:\n%s", out.String())
+	}
+
+	var parsed map[string]any
+	if err := json.Unmarshal([]byte(strings.TrimSpace(lastJSONLine(out.String()))), &parsed); err != nil {
+		t.Fatalf("json output invalid:\n%s", out.String())
+	}
+}
+
+// TestMachineOutputStaysPureUnderGates: gate lines (coverage, baseline
+// acknowledgement) are human UI. On --json with a failing --coverage-min
+// gate, the exit code and stderr carry the verdict and stdout stays one
+// parseable JSON document.
+func TestMachineOutputStaysPureUnderGates(t *testing.T) {
+	t.Parallel()
+
+	app := e2eModule(t)
+
+	var out, errOut bytes.Buffer
+
+	code := Run(Options{
+		Patterns: []string{"./..."}, Dir: app, Version: "test",
+		Env:          []string{"GOFLAGS=-mod=mod"},
+		CoverageMin:  0.99,
+		Stdout:       &out, Stderr: &errOut,
+		JSON:         true,
+		MinConfidence: finding.ConfidenceHigh,
+	})
+	if code != 1 {
+		t.Fatalf("json + failing coverage gate exit = %d, want 1; stderr: %s", code, errOut.String())
+	}
+
+	if strings.Contains(out.String(), "health-coverage:") {
+		t.Errorf("coverage line must stay off machine output:\n%s", out.String())
+	}
+
+	if !strings.Contains(errOut.String(), "below the required minimum") {
+		t.Errorf("stderr must carry the gate failure: %s", errOut.String())
+	}
+
+	var parsed map[string]any
+	if err := json.Unmarshal([]byte(strings.TrimSpace(lastJSONLine(out.String()))), &parsed); err != nil {
+		t.Fatalf("json output corrupted by gate lines: %v\n%s", err, out.String())
+	}
+}
+
 // TestJSONAndSARIF: machine outputs are produced on demand.
 func TestJSONAndSARIF(t *testing.T) {
 	t.Parallel()
