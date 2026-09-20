@@ -25,7 +25,8 @@ Honest inventory by status. Last updated: 2026-09-10.
 - **HW-6 coverage ratchet**: alias-deduped checked/registered ratio, committed
   baseline file (schema v2: per-rule finding counts + validation that fails
   loudly on unreadable or inconsistent baselines), `--coverage-min`,
-  `--set-baseline` (atomic, idempotent via go-atomic-write).
+  `--set-baseline` (atomic, idempotent via go-atomic-write); the gates
+  compose — `--coverage-min` never bypasses baseline validation.
 - **Driver CLI**: text output, `--output` presentation tables (go-output),
   `--json` (go-finding), `--sarif` (SARIF 2.1), 0/1/2 confidence exit codes
   (go-linter-sdk `ExitCodeByConfidence`; load failures exit 2, not 1; a

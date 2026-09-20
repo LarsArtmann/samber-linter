@@ -98,6 +98,18 @@ These come straight from the spec; violating any of them invalidates the analyze
 - golangci-lint integration requires the custom build
   (`.custom-gcl.yml` + `plugin/plugin_integration_test.go` locks registration
   and settings pass-through); a stock golangci-lint cannot load the plugin.
+- **The HW-6 gates compose, never short-circuit**: `--coverage-min` is an
+  absolute floor AND a baseline file that exists is always validated and
+  enforced as a ratchet — even when `--coverage-min` is also passed. The
+  2026-09-20 CV incident (stale v1 baseline through a green gate) was rooted
+  in an early return here that skipped every baseline check; guarded by
+  `TestCoverageMinComposesWithBaseline`.
+- **Version provenance is build-resolved** (`cmd/samber-linter/version.go`):
+  proxy tag for `go install …@vX` builds, short VCS revision for source
+  builds, `devel` fallback; ldflags `-X main.version=` overrides. Never
+  re-introduce a hand-pinned constant — the `0.1.1` constant drifted two
+  releases past the tags and made consumer version-gating impossible (CV
+  could not gate the analyzer instrument; found in their 2026-09-20 review).
 
 ## Upstream engagement
 
@@ -131,6 +143,21 @@ file:line references (README §2, §11). Consequences:
   against new releases — upstream drift must fail the build loudly, not
   silently invalidate rules.
 - If rules misfire, first check whether samber/do changed underneath you.
+
+**2026-09-20 four-project review sweep reconfirmations** (PapDashboard,
+go-appkit, CV, InboxClean architecture reviews of samber/do + health):
+v2.1.0 is still the latest release (proxy-verified that day). The
+lazy-unbuilt-returns-nil trap was independently re-hit (go-appkit F5,
+`service_lazy.go` healthcheck returns nil when `!s.built`) — keep it pinned.
+Newly documented, not rule-relevant today but a latent consumer trap: an
+**alias over an eager target shuts the target down twice** (alias delegates
+`shutdown`, then the target's own entry is popped too — `service_alias.go`
+delegation + `scope.go` pop; `serviceLazy` is guarded by its built flag,
+`serviceEager` is not) — only safe behind idempotent `Shutdown`
+implementations. The sweep surfaced no new HW rule: its findings were
+consumer-side (hand-synced health registries, unbounded check latency) or
+tooling-side (the two driver defects fixed above), not registration-shape
+violations this analyzer can see.
 
 ## Testing discipline (required before shipping P0)
 

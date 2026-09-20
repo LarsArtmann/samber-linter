@@ -334,6 +334,11 @@ samber-linter --check ./...             # advisory: report everything, always ex
 samber-linter all                       # in a go.work workspace use `all`; ./... from the workspace root errors
 ```
 
+`--coverage-min` composes with the baseline ratchet instead of replacing
+it: a baseline file that exists is always validated (schema, counters,
+per-rule floors) and enforced, so a stale or corrupt baseline fails the
+gate even in an absolute-floor run.
+
 `--output` renders the findings as a go-output table (Rule, Severity,
 Confidence, Location, Message); the coverage and summary lines stay plain
 text in every mode. JSON-family and diagram formats are deliberately not
@@ -461,8 +466,8 @@ when it falls outside the verified set.
 
 ## 12. Status, license, upstream
 
-- Latest tagged release: **v0.1.1** (2026-09-10; `CHANGELOG.md` tracks
-  everything that ships per version). The mechanism matrix covers
+- Latest tagged release: **v0.2.1** (2026-09-16; `CHANGELOG.md` tracks
+  releases per version). The mechanism matrix covers
   samber/do v2.0.0 + v2.1.0; upstream findings are filed as
   [samber/do#317](https://github.com/samber/do/issues/317) and
   [#318](https://github.com/samber/do/issues/318).

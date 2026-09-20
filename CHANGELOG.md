@@ -7,6 +7,22 @@ Keep a Changelog; versioning: SemVer.
 
 ### Fixed
 
+- **`--coverage-min` no longer bypasses the baseline gate.** The absolute
+  coverage floor used to short-circuit the baseline ratchet entirely: a
+  baseline file that existed was never read, so a stale or corrupt one (e.g.
+  a v1-schema file written by an old binary) passed a green gate unnoticed.
+  The gates now compose — with `--coverage-min` set, the baseline file is
+  still validated (schema, counters, per-rule floors) and enforced as a
+  ratchet. Found via the 2026-09-20 CV healthwash-gate incident, where this
+  driver defect was the root cause.
+- **The reported tool version can no longer go stale.** `-version` and the
+  version field in findings/SARIF were a hand-pinned constant that had
+  silently drifted two releases behind the tags (`0.1.1` while v0.2.1 was
+  latest), making analyzer version-gating impossible for consumers. The
+  version now resolves from the build: the module proxy version for
+  `go install …@vX` builds, the short VCS revision for source builds
+  (`devel+<rev>[.dirty]`), `devel` when the build has no identity. Release
+  builds can still pin it with `-ldflags "-X main.version=vX.Y.Z"`.
 - **The CI `lint` job never had a working golangci-lint.**
   `golangci-lint-action` `version: latest` resolves to a **v1** binary
   (v1.64.8) that cannot load the v2 config (exit 3, run 35089293309) — the
