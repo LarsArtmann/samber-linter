@@ -23,6 +23,13 @@ grow the budget.
 5. **Drift matrix.** README §2 mechanism claims are asserted against the real
    samber/do v2.0.0 and v2.1.0 sources in CI (`TestDriftV200`, `TestDriftV210`);
    an upstream behavior change fails CI before it can produce wrong findings.
+6. **Wrapper resolution is identity-mapped, never guessed.** A repo-local
+   wrapper counts only when its body holds exactly ONE `do.*` registration
+   whose provider argument is a bare parameter of that wrapper, matched by
+   object identity against the wrapper's signature. Multiple registrations,
+   computed providers, closures, methods, and cross-package wrappers are not
+   resolved — the wrapper channel can only surface sites that mirror
+   direct-call semantics exactly.
 
 ## Budgets
 
@@ -77,6 +84,16 @@ grow the budget.
   exclusive by statement count (0 vs exactly 1) — no double report.
 - **Duplicate registrations** each report at their own site (each instance is
   separately sweep-visible) but count once in the HW-6 coverage denominator.
+- **Wrapper resolution is one level and package-local.** A wrapper declared
+  in another package, a wrapper method, a closure wrapper, or a
+  wrapper-calling-wrapper chain is not resolved (invisible, as before); a
+  wrapper body with multiple `do.*` registrations is not a wrapper — its
+  calls are evaluated directly, as written. When auditing a consumer by
+  hand, grep for indirect wrappers the resolver cannot see.
+- **A parameterized body call is not a registration.** The `do.*` call inside
+  a resolvable wrapper no longer produces an `HW-unresolved` record: its
+  concrete meaning materializes at each call site inside the scan set
+  (call sites in modules outside the scan set are the standing boundary).
 
 ## Ecology evidence
 

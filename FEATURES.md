@@ -1,6 +1,6 @@
 # FEATURES — samber-linter
 
-Honest inventory by status. Last updated: 2026-09-10.
+Honest inventory by status. Last updated: 2026-09-20.
 
 ## DONE
 
@@ -49,6 +49,16 @@ Honest inventory by status. Last updated: 2026-09-10.
   FP data. With `--strict`, a human-readable summary counts statically
   unresolvable registrations (machine output stays pure — gate and summary
   lines never append to `--json`/`--sarif`/structured stdout).
+- **Wrapper-indirection detection** (one level, package-local): a repo-local
+  function — generic or plain — whose body performs exactly one `do.*`
+  registration with a bare parameter in the provider slot is resolved at
+  each call site (param→arg identity mapping); rules fire and suppressions
+  bind at the wrapper CALL SITE, and the parameterized body call is never
+  counted. Deeper chains, cross-package wrappers, methods, and closures
+  stay invisible.
+- **Single-source rule table** (`pkg/healthwash/rulemeta.go`): IDs, slugs,
+  severity, confidence, and default posture defined once; consumed by the
+  driver, the golangci plugin's generated docs, and the README drift tests.
 - **Drift matrix**: mechanism assertions executed against REAL samber/do
   v2.0.0 and v2.1.0 sources from the module cache.
 - **Discrimination proofs**: every P0 rule demonstrated to fail on a mutant

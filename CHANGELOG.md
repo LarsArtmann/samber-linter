@@ -7,6 +7,34 @@ Keep a Changelog; versioning: SemVer.
 
 ### Added
 
+- **Wrapper-indirection detection (one level, package-local).** Registrations
+  hidden behind repo-local helper functions or generics (e.g. a
+  `provideNamed[T]` wrapper around `do.ProvideNamed`) were invisible to every
+  rule — the 2026-09-20 consumer false negative. A package-level function
+  whose body performs exactly one `do.*` registration with a bare parameter
+  in the provider slot now maps that parameter to the call-site argument:
+  every rule fires at the wrapper call site, suppressions bind there, and
+  the parameterized body call is never reported or counted on its own.
+  Deeper chains, cross-package wrappers, wrapper methods, and closures stay
+  invisible; consumers with committed baselines may see new findings surface
+  (they were false negatives). Fixture: `testdata/src/hwwrap`.
+- **HW-9 reserved for `stale-directive`** (not yet implemented): the
+  valid-but-orphaned-suppression cleanup rule, renumbered from its old "HW-7
+  candidate" sketch after that ID shipped as `unconditional-nil-check`;
+  design and FP budget in `docs/FP-BUDGETS.md`.
+
+### Changed
+
+- **Single-source rule table.** Rule IDs, slugs, severity, confidence, and
+  default posture now live in one `healthwash.RuleTable`
+  (`pkg/healthwash/rulemeta.go`) consumed by the driver (exit-code mapping),
+  the golangci plugin (generated docs), and the README rule-table drift
+  tests — replacing four hand-maintained lists. A posture flip (e.g. the
+  pending HW-4 default decision) is now a one-line change, wired through
+  `DefaultDisabledRules` in both the driver and the plugin.
+
+### Added (HW-8, carried from v0.2.2 development)
+
 - **HW-8 `empty-check-body`**: the sibling of HW-7 — a reachable check whose
   body is a lone naked `return` on a named result (implicit nil, cannot
   fail). Disjoint from HW-7 by statement shape (one return value vs none), so

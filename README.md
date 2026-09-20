@@ -328,7 +328,14 @@ cannot decide interface satisfaction).
 1. **Find registration sites.** Selector calls matching the six `Provide*`
    functions AND the six `Override*` functions (resilient to dot-imports and
    renames via package-path match, not identifier text). `As`/`AsNamed`
-   alias rows are tracked but never attributed (§2.6).
+   alias rows are tracked but never attributed (§2.6). One level of
+   repo-local wrapper indirection is resolved: a package-level function —
+   generic or plain — whose body performs exactly one `do.*` registration
+   with a bare parameter in the provider slot maps that parameter to the
+   call-site argument, so every rule fires at the wrapper CALL SITE (where
+   the fix lands) and the parameterized body call is never counted on its
+   own. Deeper chains, cross-package wrappers, wrapper methods, and closures
+   stay invisible.
 2. **Resolve the service type.**
    - `Provide*`: the provider closure's **return type** (first return; drop
      the error return). Chase named types and type aliases to the underlying
