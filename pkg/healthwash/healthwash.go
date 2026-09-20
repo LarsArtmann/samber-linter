@@ -83,7 +83,7 @@ func New() *analysis.Analyzer {
 			"render green 'pass' on health dashboards but cannot actually fail",
 		URL:       "https://github.com/LarsArtmann/samber-linter",
 		Run:       run,
-		FactTypes: []analysis.Fact{(*PackageFacts)(nil), (*NilBodyFact)(nil), (*EmptyBodyFact)(nil)},
+		FactTypes: []analysis.Fact{(*PackageFacts)(nil), (*NilBodyFact)(nil), (*NakedReturnFact)(nil)},
 	}
 	a.Flags.Bool(
 		"strict",
@@ -123,8 +123,8 @@ func run(pass *analysis.Pass) (any, error) {
 			continue
 		case isSoleNilReturn(decl.Body):
 			pass.ExportObjectFact(obj, &NilBodyFact{})
-		case isEmptyBody(decl.Body):
-			pass.ExportObjectFact(obj, &EmptyBodyFact{})
+		case isSoleNakedReturn(decl.Body):
+			pass.ExportObjectFact(obj, &NakedReturnFact{})
 		}
 	}
 

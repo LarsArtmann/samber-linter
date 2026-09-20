@@ -108,6 +108,10 @@ var ruleMetaByRule = map[string]ruleMeta{
 		severity:   finding.SeverityWarning,
 		confidence: finding.ConfidenceFull,
 	},
+	healthwash.RuleHW8: {
+		severity:   finding.SeverityWarning,
+		confidence: finding.ConfidenceFull,
+	},
 	healthwash.RuleHW0: {
 		severity:   finding.SeverityWarning,
 		confidence: finding.ConfidenceFull,

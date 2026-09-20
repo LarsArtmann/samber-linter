@@ -22,7 +22,7 @@ func TestReadmeRuleTableMatchesRegistry(t *testing.T) {
 
 	registry := []string{
 		RuleHW0, RuleHW1, RuleHW2, RuleHW3, RuleHW4, RuleHW5, RuleHW7,
-		RuleUnresolved,
+		RuleHW8, RuleUnresolved,
 	}
 
 	sectionRe := regexp.MustCompile(`(?m)^### (HW-[0-9A-Za-z-]+) `)

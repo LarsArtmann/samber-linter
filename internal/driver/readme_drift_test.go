@@ -26,6 +26,7 @@ func TestRuleMetaCoversEveryRule(t *testing.T) {
 		healthwash.RuleHW4,
 		healthwash.RuleHW5,
 		healthwash.RuleHW7,
+		healthwash.RuleHW8,
 		healthwash.RuleUnresolved,
 	}
 

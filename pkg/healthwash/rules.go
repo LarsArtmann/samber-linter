@@ -82,7 +82,7 @@ func evalSite(
 	var nilBody, emptyBody bool
 	if kind == KindLazy || kind == KindEager {
 		nilBody = hasSoleNilReturnCheck(pass, stored, methodDecls)
-		emptyBody = hasEmptyBodyCheck(pass, stored, methodDecls)
+		emptyBody = hasNakedReturnCheck(pass, stored, methodDecls)
 	}
 
 	facts := typeFacts{
@@ -169,7 +169,7 @@ type typeFacts struct {
 	shutdown  bool // any Shutdowner variant on the stored type
 	valueReg  bool // registered as a value, not a pointer
 	nilBody   bool // the reachable check body is exactly `return nil`
-	emptyBody bool // the reachable check body has zero statements
+	emptyBody bool // the reachable check body is a single naked return
 }
 
 // reportTransientRules fires for transient registrations: the upstream
@@ -359,12 +359,11 @@ func hasSoleNilReturnCheck(
 	return pass.ImportObjectFact(fn, &nilBody)
 }
 
-// hasEmptyBodyCheck is HW-8's predicate: the stored type's reachable
-// HealthCheck method has a body with zero statements. Only compiles with a
-// named error result, whose implicit zero value makes the check a silent
-// no-op. Same-package bodies are read directly; foreign ones come in through
-// EmptyBodyFact, mirroring HW-7.
-func hasEmptyBodyCheck(
+// hasNakedReturnCheck is HW-8's predicate: the stored type's reachable
+// HealthCheck method's body is a single naked `return` on a named result —
+// the implicit zero value cannot fail. Same-package bodies are read directly;
+// foreign ones come in through NakedReturnFact, mirroring HW-7.
+func hasNakedReturnCheck(
 	pass *analysis.Pass, stored types.Type, methodDecls map[*types.Func]*ast.FuncDecl,
 ) bool {
 	named := baseNamed(stored)
@@ -380,18 +379,26 @@ func hasEmptyBodyCheck(
 	}
 
 	if decl, declared := methodDecls[fn]; declared {
-		return isEmptyBody(decl.Body)
+		return isSoleNakedReturn(decl.Body)
 	}
 
-	var emptyBody EmptyBodyFact
+	var nakedReturn NakedReturnFact
 
-	return pass.ImportObjectFact(fn, &emptyBody)
+	return pass.ImportObjectFact(fn, &nakedReturn)
 }
 
-// isEmptyBody reports whether the block has no statements at all. Comments
-// are not statements: a documented empty body is still a no-op.
-func isEmptyBody(body *ast.BlockStmt) bool {
-	return body == nil || len(body.List) == 0
+// isSoleNakedReturn reports whether the block's only statement is a return
+// with no results. That compiles only with named results, whose implicit zero
+// value is nil: the check cannot fail. A naked return among other statements
+// is NOT this — err may have been set.
+func isSoleNakedReturn(body *ast.BlockStmt) bool {
+	if body == nil || len(body.List) != 1 {
+		return false
+	}
+
+	ret, ok := body.List[0].(*ast.ReturnStmt)
+
+	return ok && len(ret.Results) == 0
 }
 
 // baseNamed unwraps a stored type to its named base: *T → T. Method sets and

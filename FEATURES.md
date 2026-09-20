@@ -20,6 +20,9 @@ Honest inventory by status. Last updated: 2026-09-10.
   only (transients are HW-3's; the HW-5 site stays HW-5's); promoted methods
   count; cross-package bodies work via the exported `NilBodyFact`, declared
   in the package that owns the method.
+- **HW-8 `empty-check-body`** (warn, confidence full): the reachable check's
+  body is a lone naked `return` on a named result — implicit nil, cannot
+  fail. Disjoint from HW-7 by statement shape; same scope and plumbing.
 - **HW-0** (meta): suppression directive without a reason, attributed to the
   suppressible site. Not disable-able (it audits the auditor).
 - **Suppression model**: `//samber-linter:allow hw-N <reason>` (line above,

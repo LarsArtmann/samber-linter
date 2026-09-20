@@ -11,6 +11,7 @@
 //	HW-4  lazy-never-built-pass (lazy registration implementing a check)
 //	HW-5  pointer-receiver-value-registration (check on *T, registered as T)
 //	HW-7  unconditional-nil-check (the reachable check body is `return nil`)
+//	HW-8  empty-check-body (the reachable check body has zero statements)
 //	HW-unresolved  strict-mode placeholder for unresolvable service types
 //
 // Detection is type-based: a plain *analysis.Analyzer over registration call
@@ -72,14 +73,14 @@ func (NilBodyFact) AFact() {}
 
 func (f NilBodyFact) String() string { return "healthwash: nil-body health check" }
 
-// EmptyBodyFact marks a HealthCheck method whose body has zero statements
-// (HW-8) — only possible with a named error result, which compiles to an
-// implicit nil return. Same declare-here/import-there flow as NilBodyFact.
-type EmptyBodyFact struct{}
+// NakedReturnFact marks a HealthCheck method whose body is a single naked
+// `return` on a named result (HW-8) — the implicit zero value makes the check
+// a silent no-op. Same declare-here/import-there flow as NilBodyFact.
+type NakedReturnFact struct{}
 
-func (EmptyBodyFact) AFact() {}
+func (NakedReturnFact) AFact() {}
 
-func (f EmptyBodyFact) String() string { return "healthwash: empty-body health check" }
+func (f NakedReturnFact) String() string { return "healthwash: naked-return health check" }
 
 // AFact marks PackageFacts as an analysis.Fact.
 func (PackageFacts) AFact() {}

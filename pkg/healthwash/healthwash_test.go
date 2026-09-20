@@ -18,6 +18,7 @@ func TestGoldenCorpus(t *testing.T) {
 
 	analysistest.Run(t, testdataDir(), New(),
 		"golden", "hw5value", "hw3transient", "hw4lazy", "hw2bare", "hw7nil",
+		"hw8empty",
 		"suppress", "suppressspan", "edges", "overr", "unresolvable",
 		"hw7cross/lib", "hw7cross/main",
 	)
@@ -91,6 +92,7 @@ func TestDiscriminationProofs(t *testing.T) {
 		{RuleHW4, "hw4lazy", "HW-4"},
 		{RuleHW2, "hw2bare", "HW-2"},
 		{RuleHW7, "hw7nil", "HW-7"},
+		{RuleHW8, "hw8empty", "HW-8"},
 	}
 
 	for _, testCase := range cases {
