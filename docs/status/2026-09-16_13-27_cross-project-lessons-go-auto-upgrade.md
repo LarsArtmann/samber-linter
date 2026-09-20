@@ -127,7 +127,7 @@ _(existing TODO)_ are pre-session entries that this analysis touches.
 10. Read `internal/driver/driver.go` end-to-end; document actual per-package failure semantics.
 11. Verify whether golangci-lint recovers plugin panics (source or empirical test) BEFORE implementing panic isolation.
 12. Add per-package `recover` in the driver: surface as internal-error finding, continue scanning.
-13. Version provenance: drift test `main.go:17` version ↔ CHANGELOG head (or ldflags injection — check how go-auto-upgrade's ROADMAP resolved its split brain).
+13. ~~Version provenance: drift test `main.go:17` version ↔ CHANGELOG head (or ldflags injection — check how go-auto-upgrade's ROADMAP resolved its split brain).~~ done (resolved by the 2026-09-20 version-provenance fix — resolveVersion/buildVersion from runtime/debug (cmd/samber-linter/version.go), ldflags -X main.version supported; released in v0.2.2)
 14. Default-rules single source: one `defaultRules` definition consumed by driver + README drift test.
 15. Wire lesson 14 into the open "HW-4 default posture" decision so flipping the default is a one-line change.
 

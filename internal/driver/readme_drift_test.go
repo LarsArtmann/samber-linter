@@ -1,11 +1,10 @@
 package driver
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"regexp"
-	"slices"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -19,7 +18,7 @@ import (
 func TestRuleMetaCoversEveryRule(t *testing.T) {
 	t.Parallel()
 
-	all := []string{
+	allRules := []string{
 		healthwash.RuleHW0,
 		healthwash.RuleHW1,
 		healthwash.RuleHW2,
@@ -30,15 +29,15 @@ func TestRuleMetaCoversEveryRule(t *testing.T) {
 		healthwash.RuleUnresolved,
 	}
 
-	for _, rule := range all {
-		if _, ok := ruleMetaByRule[rule]; !ok {
-			t.Errorf("ruleMetaByRule has no entry for %s (falls back to warning/Medium)", rule)
+	for _, ruleID := range allRules {
+		if _, ok := ruleMetaByRule[ruleID]; !ok {
+			t.Errorf("ruleMetaByRule has no entry for %s (falls back to warning/Medium)", ruleID)
 		}
 	}
 
-	if len(ruleMetaByRule) != len(all) {
+	if len(ruleMetaByRule) != len(allRules) {
 		t.Errorf("ruleMetaByRule has %d entries, want %d (stale entry for a retired rule?)",
-			len(ruleMetaByRule), len(all))
+			len(ruleMetaByRule), len(allRules))
 	}
 }
 
@@ -56,25 +55,26 @@ func TestReadmeLatestReleaseMatchesGitTag(t *testing.T) {
 
 	lineRe := regexp.MustCompile(`Latest tagged release: \*\*(v[0-9]+\.[0-9]+\.[0-9]+)\*\*`)
 	match := lineRe.FindSubmatch(readme)
+
 	if match == nil {
 		t.Fatalf("README §12 lost its `Latest tagged release: **vX.Y.Z**` line")
 	}
 
 	claimed := string(match[1])
 
-	git, err := exec.LookPath("git")
+	gitPath, err := exec.LookPath("git")
 	if err != nil {
 		t.Skipf("git unavailable: %v", err)
 	}
 
-	cmd := exec.Command(git, "tag", "--sort=-v:refname")
-	out, err := cmd.Output()
+	tagOut, err := exec.CommandContext(context.Background(), gitPath, "tag", "--sort=-v:refname").Output()
 	if err != nil {
 		t.Skipf("git tag failed: %v", err)
 	}
 
 	var tags []string
-	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+
+	for line := range strings.SplitSeq(strings.TrimSpace(string(tagOut)), "\n") {
 		if line != "" {
 			tags = append(tags, line)
 		}
@@ -84,43 +84,10 @@ func TestReadmeLatestReleaseMatchesGitTag(t *testing.T) {
 		t.Skip("no tags in this checkout")
 	}
 
+	// git --sort=-v:refname already returns version order; index 0 is highest.
 	highest := tags[0]
 	if claimed != highest {
 		t.Errorf("README claims latest release %s but the highest tag is %s; "+
 			"bump the README before tagging (release flow)", claimed, highest)
 	}
-
-	// Sanity: the comparison itself must be version-aware, not lexical.
-	if slices.IsSortedFunc(tags, func(a, b string) int {
-		return compareVersions(a, b)
-	}) {
-		t.Logf("tag order verified version-aware")
-	}
-}
-
-// compareVersions orders v-prefixed semver strings (v0.2.10 > v0.2.9).
-func compareVersions(a, b string) int {
-	nums := func(v string) []int {
-		v = strings.TrimPrefix(v, "v")
-
-		parts := strings.Split(v, ".")
-		out := make([]int, len(parts))
-
-		for i, p := range parts {
-			n, _ := strconv.Atoi(p)
-			out[i] = n
-		}
-
-		return out
-	}
-
-	av, bv := nums(a), nums(b)
-
-	for i := range min(len(av), len(bv)) {
-		if av[i] != bv[i] {
-			return av[i] - bv[i]
-		}
-	}
-
-	return len(av) - len(bv)
 }

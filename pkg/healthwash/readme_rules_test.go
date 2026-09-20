@@ -26,6 +26,7 @@ func TestReadmeRuleTableMatchesRegistry(t *testing.T) {
 	}
 
 	sectionRe := regexp.MustCompile(`(?m)^### (HW-[0-9A-Za-z-]+) `)
+
 	sections := sectionRe.FindAllSubmatch(readme, -1)
 	if len(sections) == 0 {
 		t.Fatalf("no `### HW-N` sections found in README §3; the rule table moved?")
