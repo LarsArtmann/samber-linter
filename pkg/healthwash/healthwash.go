@@ -81,7 +81,7 @@ func New() *analysis.Analyzer {
 			"render green 'pass' on health dashboards but cannot actually fail",
 		URL:       "https://github.com/LarsArtmann/samber-linter",
 		Run:       run,
-		FactTypes: []analysis.Fact{(*PackageFacts)(nil)},
+		FactTypes: []analysis.Fact{(*PackageFacts)(nil), (*NilBodyFact)(nil)},
 	}
 	a.Flags.Bool(
 		"strict",
@@ -127,6 +127,15 @@ func run(pass *analysis.Pass) (any, error) {
 	)
 
 	methodDecls := collectMethodDecls(pass)
+
+	// Export the nil-body verdict where the body is visible: the declaring
+	// package. Registering packages in other files or other packages import
+	// the fact at the registration site.
+	for obj, decl := range methodDecls {
+		if decl.Name.Name == "HealthCheck" && isSoleNilReturn(decl.Body) {
+			pass.ExportObjectFact(obj, NilBodyFact{})
+		}
+	}
 
 	for _, file := range pass.Files {
 		ast.Inspect(file, func(n ast.Node) bool {

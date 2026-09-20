@@ -327,17 +327,22 @@ func hasSoleNilReturnCheck(
 	// addressable=true: for a stored *T the method set includes both receiver
 	// forms; for a stored T the reachable check is a value-receiver method.
 	obj, _, _ := types.LookupFieldOrMethod(named, true, pass.Pkg, "HealthCheck")
+
 	fn, ok := obj.(*types.Func)
 	if !ok {
 		return false
 	}
 
-	decl, ok := methodDecls[fn]
-	if !ok {
-		return false
+	if decl, declared := methodDecls[fn]; declared {
+		return isSoleNilReturn(decl.Body)
 	}
 
-	return isSoleNilReturn(decl.Body)
+	// Declared in another package: that package exported the verdict when it
+	// was analyzed. Objects are identical across the package graph (one
+	// type-checker pass over the source), so the lookup keys match.
+	var nilBody NilBodyFact
+
+	return pass.ImportObjectFact(fn, &nilBody)
 }
 
 // baseNamed unwraps a stored type to its named base: *T → T. Method sets and

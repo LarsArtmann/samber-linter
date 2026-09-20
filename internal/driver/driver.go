@@ -213,9 +213,21 @@ func buildAnalyzer(opts Options) *analysis.Analyzer {
 
 // analyzePackages runs the analyzer over every loaded package, converting
 // diagnostics to findings and collecting registration records for HW-6.
+//
+// Two sweeps: HW-7's NilBodyFacts must be complete before any registration
+// site imports them, and package order is load order, not dependency order.
+// Sweep 1 runs everything with a silent report and collects only facts;
+// sweep 2 produces the authoritative findings and records. The analyzer is a
+// cheap per-package AST walk, so the duplicate execution is noise next to
+// loading.
 func analyzePackages(
 	analyzer *analysis.Analyzer, pkgs []*packages.Package, errw io.Writer,
 ) ([]finding.Finding, []healthwash.ServiceRecord) {
+	store := newFactStore()
+	for _, pkg := range pkgs {
+		runAnalyzer(analyzer, pkg, store, false)
+	}
+
 	var (
 		records  []healthwash.ServiceRecord
 		findings []finding.Finding
@@ -229,7 +241,7 @@ func analyzePackages(
 			loadErrs++
 		}
 
-		diags, recs := runAnalyzer(analyzer, pkg)
+		diags, recs := runAnalyzer(analyzer, pkg, store, true)
 
 		records = append(records, recs...)
 		for _, d := range diags {
@@ -243,6 +255,32 @@ func analyzePackages(
 	}
 
 	return findings, records
+}
+
+// factStore carries NilBodyFacts between the two per-package sweeps of one
+// driver pass. Keyed by object identity: packages.Load type-checks the whole
+// graph from source against a shared type universe, so a method object seen
+// through an importer is the same instance the declaring package produced.
+type factStore struct {
+	facts map[types.Object]bool
+}
+
+func newFactStore() *factStore {
+	return &factStore{facts: map[types.Object]bool{}}
+}
+
+func (s *factStore) exportFrom(obj types.Object, fact analysis.Fact) {
+	if _, ok := fact.(*healthwash.NilBodyFact); ok {
+		s.facts[obj] = true
+	}
+}
+
+func (s *factStore) importInto(obj types.Object, fact analysis.Fact) bool {
+	if _, ok := fact.(*healthwash.NilBodyFact); !ok {
+		return false
+	}
+
+	return s.facts[obj]
 }
 
 // emitOutputs writes the findings in every requested representation. It
@@ -369,10 +407,12 @@ func stripModTokens(flags string) string {
 }
 
 // runAnalyzer builds an analysis.Pass by hand (the x/tools checker internals
-// are internal) and runs the analyzer over one package. Facts are collected
-// for the HW-6 post-pass; no cross-package fact imports are needed because
-// registration facts are self-contained per package.
-func runAnalyzer(analyzer *analysis.Analyzer, pkg *packages.Package) (
+// are internal) and runs the analyzer over one package. On the collecting
+// sweep it yields diagnostics and HW-6 records; every sweep shares the
+// factStore so NilBodyFacts cross package boundaries.
+func runAnalyzer(
+	analyzer *analysis.Analyzer, pkg *packages.Package, store *factStore, collect bool,
+) (
 	[]analysis.Diagnostic, []healthwash.ServiceRecord,
 ) {
 	pass := &analysis.Pass{
@@ -385,8 +425,8 @@ func runAnalyzer(analyzer *analysis.Analyzer, pkg *packages.Package) (
 		TypesInfo:         pkg.TypesInfo,
 		TypesSizes:        types.SizesFor("gc", runtime.GOARCH),
 		Report:            func(analysis.Diagnostic) {},
-		ImportObjectFact:  func(obj types.Object, fact analysis.Fact) bool { return false },
-		ExportObjectFact:  func(obj types.Object, fact analysis.Fact) {},
+		ImportObjectFact:  store.importInto,
+		ExportObjectFact:  store.exportFrom,
 		ImportPackageFact: func(p *types.Package, fact analysis.Fact) bool { return false },
 		ExportPackageFact: func(fact analysis.Fact) {},
 		AllObjectFacts:    func() []analysis.ObjectFact { return nil },
@@ -399,10 +439,12 @@ func runAnalyzer(analyzer *analysis.Analyzer, pkg *packages.Package) (
 		records []healthwash.ServiceRecord
 	)
 
-	pass.Report = func(d analysis.Diagnostic) { diags = append(diags, d) }
-	pass.ExportPackageFact = func(fact analysis.Fact) {
-		if pf, ok := fact.(*healthwash.PackageFacts); ok {
-			records = append(records, pf.Records...)
+	if collect {
+		pass.Report = func(d analysis.Diagnostic) { diags = append(diags, d) }
+		pass.ExportPackageFact = func(fact analysis.Fact) {
+			if pf, ok := fact.(*healthwash.PackageFacts); ok {
+				records = append(records, pf.Records...)
+			}
 		}
 	}
 

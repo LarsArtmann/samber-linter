@@ -60,6 +60,18 @@ type PackageFacts struct {
 	Records []ServiceRecord `json:"records"`
 }
 
+// NilBodyFact marks a HealthCheck method whose body is exactly `return nil`
+// (HW-7). The package DECLARING the method exports it as an object fact; the
+// package holding the registration imports it. Analysis facts are the
+// go/analysis-native channel for exactly this: services are typically
+// declared in one package and registered in another, and a body is only
+// visible to the declaring package.
+type NilBodyFact struct{}
+
+func (NilBodyFact) AFact() {}
+
+func (f NilBodyFact) String() string { return "healthwash: nil-body health check" }
+
 // AFact marks PackageFacts as an analysis.Fact.
 func (PackageFacts) AFact() {}
 
