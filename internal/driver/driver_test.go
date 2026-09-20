@@ -482,6 +482,64 @@ func TestCoverageMinComposesWithBaseline(t *testing.T) {
 	}
 }
 
+// TestCheckForcesZeroThroughFailedGates: --check is advisory in EVERY case —
+// even when both gates fail (impossible coverage floor + corrupt baseline).
+// The gate diagnostics stay on stderr, so machine output on stdout remains
+// parseable. On the old shape (advisory forcing only finding-tier codes, or
+// gates skipping baseline validation) this exits 1 or 0-with-garbage.
+func TestCheckForcesZeroThroughFailedGates(t *testing.T) {
+	t.Parallel()
+
+	app := e2eModule(t)
+	baselinePath := filepath.Join(app, DefaultBaselinePath)
+	must(t, os.WriteFile(baselinePath,
+		[]byte(`{"version":1,"checked":1,"registered":3,"coverage":0.5}`), 0o644))
+
+	var out, errOut bytes.Buffer
+
+	code := Run(Options{
+		Patterns: []string{"./..."}, Dir: app, Version: "test",
+		Env:          []string{"GOFLAGS=-mod=mod"},
+		CoverageMin:  0.99,
+		BaselinePath: baselinePath,
+		Check:        true,
+		Stdout:       &out, Stderr: &errOut,
+	})
+	if code != 0 {
+		t.Fatalf("check + failed gates exit = %d, want 0 (advisory in every case); stderr: %s",
+			code, errOut.String())
+	}
+
+	if !strings.Contains(errOut.String(), "predates v2") {
+		t.Errorf("stderr must still diagnose the corrupt baseline: %s", errOut.String())
+	}
+
+	if !strings.Contains(errOut.String(), "below the required minimum") {
+		t.Errorf("stderr must still diagnose the coverage miss: %s", errOut.String())
+	}
+
+	out.Reset()
+	errOut.Reset()
+
+	code = Run(Options{
+		Patterns: []string{"./..."}, Dir: app, Version: "test",
+		Env:          []string{"GOFLAGS=-mod=mod"},
+		CoverageMin:  0.99,
+		BaselinePath: baselinePath,
+		Check:        true,
+		JSON:         true,
+		Stdout:       &out, Stderr: &errOut,
+	})
+	if code != 0 {
+		t.Fatalf("check + json + failed gates exit = %d, want 0; stderr: %s", code, errOut.String())
+	}
+
+	var parsed map[string]any
+	if err := json.Unmarshal([]byte(strings.TrimSpace(lastJSONLine(out.String()))), &parsed); err != nil {
+		t.Fatalf("json output corrupted by gate lines: %v\n%s", err, out.String())
+	}
+}
+
 // TestJSONAndSARIF: machine outputs are produced on demand.
 func TestJSONAndSARIF(t *testing.T) {
 	t.Parallel()
