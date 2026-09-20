@@ -19,39 +19,43 @@ execution plan is historical:
 
 ## Short-term work queue (bounded, actionable)
 
-- [ ] **After the next push + release:** tag the schema-v2 release
-      (baseline v2, per-module go.work scanning, shared loader, snippet-gate
-      extension are all unreleased as of v0.2.1), then wire the health-wash
-      CI job into `samber-do-auditlog` and `standard-bug-tracking-schema`
-      pinning that version. Both repos already carry committed v2 baselines
-      (auditlog 12/20 = 60%, standard-bug 2/61 = 3%) and an AGENTS.md note
-      describing the exact pending step; a v0.2.1 pin would fail closed on
-      schema v2.
-- [ ] **cmdguard (its repo, not here):** `*CLI[T]` implements a bare
-      `HealthCheck()` while registered via `Package` (`do.ProvideValue`) —
-      the ecology survey's only true HW-2 (ctx variant
-      `HealthCheckWithContext` already exists next to it). Decide there:
-      satisfy `do.Healthchecker` (naming collision with the existing bare
-      method — needs an API decision) or suppress with a documented reason.
-      CV is unaffected: its nine workspace modules scan clean, and its
-      schema-v2 baseline (10/30 = 33%) is committed.
+- [ ] **HW-8 `no-op-body` rule** (source: max-recall plan T7,
+      `docs/planning/2026-09-20_12-18_max-recall-pareto-execution-plan.md`):
+      flag empty or comment-only check bodies on sweep-dispatched
+      registrations; shares HW-7's method visitor and `NilBodyFact` plumbing
+      (`pkg/healthwash/rules.go`). Adjudicate `panic` bodies in the FP budget
+      first (budget-before-ship), then fixtures + discrimination proof.
+- [ ] **Wire consumer ratchet jobs onto v0.2.2** (source: "tag the schema-v2
+      release" — the tagging half is done, v0.2.2 shipped 2026-09-20):
+      `samber-do-auditlog` and `standard-bug-tracking-schema` pin `@v0.2.2`
+      in their healthwash CI jobs; both already carry committed v2 baselines
+      (auditlog 12/20 = 60%, standard-bug 2/61 = 3%).
+- [ ] **CV runbook note** (source: plan T5.8): CV's healthwash gate can now
+      version-gate the analyzer (`go run …@v0.2.2 -version` → `v0.2.2`,
+      verified via the module proxy 2026-09-20). Draft the runbook paragraph
+      for CV's `scripts/healthwash.sh` pin bump — the v0.2.1 pin still
+      carries both driver defects fixed in v0.2.2.
+- [ ] **Renumber the stale-directive rule candidate to HW-8+** (source:
+      "HW-7 stale directive" — the HW-7 ID is now taken by
+      `unconditional-nil-check`, released v0.2.2). Valid-but-orphaned
+      suppressions with `until` expiry resurface for cleanup; design noted in
+      `docs/FP-BUDGETS.md`. Assign the next free ID before designing.
+- [ ] **Default-rules single source** (source: lessons report item 14,
+      `docs/status/2026-09-16_13-27_cross-project-lessons-go-auto-upgrade.md`):
+      one `defaultRules` definition consumed by the driver, the plugin, and
+      the README rule-table drift test, so posture changes are one-line.
 - [ ] Refresh the pseudonymous triage doc with the post-fix ecology numbers
-      (`docs/ecology/2026-09-16-scan*.txt` + `scripts/ecology-scan.sh`
-      output supersede the 2026-09-10 table).
+      (`docs/ecology/2026-09-20-scan.txt` supersedes both 2026-09-16 scans;
+      note the load-error wave — 32 consumers require go ≥ 1.27.1).
 
 ## Open decisions (user)
 
-- [ ] **Push authorization:** master carries the v2.13.2 lint pin, baseline
-      v2, and this round's fixes; none of it is observable in CI until
-      pushed (never push without an explicit go-ahead).
-- [ ] **HW-4 default posture:** on-by-default `info`/Medium vs opt-in.
-      24 of 66 ecology findings were HW-4; it is the main noise dial
-      (docs/FP-BUDGETS.md soft ceiling ≈ 20%).
+- [ ] **`--min-confidence` default flip:** profile-first was recorded
+      2026-09-20 (README "Threshold policy"): the max-recall profile
+      (`--min-confidence 0.5 --strict`) is opt-in until one release of
+      measured FP data exists; then decide the default flip.
 - [ ] **GitHub `.crush` history purge:** support ticket vs delete+recreate
       (untracked since f441f34; history blobs remain).
-- [ ] **HW-7 "stale directive":** valid-but-orphaned directives with an
-      `until` expiry resurface for cleanup — rule candidate
-      (docs/FP-BUDGETS.md).
 - [ ] **Upstream ownership:** who watches samber/do#317 and #318 (both OPEN,
       no maintainer response as of 2026-09-10), on what response SLA, and
       whether design notes beyond #318 wait for a maintainer ask.
