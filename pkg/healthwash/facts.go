@@ -72,6 +72,15 @@ func (NilBodyFact) AFact() {}
 
 func (f NilBodyFact) String() string { return "healthwash: nil-body health check" }
 
+// EmptyBodyFact marks a HealthCheck method whose body has zero statements
+// (HW-8) — only possible with a named error result, which compiles to an
+// implicit nil return. Same declare-here/import-there flow as NilBodyFact.
+type EmptyBodyFact struct{}
+
+func (EmptyBodyFact) AFact() {}
+
+func (f EmptyBodyFact) String() string { return "healthwash: empty-body health check" }
+
 // AFact marks PackageFacts as an analysis.Fact.
 func (PackageFacts) AFact() {}
 

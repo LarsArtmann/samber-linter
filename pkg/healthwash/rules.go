@@ -76,22 +76,24 @@ func evalSite(
 	valueReg := !isPointer(stored)
 	ptrToBase := types.NewPointer(stored) // for value regs this is *T
 
-	// HW-7 reads the reachable check's body, which only exists for
+	// HW-7/HW-8 read the reachable check's body, which only exists for
 	// sweep-dispatched kinds: transients never dispatch (HW-3 owns the whole
 	// story) and aliases delegate to their target.
-	var nilBody bool
+	var nilBody, emptyBody bool
 	if kind == KindLazy || kind == KindEager {
 		nilBody = hasSoleNilReturnCheck(pass, stored, methodDecls)
+		emptyBody = hasEmptyBodyCheck(pass, stored, methodDecls)
 	}
 
 	facts := typeFacts{
-		anyCheck:  doIfaces.typeImplementsAnyCheck(stored),
-		bareCheck: doIfaces.typeImplementsBareCheck(stored),
-		ctxCheck:  doIfaces.typeImplementsCtxCheck(stored),
-		anyCheckP: doIfaces.typeImplementsAnyCheck(ptrToBase),
-		shutdown:  doIfaces.typeImplementsAnyShutdown(stored),
-		valueReg:  valueReg,
-		nilBody:   nilBody,
+		anyCheck:   doIfaces.typeImplementsAnyCheck(stored),
+		bareCheck:  doIfaces.typeImplementsBareCheck(stored),
+		ctxCheck:   doIfaces.typeImplementsCtxCheck(stored),
+		anyCheckP:  doIfaces.typeImplementsAnyCheck(ptrToBase),
+		shutdown:   doIfaces.typeImplementsAnyShutdown(stored),
+		valueReg:   valueReg,
+		nilBody:    nilBody,
+		emptyBody:  emptyBody,
 	}
 
 	rec.ImplementsCheck = facts.anyCheck
@@ -158,7 +160,7 @@ func resolveStoredType(
 
 // typeFacts is what the sweep can see about the stored instance. All fields
 // derive from interface satisfaction of the stored type (and its pointer for
-// value registrations); nilBody is the one syntactic fact (HW-7).
+// value registrations); nilBody/emptyBody are the syntactic facts (HW-7/HW-8).
 type typeFacts struct {
 	anyCheck  bool // any Healthchecker variant on the stored type
 	bareCheck bool // bare HealthCheck() on the stored type
@@ -167,6 +169,7 @@ type typeFacts struct {
 	shutdown  bool // any Shutdowner variant on the stored type
 	valueReg  bool // registered as a value, not a pointer
 	nilBody   bool // the reachable check body is exactly `return nil`
+	emptyBody bool // the reachable check body has zero statements
 }
 
 // reportTransientRules fires for transient registrations: the upstream
@@ -246,6 +249,17 @@ func reportSweepRules(add func(rule, msg string), rel, fnName string, kind Servi
 					"//samber-linter:allow %s <reason>",
 				rel,
 				RuleCodeHW7,
+			))
+		}
+
+		if facts.emptyBody {
+			add(RuleHW8, fmt.Sprintf(
+				"%s's health check body is empty (named result, implicit nil); "+
+					"the check can never fail and always renders \"pass\" on health dashboards. "+
+					"Implement a real check or suppress with a reason: "+
+					"//samber-linter:allow %s <reason>",
+				rel,
+				RuleCodeHW8,
 			))
 		}
 	}
@@ -343,6 +357,41 @@ func hasSoleNilReturnCheck(
 	var nilBody NilBodyFact
 
 	return pass.ImportObjectFact(fn, &nilBody)
+}
+
+// hasEmptyBodyCheck is HW-8's predicate: the stored type's reachable
+// HealthCheck method has a body with zero statements. Only compiles with a
+// named error result, whose implicit zero value makes the check a silent
+// no-op. Same-package bodies are read directly; foreign ones come in through
+// EmptyBodyFact, mirroring HW-7.
+func hasEmptyBodyCheck(
+	pass *analysis.Pass, stored types.Type, methodDecls map[*types.Func]*ast.FuncDecl,
+) bool {
+	named := baseNamed(stored)
+	if named == nil {
+		return false
+	}
+
+	obj, _, _ := types.LookupFieldOrMethod(named, true, pass.Pkg, "HealthCheck")
+
+	fn, ok := obj.(*types.Func)
+	if !ok {
+		return false
+	}
+
+	if decl, declared := methodDecls[fn]; declared {
+		return isEmptyBody(decl.Body)
+	}
+
+	var emptyBody EmptyBodyFact
+
+	return pass.ImportObjectFact(fn, &emptyBody)
+}
+
+// isEmptyBody reports whether the block has no statements at all. Comments
+// are not statements: a documented empty body is still a no-op.
+func isEmptyBody(body *ast.BlockStmt) bool {
+	return body == nil || len(body.List) == 0
 }
 
 // baseNamed unwraps a stored type to its named base: *T → T. Method sets and

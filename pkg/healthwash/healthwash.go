@@ -24,6 +24,7 @@ const (
 	RuleHW4        = "HW-4"
 	RuleHW5        = "HW-5"
 	RuleHW7        = "HW-7"
+	RuleHW8        = "HW-8"
 	RuleUnresolved = "HW-unresolved"
 
 	RuleCodeHW0     = "hw-0"
@@ -33,6 +34,7 @@ const (
 	RuleCodeHW4     = "hw-4"
 	RuleCodeHW5     = "hw-5"
 	RuleCodeHW7     = "hw-7"
+	RuleCodeHW8     = "hw-8"
 	RuleCodeUnres   = "hw-unresolved"
 	RuleCodeAll     = "all"
 	RuleMessageHW0  = "suppression directive without a reason; unexplained suppressions rot into permanent darkness"
@@ -81,7 +83,7 @@ func New() *analysis.Analyzer {
 			"render green 'pass' on health dashboards but cannot actually fail",
 		URL:       "https://github.com/LarsArtmann/samber-linter",
 		Run:       run,
-		FactTypes: []analysis.Fact{(*PackageFacts)(nil), (*NilBodyFact)(nil)},
+		FactTypes: []analysis.Fact{(*PackageFacts)(nil), (*NilBodyFact)(nil), (*EmptyBodyFact)(nil)},
 	}
 	a.Flags.Bool(
 		"strict",
@@ -116,8 +118,13 @@ func run(pass *analysis.Pass) (any, error) {
 	methodDecls := collectMethodDecls(pass)
 
 	for obj, decl := range methodDecls {
-		if decl.Name.Name == "HealthCheck" && isSoleNilReturn(decl.Body) {
+		switch {
+		case decl.Name.Name != "HealthCheck":
+			continue
+		case isSoleNilReturn(decl.Body):
 			pass.ExportObjectFact(obj, &NilBodyFact{})
+		case isEmptyBody(decl.Body):
+			pass.ExportObjectFact(obj, &EmptyBodyFact{})
 		}
 	}
 
