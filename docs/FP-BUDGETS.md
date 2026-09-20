@@ -53,9 +53,11 @@ grow the budget.
   still cannot fail.
 - **HW-7 v1 narrowness (documented, not FPs):** multi-statement bodies
   (log-then-nil), delegation (`return s.db.Ping()`), and naked returns on named
-  results are negative — they can fail, or their verdict needs flow data. Also
-  invisible: check methods declared outside the analyzed package (no body to
-  read — same silent-skip doctrine as unresolved registrations).
+  results are negative — they can fail, or their verdict needs flow data.
+  Cross-package bodies ARE covered: the declaring package exports the verdict
+  as a `NilBodyFact` and the registering package imports it. Still invisible:
+  check methods declared in a module outside the scan set (a dependency
+  library analyzed as source nowhere in the run).
 - **Duplicate registrations** each report at their own site (each instance is
   separately sweep-visible) but count once in the HW-6 coverage denominator.
 

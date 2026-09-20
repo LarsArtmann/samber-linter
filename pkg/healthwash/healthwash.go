@@ -109,6 +109,18 @@ type siteReport struct {
 }
 
 func run(pass *analysis.Pass) (any, error) {
+	// Nil-body verdicts are exported from EVERY analyzed package: service
+	// packages typically do not import samber/do, yet their bodies are the
+	// only place HW-7's fact can be computed. Only registration sites below
+	// require the do import.
+	methodDecls := collectMethodDecls(pass)
+
+	for obj, decl := range methodDecls {
+		if decl.Name.Name == "HealthCheck" && isSoleNilReturn(decl.Body) {
+			pass.ExportObjectFact(obj, &NilBodyFact{})
+		}
+	}
+
 	doPkg := findDoPackage(pass)
 	if doPkg == nil {
 		return nil, nil //nolint:nilnil // analyzers signal "nothing found" via nil, nil
@@ -125,17 +137,6 @@ func run(pass *analysis.Pass) (any, error) {
 		records []ServiceRecord
 		reports []siteReport
 	)
-
-	methodDecls := collectMethodDecls(pass)
-
-	// Export the nil-body verdict where the body is visible: the declaring
-	// package. Registering packages in other files or other packages import
-	// the fact at the registration site.
-	for obj, decl := range methodDecls {
-		if decl.Name.Name == "HealthCheck" && isSoleNilReturn(decl.Body) {
-			pass.ExportObjectFact(obj, &NilBodyFact{})
-		}
-	}
 
 	for _, file := range pass.Files {
 		ast.Inspect(file, func(n ast.Node) bool {

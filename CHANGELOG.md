@@ -14,7 +14,10 @@ Keep a Changelog; versioning: SemVer.
   warn severity, Full confidence (gates by default, like HW-1/3/5).
   Deliberately narrow in v1: delegation, multi-statement bodies, and naked
   returns can fail and stay negative; transients stay HW-3's, unreachable
-  `*T` bodies stay HW-5's. Budget and boundary cases in `docs/FP-BUDGETS.md`.
+  `*T` bodies stay HW-5's. Bodies are read where they are declared and
+  shipped across package boundaries as a `NilBodyFact` object fact, so the
+  standard declare-here/register-there architecture is covered. Budget and
+  boundary cases in `docs/FP-BUDGETS.md`.
 
 ### Fixed
 

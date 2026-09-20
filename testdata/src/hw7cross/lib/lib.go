@@ -1,8 +1,7 @@
-// want package:"healthwash: registration records"
-
 // Package lib declares the services; the registrations live in hw7cross/main.
 // HW-7's body verdict is exported here as a NilBodyFact and imported at the
 // registration site — the standard declare-here/register-there architecture.
+// (No package fact is exported here: this package does not import samber/do.)
 package lib
 
 import "context"

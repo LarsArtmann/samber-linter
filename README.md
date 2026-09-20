@@ -254,8 +254,16 @@ because reading the source shows a plausible implementation.
 The reachable check's body is exactly one statement: `return nil`. The check
 can never fail, so the dashboard renders an unconditional `pass` — health-
 washing in its purest syntactic form. Fires for lazy and eager registrations
-whose stored type satisfies a `Healthchecker` variant; a check method declared
-outside the analyzed package (no visible body) is silently skipped.
+whose stored type satisfies a `Healthchecker` variant; promoted methods
+(embedded structs) count, transients stay HW-3's, and bodies the sweep cannot
+reach (HW-5's shape) stay HW-5's.
+
+Bodies are read where they are declared: the declaring package exports the
+verdict as a `NilBodyFact` (go/analysis object fact) and the registering
+package imports it — services are typically declared in one package and
+registered in another, and that architecture is fully covered. A type
+declared in a module outside the scan set (a dependency library) has no
+analyzed declaring package and stays invisible.
 
 Rationale: a type that satisfies the health-check contract but whose
 implementation is a stub renders green forever — statically indistinguishable
@@ -478,6 +486,7 @@ Claims in this document and their sources:
 | transient `isHealthchecker()` returns `false` unconditionally                   | `service_transient.go:58-60`                                                                                                                                    |
 | CV registration sites: 61 today (53 `Provide`, 8 `ProvideValue`) — counts drift | `~/projects/CV` grep 2026-09-09                                                                                                                                 |
 | go-finding / go-linter-sdk / go-atomic-write APIs                               | local source reads 2026-09-09 (`analysis/analysis.go`, `registry.go:358`, `atomicwrite.go:66-140`)                                                              |
+| HW-7 coverage-variant matrix: bare/ctx/value-receiver/promoted/cross-package nil bodies all fire; duck-typed non-do `Check`, naked returns, delegation, and HW-5's unreachable body stay clean | scratch-module audit + `testdata/src/hw7nil` + `testdata/src/hw7cross` (2026-09-20) — the cross-package gap this audit found is what forced the `NilBodyFact` two-sweep driver design |
 
 Upstream drift guard: pin the analyzed samber/do version in CI and re-run the
 mechanism assertions (§2) against new releases; a behavior change upstream

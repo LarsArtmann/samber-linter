@@ -98,6 +98,16 @@ These come straight from the spec; violating any of them invalidates the analyze
 - golangci-lint integration requires the custom build
   (`.custom-gcl.yml` + `plugin/plugin_integration_test.go` locks registration
   and settings pass-through); a stock golangci-lint cannot load the plugin.
+- **HW-7 facts cross packages via a driver-owned two-sweep** (added 2026-09-20):
+  the analyzer exports `NilBodyFact` from EVERY analyzed package — including
+  packages that never import samber/do, which is where service bodies live
+  (the old `findDoPackage` early return silently skipped them). The driver
+  runs all packages twice through one `factStore` (sweep 1 collects facts,
+  sweep 2 is authoritative); object identity holds because packages.Load
+  type-checks the graph from one source pass. analysistest covers it with the
+  two-package `hw7cross` fixture (both packages named in ONE Run call — the
+  syntax for fact expectations is `ObjectName:"pattern"`, NOT `fact:`).
+  Still invisible: bodies in modules outside the scan set.
 - **The HW-6 gates compose, never short-circuit**: `--coverage-min` is an
   absolute floor AND a baseline file that exists is always validated and
   enforced as a ratchet — even when `--coverage-min` is also passed. The

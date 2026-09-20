@@ -5,9 +5,11 @@
 // for ForeignReal.
 package main
 
-import do "github.com/samber/do/v2"
+import (
+	"hw7cross/lib"
 
-import "hw7cross/lib"
+	do "github.com/samber/do/v2"
+)
 
 var _ = func() bool {
 	do.ProvideValue(nil, &lib.ForeignNil{}) // want `HW-7: .*`

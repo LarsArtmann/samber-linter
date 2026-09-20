@@ -597,6 +597,82 @@ func lastJSONLine(text string) string {
 	return text
 }
 
+// TestHW7CrossPackage: the nil-body verdict is computed in the package
+// DECLARING the service and consumed at the registration site in another
+// package. Discriminates the two-sweep fact store from a single-sweep
+// regression: on the old shape (facts never shared across packages) the
+// nil-body service renders clean and this test fails.
+func TestHW7CrossPackage(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	stub := filepath.Join(dir, "dostub")
+	must(t, os.MkdirAll(stub, 0o755))
+	must(t, os.WriteFile(filepath.Join(stub, "go.mod"),
+		[]byte("module github.com/samber/do/v2\n\ngo 1.26\n"), 0o644))
+	src, err := os.ReadFile(filepath.Join("..", "..", "testdata", "src", "github.com", "samber", "do", "v2", "do.go"))
+	must(t, err)
+	must(t, os.WriteFile(filepath.Join(stub, "do.go"), src, 0o644))
+
+	app := filepath.Join(dir, "app")
+	must(t, os.MkdirAll(filepath.Join(app, "services"), 0o755))
+	must(t, os.WriteFile(
+		filepath.Join(app, "go.mod"),
+		[]byte(
+			"module example.com/cross\n\ngo 1.26\n\n"+
+				"require github.com/samber/do/v2 v2.1.0\n\n"+
+				"replace github.com/samber/do/v2 => ../dostub\n",
+		),
+		0o644,
+	))
+	must(t, os.WriteFile(filepath.Join(app, "services", "services.go"), []byte(`package services
+
+import "context"
+
+type NilCheck struct{}
+
+func (n *NilCheck) HealthCheck(context.Context) error { return nil }
+
+type RealCheck struct{}
+
+func (r *RealCheck) HealthCheck(context.Context) error { return r.probe() }
+
+func (r *RealCheck) probe() error { return nil }
+`), 0o644))
+	must(t, os.WriteFile(filepath.Join(app, "main.go"), []byte(`package main
+
+import (
+	do "github.com/samber/do/v2"
+
+	"example.com/cross/services"
+)
+
+func main() {
+	do.ProvideValue(nil, &services.NilCheck{})
+	do.ProvideValue(nil, &services.RealCheck{})
+}
+`), 0o644))
+
+	var out, errOut bytes.Buffer
+
+	code := Run(Options{
+		Patterns: []string{"./..."}, Dir: app, Version: "test",
+		Env:    []string{"GOFLAGS=-mod=mod"},
+		Stdout: &out, Stderr: &errOut,
+	})
+	if code != 1 {
+		t.Fatalf("exit = %d, want 1 (HW-7 is Full confidence); stderr: %s", code, errOut.String())
+	}
+
+	if !strings.Contains(out.String(), "HW-7") {
+		t.Errorf("cross-package nil body must be reported:\n%s", out.String())
+	}
+
+	if strings.Count(out.String(), "HW-7") != 1 {
+		t.Errorf("HW-7 must fire exactly once (RealCheck delegates):\n%s", out.String())
+	}
+}
+
 // TestCheckAdvisoryMode: --check reports findings but always exits 0, so CI
 // annotation pipelines can parse output without failing the build.
 func TestCheckAdvisoryMode(t *testing.T) {
