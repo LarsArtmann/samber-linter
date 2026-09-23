@@ -4,8 +4,8 @@ go 1.27
 
 require (
 	github.com/golangci/plugin-module-register v0.1.2
-	github.com/larsartmann/go-atomic-write v0.5.1
-	github.com/larsartmann/go-finding v1.10.0
+	github.com/larsartmann/go-atomic-write v0.5.2
+	github.com/larsartmann/go-finding v1.12.0
 	github.com/larsartmann/go-linter-sdk v0.3.1
 	github.com/larsartmann/go-output v0.38.0
 	github.com/larsartmann/go-output/delimited v0.38.0
