@@ -7,6 +7,16 @@ Keep a Changelog; versioning: SemVer.
 
 ### Added
 
+- Nothing yet.
+
+### Changed
+
+- Nothing yet.
+
+## [0.3.0] - 2026-09-23
+
+### Added
+
 - **Wrapper-indirection detection (one level, package-local).** Registrations
   hidden behind repo-local helper functions or generics (e.g. a
   `provideNamed[T]` wrapper around `do.ProvideNamed`) were invisible to every

@@ -19,12 +19,12 @@ execution plan is historical:
 
 ## Short-term work queue (bounded, actionable)
 
-- [ ] **Release the post-v0.2.2 batch** (HW-8 + wrapper-indirection
-      detection + single-source rule table are in Unreleased): cut v0.3.0
-      with the README §12 release flow, then evaluate whether the wrapper
-      channel surfaces new findings in the ecology (re-scan needs a
-      go ≥ 1.27.1 scanner toolchain — 32 consumers are in the load-error
-      wave until then).
+- [x] **Release the post-v0.2.2 batch: DONE 2026-09-23.** Cut v0.3.0
+      (HW-8 + wrapper-indirection detection + single-source rule table) with
+      the README §12 release flow.
+- [ ] **Evaluate wrapper-channel findings in the ecology** (follow-up to the
+      v0.3.0 release): re-scan needs a go ≥ 1.27.1 scanner toolchain —
+      32 consumers are in the load-error wave until then.
 - [ ] **Mutant-proof the wrapper channel further** (optional hardening):
       the `hwwrap` fixture proves the channel via HW-1; consider a dedicated
       negative fixture for wrapper chains (wrapper-calling-wrapper) once a
