@@ -349,22 +349,12 @@ func collectMethodDecls(pass *analysis.Pass) map[*types.Func]*ast.FuncDecl {
 
 // hasSoleNilReturnCheck is HW-7's predicate: the stored type's reachable
 // HealthCheck method is declared in this package and its body's only
-// statement is `return nil`. The method is resolved by interface-method
-// lookup (promoted methods included) — never by name heuristics on the AST.
+// statement is `return nil`.
 func hasSoleNilReturnCheck(
 	pass *analysis.Pass, stored types.Type, methodDecls map[*types.Func]*ast.FuncDecl,
 ) bool {
-	named := baseNamed(stored)
-	if named == nil {
-		return false
-	}
-
-	// addressable=true: for a stored *T the method set includes both receiver
-	// forms; for a stored T the reachable check is a value-receiver method.
-	obj, _, _ := types.LookupFieldOrMethod(named, true, pass.Pkg, "HealthCheck")
-
-	fn, ok := obj.(*types.Func)
-	if !ok {
+	fn := resolveHealthCheck(pass, stored)
+	if fn == nil {
 		return false
 	}
 
@@ -387,15 +377,8 @@ func hasSoleNilReturnCheck(
 func hasNakedReturnCheck(
 	pass *analysis.Pass, stored types.Type, methodDecls map[*types.Func]*ast.FuncDecl,
 ) bool {
-	named := baseNamed(stored)
-	if named == nil {
-		return false
-	}
-
-	obj, _, _ := types.LookupFieldOrMethod(named, true, pass.Pkg, "HealthCheck")
-
-	fn, ok := obj.(*types.Func)
-	if !ok {
+	fn := resolveHealthCheck(pass, stored)
+	if fn == nil {
 		return false
 	}
 
@@ -406,6 +389,27 @@ func hasNakedReturnCheck(
 	var nakedReturn NakedReturnFact
 
 	return pass.ImportObjectFact(fn, &nakedReturn)
+}
+
+// resolveHealthCheck returns the stored type's reachable HealthCheck method,
+// or nil. Resolution is by interface-method lookup (promoted methods
+// included), never by name heuristics on the AST.
+// addressable=true: for a stored *T the method set includes both receiver
+// forms; for a stored T the reachable check is a value-receiver method.
+func resolveHealthCheck(pass *analysis.Pass, stored types.Type) *types.Func {
+	named := baseNamed(stored)
+	if named == nil {
+		return nil
+	}
+
+	obj, _, _ := types.LookupFieldOrMethod(named, true, pass.Pkg, "HealthCheck")
+
+	fn, ok := obj.(*types.Func)
+	if !ok {
+		return nil
+	}
+
+	return fn
 }
 
 // isSoleNakedReturn reports whether the block's only statement is a return
