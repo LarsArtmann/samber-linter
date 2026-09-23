@@ -19,31 +19,31 @@
 
 ## a) FULLY DONE
 
-| # | Item | Evidence |
-|---|------|----------|
-| 1 | Harmful clone group eliminated: HW-7/HW-8 resolution logic deduplicated into `resolveHealthCheck` | `art-dupl -t 4` re-run: Actionable **1 → 0**, Detected **8 → 7**; commit `46674df` |
-| 2 | Semantics preserved exactly — nil→false paths, addressable lookup, `*types.Func` assertion, addressability comment relocated (not lost) | Side-by-side read of pre/post bodies; `pkg/healthwash/rules.go:350-413` |
-| 3 | Full test suite green | `nix run .#test` → ok ×6 (cmd, internal/driver, pkg/healthaudit, pkg/healthwash, pkg/sdk, plugin); healthwash analysistest HW-7/HW-8 fixtures cover both refactored predicates end-to-end |
-| 4 | Lint green | `nix run .#lint` (golangci-lint v2.13.2) → **0 issues** |
-| 5 | Format green | `nix run .#fmt` (treefmt: gofumpt/goimports/nixfmt/dprint) → **0 changed** |
-| 6 | Suppressed-group calibration performed, not skipped | `--show-suppressed` listing inspected; all 7 groups are idiomatic test boilerplate — an abstraction would take more parameters than the clones have lines |
+| # | Item                                                                                                                                    | Evidence                                                                                                                                                                                  |
+| - | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 | Harmful clone group eliminated: HW-7/HW-8 resolution logic deduplicated into `resolveHealthCheck`                                       | `art-dupl -t 4` re-run: Actionable **1 → 0**, Detected **8 → 7**; commit `46674df`                                                                                                        |
+| 2 | Semantics preserved exactly — nil→false paths, addressable lookup, `*types.Func` assertion, addressability comment relocated (not lost) | Side-by-side read of pre/post bodies; `pkg/healthwash/rules.go:350-413`                                                                                                                   |
+| 3 | Full test suite green                                                                                                                   | `nix run .#test` → ok ×6 (cmd, internal/driver, pkg/healthaudit, pkg/healthwash, pkg/sdk, plugin); healthwash analysistest HW-7/HW-8 fixtures cover both refactored predicates end-to-end |
+| 4 | Lint green                                                                                                                              | `nix run .#lint` (golangci-lint v2.13.2) → **0 issues**                                                                                                                                   |
+| 5 | Format green                                                                                                                            | `nix run .#fmt` (treefmt: gofumpt/goimports/nixfmt/dprint) → **0 changed**                                                                                                                |
+| 6 | Suppressed-group calibration performed, not skipped                                                                                     | `--show-suppressed` listing inspected; all 7 groups are idiomatic test boilerplate — an abstraction would take more parameters than the clones have lines                                 |
 
 ## b) PARTIALLY DONE
 
-| # | Item | What works | What remains | Effort |
-|---|------|-----------|--------------|--------|
-| 1 | Local dogfood leg | Analyzer semantics unchanged (proven by analysistest), committed baseline floor is 0 findings | `go run ./cmd/samber-linter ./...` **not run locally** this session — CI third leg covers it, but the local belt-and-braces check was skipped. Risk assessed ≈ 0, honesty requires listing it | S |
-| 2 | Post-change regression proofs | test + lint + fmt + art-dupl all green | `scripts/ecology-scan.sh` (AGENTS.md names it "the post-change regression proof") **not run** — my judgment: unnecessary for a behavior-preserving internal refactor with full fixture coverage. That is a judgment call, not a policy exception anyone signed off on | M |
-| 3 | LSP health in this repo | Edit completed via fallback | `lsp_replace_symbol` is **silently unavailable** (gopls `textDocument/documentSymbol: method not supported`). One diagnostic grep of `crush_info` returned nothing; root cause **not diagnosed** | S–M |
-| 4 | Accept-rationale for remaining clones | Judgment documented in this report + conversation | Skill says "when accepting, leave a one-line rationale so the next reader knows" — **no rationale committed in-repo** for the 7 accepted test clones (art-dupl auto-suppresses them, so a future session re-runs the same calibration from zero) | S |
+| # | Item                                  | What works                                                                                    | What remains                                                                                                                                                                                                                                                          | Effort |
+| - | ------------------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 1 | Local dogfood leg                     | Analyzer semantics unchanged (proven by analysistest), committed baseline floor is 0 findings | `go run ./cmd/samber-linter ./...` **not run locally** this session — CI third leg covers it, but the local belt-and-braces check was skipped. Risk assessed ≈ 0, honesty requires listing it                                                                         | S      |
+| 2 | Post-change regression proofs         | test + lint + fmt + art-dupl all green                                                        | `scripts/ecology-scan.sh` (AGENTS.md names it "the post-change regression proof") **not run** — my judgment: unnecessary for a behavior-preserving internal refactor with full fixture coverage. That is a judgment call, not a policy exception anyone signed off on | M      |
+| 3 | LSP health in this repo               | Edit completed via fallback                                                                   | `lsp_replace_symbol` is **silently unavailable** (gopls `textDocument/documentSymbol: method not supported`). One diagnostic grep of `crush_info` returned nothing; root cause **not diagnosed**                                                                      | S–M    |
+| 4 | Accept-rationale for remaining clones | Judgment documented in this report + conversation                                             | Skill says "when accepting, leave a one-line rationale so the next reader knows" — **no rationale committed in-repo** for the 7 accepted test clones (art-dupl auto-suppresses them, so a future session re-runs the same calibration from zero)                      | S      |
 
 ## c) NOT STARTED
 
-| # | Item | Why not started | Still wanted? |
-|---|------|-----------------|---------------|
-| 1 | HARVEST of section (f) into `TODO_LIST.md` / `ROADMAP.md` | Report was written at end of session per skill contract; harvest is the explicit next step | Yes — otherwise items die in this timestamped file |
-| 2 | Judgment + in-repo documentation on the remaining near-duplicate tails (`NilBodyFact` vs `NakedReturnFact` import branches) — extract or accept | Awaiting a decision (see question 2) — current shape is fine, but lower art-dupl thresholds may re-flag it | Yes, small |
-| 3 | No README/CHANGELOG updates | None needed: zero behavior change, no release cut this session | N/A by design |
+| # | Item                                                                                                                                            | Why not started                                                                                            | Still wanted?                                      |
+| - | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| 1 | HARVEST of section (f) into `TODO_LIST.md` / `ROADMAP.md`                                                                                       | Report was written at end of session per skill contract; harvest is the explicit next step                 | Yes — otherwise items die in this timestamped file |
+| 2 | Judgment + in-repo documentation on the remaining near-duplicate tails (`NilBodyFact` vs `NakedReturnFact` import branches) — extract or accept | Awaiting a decision (see question 2) — current shape is fine, but lower art-dupl thresholds may re-flag it | Yes, small                                         |
+| 3 | No README/CHANGELOG updates                                                                                                                     | None needed: zero behavior change, no release cut this session                                             | N/A by design                                      |
 
 ## d) TOTALLY FUCKED UP
 
@@ -56,7 +56,7 @@ Not fucked up, for the record: the analyzer's findings did not change (proven by
 
 ## e) WHAT WE SHOULD IMPROVE
 
-1. **Session-start ritual: never raw `go test` in this repo.** The floor-vs-GOTOOLCHAIN trap has now bitten documented *and* re-bitten. Fix: add one aggressive line to AGENTS.md ("test = `nix run .#test`, full stop — raw `go test` refuses on the toolchain floor") or encode it in a skill. Impact: one wasted cycle per offender.
+1. **Session-start ritual: never raw `go test` in this repo.** The floor-vs-GOTOOLCHAIN trap has now bitten documented _and_ re-bitten. Fix: add one aggressive line to AGENTS.md ("test = `nix run .#test`, full stop — raw `go test` refuses on the toolchain floor") or encode it in a skill. Impact: one wasted cycle per offender.
 2. **Commit the art-dupl calibration.** A tiny script or documented command (`art-dupl --type-aware -t 4 --sort total-tokens --html` + rationale that test boilerplate is auto-suppressed) makes the dedup loop reproducible across sessions instead of re-derived each time.
 3. **Fix gopls availability** so `lsp_replace_symbol` works — the exact-text fallback is the riskiest editing path the codebase routinely uses.
 4. **One gate instead of three.** `nix flake check` runs test + treefmt (twice-registered) + hermetic golangci + dprint + drift-matrix; this session ran three separate `nix run` invocations. For post-change verification, the single full gate is fewer commands and stricter.
@@ -66,38 +66,38 @@ Not fucked up, for the record: the analyzer's findings did not change (proven by
 
 Up-to-50 honored at **30 substantive items** — the remaining slots would be padding, and per the skill a larger N is brainstorm/ROADMAP fuel, not commitment. Impact / Effort (S <30min, M 30min–2h, L >2h) / Category. Source: [S] = observed this session, [A] = known state from AGENTS.md (not re-verified — no research this session).
 
-| # | Task | Impact | Effort | Category | Source |
-|---|------|--------|--------|----------|--------|
-| 1 | Run local dogfood leg: `go run ./cmd/samber-linter ./...` to confirm the self-baseline ratchet post-refactor | High | S | Quality | [S] |
-| 2 | Run `nix flake check` once as the full gate (test + treefmt ×2 + hermetic lint + dprint + drift-matrix) | High | S | Quality | [S] |
-| 3 | HARVEST this report's items into `TODO_LIST.md` / `ROADMAP.md` (docs-health) | High | S | Documentation | [S] |
-| 4 | Diagnose why gopls `documentSymbol` is unsupported here (devshell PATH vs Crush LSP config) and restore `lsp_replace_symbol` | Medium | S–M | Quality | [S] |
-| 5 | Commit the art-dupl calibration (command + accept-rationale for the 7 test-boilerplate groups) so dedup runs are reproducible | Low | S | Cleanup | [S] |
-| 6 | Decide extract-vs-accept for the `NilBodyFact`/`NakedReturnFact` import tails; record the rationale in-repo | Low | S | Quality | [S] |
-| 7 | Review daemon commit `9cd992d` (flake.lock auto-bump) — confirm the input updates were intended | Medium | S | Quality | [S] |
-| 8 | Confirm latest CI run is green after `46674df` reached the remote (daemon push) | Medium | S | Quality | [S] |
-| 9 | Scope the ecology-scan regression proof: document when it is required (behavior-affecting changes) vs optional (internal refactors) | Medium | S | Documentation | [S] |
-| 10 | Watch samber/do#317 (transient healthcheck sentinel) and #318 (sweep outcome states) for upstream responses | Medium | S | Feature | [A] |
-| 11 | Pull the go-nix-helpers update carrying the (unpushed) `hermeticTreefmtCheck` fix; drop samber-linter's local flake override | Medium | M | Cleanup | [A] |
-| 12 | Add a "known blind spots" section to README: scan-set-invisible HW-7/HW-8 bodies + the documented wrapper false-negative classes — honesty sells the tool | Medium | S | Documentation | [A] |
-| 13 | Wrapper resolution limits (chains >1 level, cross-package wrappers, wrapper methods, closures, multi-registration bodies): extend resolver or make the limits louder in `--strict` output | Medium | L | Feature | [A] |
-| 14 | Evaluate the alias double-shutdown trap (alias delegates shutdown + target popped; `serviceEager` unguarded) as a new HW rule candidate or upstream issue | Medium | M | Feature | [A] |
-| 15 | HW-7/HW-8: bodies in modules outside the scan set remain invisible — consider scan-set expansion guidance or a loud `--strict` warning | Medium | L | Feature | [A] |
-| 16 | Next samber/do release: re-pin, re-run mechanism assertions against it (v2.1.0 was latest as of 2026-09-20); drift must fail loudly | Medium | S | Quality | [A] |
-| 17 | Next release: bump README §12 "Latest tagged release" **before** tagging (drift test), accumulate CHANGELOG (output formats, HW-7/8, this refactor) | Medium | S | Process | [A] |
-| 18 | golangci-lint bump (when due): move CI action + `.custom-gcl.yml` + nixpkgs together; re-run `nix run .#lint` first; verify the action major accepts the pin (v6 did not) | Low | M | Quality | [A] |
-| 19 | CV's committed v1 baseline: document/walk through the one-time `--set-baseline` v2 migration | Medium | S | Documentation | [A] |
-| 20 | go-output/escape v0.38.0 pin: `go mod tidy` re-breaks the build — add a guard or release-checklist step that re-verifies after any tidy | Medium | S | Quality | [A] |
-| 21 | DO-9 family backport to branching-flow `doanalyzerv2` (P3 phase) | Low | L | Feature | [A] |
-| 22 | Runtime companion (`healthaudit`) metrics expansion (P3 phase) | Low | L | Feature | [A] |
-| 23 | Check drift coverage between README §3 rule table and driver `ruleMetaByRule` (a rule added to one but not the other should fail a test) | Medium | S | Quality | [A] |
-| 24 | HW-6 baseline schema v2: add tests for the loud-validation rejections (wrong schema version, counters vs coverage mismatch, negative counts, unparseable JSON) if not already exhaustive | Medium | M | Quality | [A] |
-| 25 | Add an analysistest fixture exercising a wrapper body containing methods relevant to BOTH HW-7 and HW-8 (cross-rule interaction through one resolution) — verify coverage first | Low | M | Quality | [A] |
-| 26 | GOEXPERIMENT=jsonv2 is a hard requirement — add a canary (test or script grep) that fails fast when a new Go entry point omits it | Low | S | Quality | [A] |
-| 27 | dprint plugin drift guard: when bumping dprint.json plugin versions, bump the flake prefetch hashes in the same commit (existing contract — verify it is tested) | Low | S | Process | [A] |
-| 28 | `--output` format addition checklist (blank import + `SupportedOutputFormats` tests; json/yaml/toml/jsonl + diagram formats deliberately banned) — encode as a doc comment or skill note | Low | S | Documentation | [A] |
-| 29 | ROADMAP candidate: wrapper-resolution improvements (see #13) vs `--strict` visibility warnings — pick one direction and write it down | Medium | S | Documentation | [A] |
-| 30 | Roadmap fuel only: upstream the "explicit sweep outcome states" design conversation once #318 gets a maintainer response — do not dump unsolicited notes before then | Low | S | Feature | [A] |
+| #  | Task                                                                                                                                                                                      | Impact | Effort | Category      | Source |
+| -- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ------ | ------------- | ------ |
+| 1  | Run local dogfood leg: `go run ./cmd/samber-linter ./...` to confirm the self-baseline ratchet post-refactor                                                                              | High   | S      | Quality       | [S]    |
+| 2  | Run `nix flake check` once as the full gate (test + treefmt ×2 + hermetic lint + dprint + drift-matrix)                                                                                   | High   | S      | Quality       | [S]    |
+| 3  | HARVEST this report's items into `TODO_LIST.md` / `ROADMAP.md` (docs-health)                                                                                                              | High   | S      | Documentation | [S]    |
+| 4  | Diagnose why gopls `documentSymbol` is unsupported here (devshell PATH vs Crush LSP config) and restore `lsp_replace_symbol`                                                              | Medium | S–M    | Quality       | [S]    |
+| 5  | Commit the art-dupl calibration (command + accept-rationale for the 7 test-boilerplate groups) so dedup runs are reproducible                                                             | Low    | S      | Cleanup       | [S]    |
+| 6  | Decide extract-vs-accept for the `NilBodyFact`/`NakedReturnFact` import tails; record the rationale in-repo                                                                               | Low    | S      | Quality       | [S]    |
+| 7  | Review daemon commit `9cd992d` (flake.lock auto-bump) — confirm the input updates were intended                                                                                           | Medium | S      | Quality       | [S]    |
+| 8  | Confirm latest CI run is green after `46674df` reached the remote (daemon push)                                                                                                           | Medium | S      | Quality       | [S]    |
+| 9  | Scope the ecology-scan regression proof: document when it is required (behavior-affecting changes) vs optional (internal refactors)                                                       | Medium | S      | Documentation | [S]    |
+| 10 | Watch samber/do#317 (transient healthcheck sentinel) and #318 (sweep outcome states) for upstream responses                                                                               | Medium | S      | Feature       | [A]    |
+| 11 | Pull the go-nix-helpers update carrying the (unpushed) `hermeticTreefmtCheck` fix; drop samber-linter's local flake override                                                              | Medium | M      | Cleanup       | [A]    |
+| 12 | Add a "known blind spots" section to README: scan-set-invisible HW-7/HW-8 bodies + the documented wrapper false-negative classes — honesty sells the tool                                 | Medium | S      | Documentation | [A]    |
+| 13 | Wrapper resolution limits (chains >1 level, cross-package wrappers, wrapper methods, closures, multi-registration bodies): extend resolver or make the limits louder in `--strict` output | Medium | L      | Feature       | [A]    |
+| 14 | Evaluate the alias double-shutdown trap (alias delegates shutdown + target popped; `serviceEager` unguarded) as a new HW rule candidate or upstream issue                                 | Medium | M      | Feature       | [A]    |
+| 15 | HW-7/HW-8: bodies in modules outside the scan set remain invisible — consider scan-set expansion guidance or a loud `--strict` warning                                                    | Medium | L      | Feature       | [A]    |
+| 16 | Next samber/do release: re-pin, re-run mechanism assertions against it (v2.1.0 was latest as of 2026-09-20); drift must fail loudly                                                       | Medium | S      | Quality       | [A]    |
+| 17 | Next release: bump README §12 "Latest tagged release" **before** tagging (drift test), accumulate CHANGELOG (output formats, HW-7/8, this refactor)                                       | Medium | S      | Process       | [A]    |
+| 18 | golangci-lint bump (when due): move CI action + `.custom-gcl.yml` + nixpkgs together; re-run `nix run .#lint` first; verify the action major accepts the pin (v6 did not)                 | Low    | M      | Quality       | [A]    |
+| 19 | CV's committed v1 baseline: document/walk through the one-time `--set-baseline` v2 migration                                                                                              | Medium | S      | Documentation | [A]    |
+| 20 | go-output/escape v0.38.0 pin: `go mod tidy` re-breaks the build — add a guard or release-checklist step that re-verifies after any tidy                                                   | Medium | S      | Quality       | [A]    |
+| 21 | DO-9 family backport to branching-flow `doanalyzerv2` (P3 phase)                                                                                                                          | Low    | L      | Feature       | [A]    |
+| 22 | Runtime companion (`healthaudit`) metrics expansion (P3 phase)                                                                                                                            | Low    | L      | Feature       | [A]    |
+| 23 | Check drift coverage between README §3 rule table and driver `ruleMetaByRule` (a rule added to one but not the other should fail a test)                                                  | Medium | S      | Quality       | [A]    |
+| 24 | HW-6 baseline schema v2: add tests for the loud-validation rejections (wrong schema version, counters vs coverage mismatch, negative counts, unparseable JSON) if not already exhaustive  | Medium | M      | Quality       | [A]    |
+| 25 | Add an analysistest fixture exercising a wrapper body containing methods relevant to BOTH HW-7 and HW-8 (cross-rule interaction through one resolution) — verify coverage first           | Low    | M      | Quality       | [A]    |
+| 26 | GOEXPERIMENT=jsonv2 is a hard requirement — add a canary (test or script grep) that fails fast when a new Go entry point omits it                                                         | Low    | S      | Quality       | [A]    |
+| 27 | dprint plugin drift guard: when bumping dprint.json plugin versions, bump the flake prefetch hashes in the same commit (existing contract — verify it is tested)                          | Low    | S      | Process       | [A]    |
+| 28 | `--output` format addition checklist (blank import + `SupportedOutputFormats` tests; json/yaml/toml/jsonl + diagram formats deliberately banned) — encode as a doc comment or skill note  | Low    | S      | Documentation | [A]    |
+| 29 | ROADMAP candidate: wrapper-resolution improvements (see #13) vs `--strict` visibility warnings — pick one direction and write it down                                                     | Medium | S      | Documentation | [A]    |
+| 30 | Roadmap fuel only: upstream the "explicit sweep outcome states" design conversation once #318 gets a maintainer response — do not dump unsolicited notes before then                      | Low    | S      | Feature       | [A]    |
 
 ## g) Questions I cannot figure out myself
 
@@ -107,4 +107,4 @@ Up-to-50 honored at **30 substantive items** — the remaining slots would be pa
 
 ---
 
-*Point-in-time snapshot. Section (f) is the input for docs-health HARVEST — it belongs in `TODO_LIST.md`/`ROADMAP.md`, not entombed here. Questions answered or items harvested → annotate this report via docs-health ANNOTATE, never rewrite.*
+_Point-in-time snapshot. Section (f) is the input for docs-health HARVEST — it belongs in `TODO_LIST.md`/`ROADMAP.md`, not entombed here. Questions answered or items harvested → annotate this report via docs-health ANNOTATE, never rewrite._
