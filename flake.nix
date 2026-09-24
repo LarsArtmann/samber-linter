@@ -27,8 +27,6 @@
       go-standard = {
         pname = "samber-linter";
         vendorHash = "sha256-wlsuHDxtmZbt9tJf5T0Fb6ZZOlCdmO/GK1V7modhr2M=";
-        # go.mod floor is 1.27.1; locked nixpkgs ships go_1_27 = exactly 1.27.1.
-        goPkgAttr = "go_1_27";
         description = "Static analyzer that detects health-washing in samber/do v2 dependency-injection containers";
         subPackages = [ "./cmd/samber-linter" ];
 

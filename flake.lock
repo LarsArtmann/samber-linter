@@ -51,11 +51,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1789920568,
-        "narHash": "sha256-37SpxKWoI+rxaYI444SV4KeibYN8aErY4vJxg2105RE=",
+        "lastModified": 1790266572,
+        "narHash": "sha256-d8m3kN5OAUqWRp3px5+t1EvUDd4wq3allH+Fg0jncKU=",
         "ref": "master",
-        "rev": "29e39b25b691ce51c0daa7be85f551c7016ed2c5",
-        "revCount": 163,
+        "rev": "1964f4fb29e12fb4e84fdbe7768fb49c303bda68",
+        "revCount": 182,
         "type": "git",
         "url": "ssh://git@github.com/LarsArtmann/go-nix-helpers"
       },
