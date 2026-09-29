@@ -16,44 +16,44 @@ Commits this session: `9589390` (release prep), `ba4da30` (flake fix, tagged), `
 
 ## A. FULLY DONE
 
-| # | Item | Evidence |
-|---|------|----------|
-| A1 | Release assessment: correctly identified MINOR bump (two rule-family features in 0.x), correctly excluded HW-9 (unimplemented) from release claims | CHANGELOG `[0.3.0]` section, session Phase 0 |
-| A2 | CHANGELOG `[0.3.0] - 2026-09-23` cut; `[Unreleased]` reset to placeholders; HW-8 note "Shipped after v0.2.2" now true | `CHANGELOG.md:6-13,15` |
-| A3 | README §12 "Latest tagged release" bumped **before** tagging (the documented release flow; drift test green in the full suite) | `README.md:559`, `internal/driver/readme_drift_test.go:90` |
-| A4 | TODO_LIST release item marked done, follow-up split into its own item | `TODO_LIST.md:22-28` |
-| A5 | Annotated tag `v0.3.0` on `ba4da30`, pushed; tag message summarizes headline changes | `git tag --points-at HEAD` verified pre-push |
-| A6 | CI green **on the exact tagged commit** (Phase 4.4 discipline): run `35878762122` (master) + `35878960527` (tag) both success | `gh run view` |
-| A7 | Local gates green on the tagged tree: full test suite (`nix run .#test`), golangci-lint 0 issues (`nix run .#lint`), `nix flake check` all checks passed | session logs |
-| A8 | Module proxy verified: `@v/v0.3.0.info` serves the exact commit `ba4da30…`; `@latest` resolves to v0.3.0 | proxy fetches |
-| A9 | Definitive consumer test: clean-dir `go mod init` + `go get github.com/larsartmann/samber-linter@v0.3.0` succeeded | `/tmp/release-verify` |
-| A10 | GitHub Release v0.3.0 created (`--latest`), curated notes with upgrade warning about baseline ratchet vs. new wrapper-channel findings | release URL in chat |
-| A11 | `nix flake check` unbroken: duplicate `checks.treefmt` definition resolved by dropping the local hermetic override; upstream module's copy verified equivalent (goPkg→go_1_27 + GOTOOLCHAIN=local, both checks) **before** deleting | `flake.nix`, commit `ba4da30` |
-| A12 | AGENTS.md updated: the "UNPUSHED — drop the local copy when pulled" contingency now records the resolved state and the collision mode | `8847ea5` |
-| A13 | go.mod release hygiene: no `replace` directives, no pseudo-versions, module path correct; go-output escape pin untouched (no `go mod tidy` was run — deliberately, per the known re-breakage trap) | Phase 3 checks |
+| #   | Item                                                                                                                                                                                                                                | Evidence                                                   |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| A1  | Release assessment: correctly identified MINOR bump (two rule-family features in 0.x), correctly excluded HW-9 (unimplemented) from release claims                                                                                  | CHANGELOG `[0.3.0]` section, session Phase 0               |
+| A2  | CHANGELOG `[0.3.0] - 2026-09-23` cut; `[Unreleased]` reset to placeholders; HW-8 note "Shipped after v0.2.2" now true                                                                                                               | `CHANGELOG.md:6-13,15`                                     |
+| A3  | README §12 "Latest tagged release" bumped **before** tagging (the documented release flow; drift test green in the full suite)                                                                                                      | `README.md:559`, `internal/driver/readme_drift_test.go:90` |
+| A4  | TODO_LIST release item marked done, follow-up split into its own item                                                                                                                                                               | `TODO_LIST.md:22-28`                                       |
+| A5  | Annotated tag `v0.3.0` on `ba4da30`, pushed; tag message summarizes headline changes                                                                                                                                                | `git tag --points-at HEAD` verified pre-push               |
+| A6  | CI green **on the exact tagged commit** (Phase 4.4 discipline): run `35878762122` (master) + `35878960527` (tag) both success                                                                                                       | `gh run view`                                              |
+| A7  | Local gates green on the tagged tree: full test suite (`nix run .#test`), golangci-lint 0 issues (`nix run .#lint`), `nix flake check` all checks passed                                                                            | session logs                                               |
+| A8  | Module proxy verified: `@v/v0.3.0.info` serves the exact commit `ba4da30…`; `@latest` resolves to v0.3.0                                                                                                                            | proxy fetches                                              |
+| A9  | Definitive consumer test: clean-dir `go mod init` + `go get github.com/larsartmann/samber-linter@v0.3.0` succeeded                                                                                                                  | `/tmp/release-verify`                                      |
+| A10 | GitHub Release v0.3.0 created (`--latest`), curated notes with upgrade warning about baseline ratchet vs. new wrapper-channel findings                                                                                              | release URL in chat                                        |
+| A11 | `nix flake check` unbroken: duplicate `checks.treefmt` definition resolved by dropping the local hermetic override; upstream module's copy verified equivalent (goPkg→go_1_27 + GOTOOLCHAIN=local, both checks) **before** deleting | `flake.nix`, commit `ba4da30`                              |
+| A12 | AGENTS.md updated: the "UNPUSHED — drop the local copy when pulled" contingency now records the resolved state and the collision mode                                                                                               | `8847ea5`                                                  |
+| A13 | go.mod release hygiene: no `replace` directives, no pseudo-versions, module path correct; go-output escape pin untouched (no `go mod tidy` was run — deliberately, per the known re-breakage trap)                                  | Phase 3 checks                                             |
 
 ## B. PARTIALLY DONE
 
-| # | Item | State | Missing |
-|---|------|-------|---------|
-| B1 | pkg.go.dev documentation for v0.3.0 | Fetch endpoint pinged twice; still 404 at session end (proxy indexed only minutes prior) | Confirmation docs actually generated; `pkg.go.dev/github.com/larsartmann/samber-linter@v0.3.0` returning 200 with rendered docs |
-| B2 | Post-release consumer value flow | Release exists and is consumable; upgrade-warning published in release notes | None of the three known consumers (CV, samber-do-auditlog, standard-bug-tracking-schema) actually bumped to `@v0.3.0` yet |
-| B3 | TODO_LIST hygiene | Release item closed; new follow-up item created ("evaluate wrapper-channel findings in the ecology") | That follow-up blocked on the scanner toolchain (B4) and not started |
-| B4 | Ecology re-scan readiness | AGENTS.md documents the exact recipe (build scanner with `GOTOOLCHAIN=go1.27.1`, export same, `env -u GOWORK` for member discovery, stderr inspected separately) | Recipe never executed; 32 consumers still in the load-error wave |
-| B5 | Self-review integration | This report contains the brutal review (Section E); the review skill's own HTML-report output at `docs/reviews/` was **not** produced — folded into this file per the user's single-report instruction | Nothing, unless the HTML series is wanted separately |
+| #  | Item                                | State                                                                                                                                                                                                  | Missing                                                                                                                         |
+| -- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| B1 | pkg.go.dev documentation for v0.3.0 | Fetch endpoint pinged twice; still 404 at session end (proxy indexed only minutes prior)                                                                                                               | Confirmation docs actually generated; `pkg.go.dev/github.com/larsartmann/samber-linter@v0.3.0` returning 200 with rendered docs |
+| B2 | Post-release consumer value flow    | Release exists and is consumable; upgrade-warning published in release notes                                                                                                                           | None of the three known consumers (CV, samber-do-auditlog, standard-bug-tracking-schema) actually bumped to `@v0.3.0` yet       |
+| B3 | TODO_LIST hygiene                   | Release item closed; new follow-up item created ("evaluate wrapper-channel findings in the ecology")                                                                                                   | That follow-up blocked on the scanner toolchain (B4) and not started                                                            |
+| B4 | Ecology re-scan readiness           | AGENTS.md documents the exact recipe (build scanner with `GOTOOLCHAIN=go1.27.1`, export same, `env -u GOWORK` for member discovery, stderr inspected separately)                                       | Recipe never executed; 32 consumers still in the load-error wave                                                                |
+| B5 | Self-review integration             | This report contains the brutal review (Section E); the review skill's own HTML-report output at `docs/reviews/` was **not** produced — folded into this file per the user's single-report instruction | Nothing, unless the HTML series is wanted separately                                                                            |
 
 ## C. NOT STARTED
 
-| # | Item | Where it lives |
-|---|------|----------------|
-| C1 | HW-9 `stale-directive` implementation (ID reserved this release; design + FP budget already in `docs/FP-BUDGETS.md`) | CHANGELOG Unreleased-history, FP-BUDGETS |
-| C2 | HW-4 `--min-confidence` default flip decision — explicitly parked as "Open decision (user)" | TODO_LIST |
-| C3 | Wrapper-chain negative fixture (wrapper-calling-wrapper) — explicitly optional, waiting for a real consumer shape | TODO_LIST |
-| C4 | Deeper wrapper support: chains > 1 level, cross-package wrappers, wrapper methods, closures — all documented-invisible false-negative classes | AGENTS.md known-false-negative section |
-| C5 | HARVEST of this report's Section F into `TODO_LIST.md`/`ROADMAP.md` (docs-health HARVEST mode) — deliberately deferred: user said WAIT | this report |
-| C6 | samber/do upstream watch: issues #317 (transient healthcheck sentinel) and #318 (sweep outcome states) — no responses checked this session | AGENTS.md upstream section |
-| C7 | Alias double-shutdown latent trap (documented 2026-09-20 sweep): rule candidate or doc-only — never triaged | AGENTS.md sweep notes |
-| C8 | Runtime companion (P3, `pkg/healthaudit`) and doanalyzerv2 DO-9 backport — untouched this session | AGENTS.md phasing |
+| #  | Item                                                                                                                                          | Where it lives                           |
+| -- | --------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| C1 | HW-9 `stale-directive` implementation (ID reserved this release; design + FP budget already in `docs/FP-BUDGETS.md`)                          | CHANGELOG Unreleased-history, FP-BUDGETS |
+| C2 | HW-4 `--min-confidence` default flip decision — explicitly parked as "Open decision (user)"                                                   | TODO_LIST                                |
+| C3 | Wrapper-chain negative fixture (wrapper-calling-wrapper) — explicitly optional, waiting for a real consumer shape                             | TODO_LIST                                |
+| C4 | Deeper wrapper support: chains > 1 level, cross-package wrappers, wrapper methods, closures — all documented-invisible false-negative classes | AGENTS.md known-false-negative section   |
+| C5 | HARVEST of this report's Section F into `TODO_LIST.md`/`ROADMAP.md` (docs-health HARVEST mode) — deliberately deferred: user said WAIT        | this report                              |
+| C6 | samber/do upstream watch: issues #317 (transient healthcheck sentinel) and #318 (sweep outcome states) — no responses checked this session    | AGENTS.md upstream section               |
+| C7 | Alias double-shutdown latent trap (documented 2026-09-20 sweep): rule candidate or doc-only — never triaged                                   | AGENTS.md sweep notes                    |
+| C8 | Runtime companion (P3, `pkg/healthaudit`) and doanalyzerv2 DO-9 backport — untouched this session                                             | AGENTS.md phasing                        |
 
 ## D. TOTALLY FUCKED UP
 
@@ -68,7 +68,7 @@ Nothing in the **shipped artifact** — v0.3.0 itself is verified correct at eve
 Brutal review against the self-review questions:
 
 - **What did I forget?** (1) To establish a green baseline (`nix flake check`) before touching anything in a release flow — the flake was already broken, and I nearly tagged onto a commit carrying it. (2) The AGENTS.md repo-status header still says "implemented v0.1.0 (updated 2026-09-10)" — noticed while editing AGENTS.md, not fixed; small but it is exactly the doc-drift this project hunts. (3) pkg.go.dev confirmation — declared "propagation delay" and moved on without a later re-check in-session.
-- **What is stupid that we do anyway?** The release flow is documented only as prose bullets in AGENTS.md (bump README first, drift test, tag, dogfood…). Every release re-derives the ordering from prose — this session proved the ordering is non-obvious enough to get half-wrong (tag before full gate). It wants to be a script or a numbered runbook that *enforces* order, not describes it.
+- **What is stupid that we do anyway?** The release flow is documented only as prose bullets in AGENTS.md (bump README first, drift test, tag, dogfood…). Every release re-derives the ordering from prose — this session proved the ordering is non-obvious enough to get half-wrong (tag before full gate). It wants to be a script or a numbered runbook that _enforces_ order, not describes it.
 - **Could I have done better?** Yes: full-gate-first, then edits; proxy-first for version checks; fix the stale header while in the file; verify the GitHub Release notes' CHANGELOG anchor link (`#030---2026-09-23`) actually resolves — I linked it without testing the slug.
 - **Did I lie to you?** No. Two softenings to be explicit about: (a) "pkg.go.dev self-heals" was an inference, not an observation — it was still 404 at session end; (b) "release-worthy" verdict — two rule features is a defensible MINOR, but the batch also contains a go-floor bump (1.27.1) that raises the bar for every consumer; a stricter reading is that deserves louder release-notes billing than it got (it is in Changed, not Highlights).
 - **Ghost systems?** None introduced. The dropped `hermeticTreefmtCheck` was the opposite — dead local plumbing superseded by upstream, now removed.
@@ -79,6 +79,7 @@ Brutal review against the self-review questions:
 ## F. NEXT — up to 50, ranked by impact/effort (brainstorm; most are ROADMAP fuel, HARVEST should route with rigor)
 
 **Now (release follow-through):**
+
 1. Confirm pkg.go.dev docs rendered for v0.3.0 (B1)
 2. Bump CV's `scripts/healthwash.sh` pin v0.2.2 → v0.3.0 (version-gated runbook exists in CV docs)
 3. Bump samber-do-auditlog to `@v0.3.0`; expect wrapper-channel findings to surface its 7×HW-1/5×HW-2/1×HW-3 baseline; re-cut baseline only deliberately
@@ -148,4 +149,4 @@ Brutal review against the self-review questions:
 
 ---
 
-*Point-in-time snapshot; goes stale. Section F is the HARVEST input. No Go code blocks in this file (upstream-snippets gate trivially satisfied).*
+_Point-in-time snapshot; goes stale. Section F is the HARVEST input. No Go code blocks in this file (upstream-snippets gate trivially satisfied)._

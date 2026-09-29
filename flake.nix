@@ -69,7 +69,6 @@
         {
           pkgs,
           lib,
-          config,
           ...
         }:
         let
