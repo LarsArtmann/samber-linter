@@ -26,7 +26,7 @@
 
       go-standard = {
         pname = "samber-linter";
-        vendorHash = "sha256-ap9cvQKEgNrhKJaMCcf+QFxzSw5at2xjxVBmWHxkJr4=";
+        vendorHash = "sha256-xFAbKhwzCRsdKA7wuLDqiV8wxbPUJulEJREsln3JdbM=";
         description = "Static analyzer that detects health-washing in samber/do v2 dependency-injection containers";
         subPackages = [ "./cmd/samber-linter" ];
 
