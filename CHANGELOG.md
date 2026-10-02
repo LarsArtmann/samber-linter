@@ -7,7 +7,42 @@ Keep a Changelog; versioning: SemVer.
 
 ### Added
 
-- Nothing yet.
+- **CLI exit-code contract harness.** `cmd/samber-linter` now has one
+  table-driven regression gate (`TestExitCodeContract`) that executes the
+  real CLI wiring against self-contained scaffold modules: help spellings
+  (`--help`, `-h`, `-help`, trailing after patterns, `help` subcommand,
+  `completion bash`), `--version`, unknown-flag exit 1, invalid `--output`
+  exit 2, and the driver tri-state (clean 0 / findings 1 / load failure 2 /
+  `--check` forcing 0) — replacing the manual smoke loop from the cmdguard
+  adoption session. The flag-struct-to-`driver.Options` mapping (pattern
+  fallback, empty `--baseline` fallback) is unit-pinned by
+  `TestBuildDriverOptions`.
+- **golangci-lint pin drift guard.** `nix flake check` now fails when the
+  nixpkgs golangci-lint version differs from the `.custom-gcl.yml`/CI-action
+  pin (`checks.golangci-version-drift`), and the CI lint job verifies the
+  two in-repo pins against each other. Pins aligned to **v2.14.0** (the
+  locked nixpkgs package; local hermetic lint verified green on it).
+- **Resolver fixtures for the remaining unresolvable/composable shapes.**
+  `testdata/src/diverging` pins that provider bodies returning two
+  different concrete types stay unresolvable (silent);
+  `foreignprov/lib`+`main` pin that providers declared in another package
+  stay invisible to provider-body resolution; `hwwrap` and `hw7cross/main`
+  grew cases pinning that wrapper resolution × provider-body resolution
+  compose, and that HW-7's cross-package fact composes with provider-body
+  resolution at one registration site.
+
+### Fixed
+
+- **Bare `-help` now prints help and exits 0.** pflag parses single-dash
+  tokens as shorthand clusters, so `-help` died on unknown shorthand `e`
+  with a styled error and exit 1 — a silent regression of the stdlib-flag
+  CLI contract the cmdguard adoption claimed to preserve (that session's
+  smoke table recorded `-help` as passing). The exact standalone token is
+  rewritten to `--help` before parsing; lookalikes (`-help=3`) stay errors.
+- **`--check` now forces exit 0 on load failures too.** README documents
+  `--check` as "report everything, always exit 0", but the load-failure
+  path returned 2 before consulting the flag — breaking advisory CI legs on
+  unloadable trees. The advisory note is printed on stderr.
 
 ### Changed
 

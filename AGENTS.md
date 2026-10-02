@@ -28,13 +28,19 @@ When bumping: CI action `version:`, `.custom-gcl.yml`, and nixpkgs' package
 must move together, and `nix run .#lint` must be re-run locally first — a
 golangci binary built with go < go.mod floor refuses the whole config.
 Also verify the GitHub action major still accepts the pin (v6 did not).
-Drift alert (2026-10-02): the locked nixpkgs now ships golangci-lint
-**2.14.0**, so local `nix run .#lint` runs 2.14.0 while CI/`.custom-gcl.yml`
-still pin v2.13.2 — green locally is no longer proof of green CI lint until
-the pin is bumped deliberately (2.14.0 passes this repo's config, verified;
-also note 2.14.0's tagalign fixer/checker disagree on tag ORDER without an
+**golangci-lint version policy:** one version everywhere, currently
+**v2.14.0** (aligned 2026-10-02: CI action, `.custom-gcl.yml`, and the
+locked nixpkgs all ship 2.14.0; the 2.13.2/2.14.0 drift alert is resolved).
+Enforced twice: `nix flake check` runs `checks.golangci-version-drift`
+(fails when nixpkgs' package ≠ the `.custom-gcl.yml` pin ≠ the CI-action
+pin; negative-proven), and the CI lint job cross-checks the two in-repo
+pins. When bumping: CI action `version:`, `.custom-gcl.yml`, and nixpkgs'
+package must move together, and `nix run .#lint` must be re-run locally
+first — a golangci binary built with go < go.mod floor refuses the whole
+config. Also verify the GitHub action major still accepts the pin (v6 did
+not). 2.14.0's tagalign fixer/checker disagree on tag ORDER without an
 explicit `order:` setting — the repo pins `flag, help, default` in
-.golangci.yml).
+.golangci.yml.
 
 **`README.md` is the contract.** Read it fully before writing any code. Its
 claims carry a verification ledger (§11) with file:line pins into
@@ -98,9 +104,22 @@ These come straight from the spec; violating any of them invalidates the analyze
   interspersed flags, which structurally replaced the wantsHelp workaround
   from the 2026-10-02 webphone report. Flag misuse exits 1 (cobra
   convention) instead of stdlib's 2; `--output` validation keeps exit 2.
-  `flags_test.go` pins the flag surface to the legacy contract.
+  Bare `-help` is rewritten to `--help` before parsing (`normalizeHelpFlag`)
+  — pflag reads single-dash tokens as shorthand clusters, so without the
+  rewrite `-help` dies on unknown shorthand `e` with exit 1 (a real
+  regression the adoption session's smoke table misrecorded as passing;
+  lookalikes like `-help=3` stay errors).
+  `flags_test.go` pins the flag surface; `exitcode_test.go`
+  (`TestExitCodeContract`) executes the REAL CLI wiring against
+  self-contained scaffold modules for the full exit-code matrix — help
+  spellings, `--version`, unknown flag, invalid `--output`, clean/findings/
+  load-failure, `--check` forcing 0. Extend THAT table instead of manual
+  smoke loops. `main()` builds via `newCLI()`/`buildDriverOptions()` —
+  extracted so the tests run main's own wiring, never a copy.
 - Exit codes: `0` clean, `1` findings/gate failure, `2` load failure or
-  triage-only (`--check` advisory forces `0` in every case). A failed gate
+  triage-only (`--check` advisory forces `0` in every case — including
+  load failure, fixed 2026-10-02; the note goes to stderr there since
+  stdout produced nothing). A failed gate
   (coverage/baseline/validation) forces `1` even from a triage-only `2`.
 - The `--check` advisory line is printed only on human-facing output (plain
   text, table, markdown); `--json`/`--sarif` and the structured `--output`
@@ -304,8 +323,14 @@ Non-obvious, easy to break:
   resolver also extracts the concrete instance from an interface-typed
   provider signature when the package-local body returns exactly one
   concrete type; interface-typed return expressions, diverging returns, and
-  type parameters stay unresolvable. Still invisible: chains deeper than
-  one level, wrappers/providers declared in other packages, wrapper
+  type parameters stay unresolvable (diverging returns and cross-package
+  provider bodies are pinned by fixtures `testdata/src/diverging` and
+  `testdata/src/foreignprov` — both silent by design). The channels
+  COMPOSE: a wrapper call site whose provider is an interface-signature
+  function with a concrete body resolves (pinned in `hwwrap`), and HW-7's
+  cross-package NilBodyFact composes with provider-body resolution at one
+  site (pinned in `hw7cross/main`). Still invisible: chains deeper than
+  one level, providers declared in other packages, wrapper
   methods, closures, and wrapper bodies with multiple registrations. A
   clean scan is "no direct or one-level-wrapped registrations found", not
   "provably no health-washing"; when auditing by hand, grep for indirect

@@ -150,8 +150,7 @@
           # here means "green locally proves nothing about CI lint" (the
           # 2026-10-02 alert) — fail loudly instead.
           checks.golangci-version-drift =
-            pkgs.runCommand "samber-linter-golangci-pin-drift"
-              { nixpkgsVersion = pkgs.golangci-lint.version; }
+            pkgs.runCommand "samber-linter-golangci-pin-drift" { nixpkgsVersion = pkgs.golangci-lint.version; }
               ''
                 fail() {
                   echo "golangci-lint version drift: $1"

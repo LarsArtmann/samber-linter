@@ -22,6 +22,18 @@ execution plan is historical:
 - [x] **Release the post-v0.2.2 batch: DONE 2026-09-23.** Cut v0.3.0
       (HW-8 + wrapper-indirection detection + single-source rule table) with
       the README §12 release flow.
+- [ ] **Post-v0.4.0 follow-ups from the 2026-10-02 cmdguard session**
+      (detail: `docs/status/2026-10-02_11-42_cmdguard-cli-adoption-and-stale-fixture-completion.md`
+      §f): re-run `scripts/ecology-scan.sh` as the post-resolver-change
+      regression proof (needs a go ≥ 1.27.1 scanner toolchain); re-run the
+      old-vs-new binary parity on a findings-bearing module for the FINAL
+      binary; file the tagalign fixer/checker tag-order disagreement against
+      golangci-lint v2.14.0 (verify-before-filing first); decide whether
+      README §5/§11 should name cmdguard as the CLI framework. DONE from
+      that list on 2026-10-02 later session: golangci pin alignment to
+      v2.14.0 + drift guards, CLI exit-code harness, `-help` fix,
+      `--check`-on-load-failure fix, resolver fixtures (diverging,
+      foreignprov, hwwrap/hw7cross composition pins).
 - [ ] **Evaluate wrapper-channel findings in the ecology** (follow-up to the
       v0.3.0 release): re-scan needs a go ≥ 1.27.1 scanner toolchain —
       32 consumers are in the load-error wave until then.

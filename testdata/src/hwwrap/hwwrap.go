@@ -67,9 +67,9 @@ func provideValue[T any](i do.Injector, value T) {
 
 var _ = func() bool {
 	provideNamed[*CheckedStore](nil, "checked", NewCheckedStore) // want `HW-4: .*registered lazily`
-	provide(nil, NewShutStore)     // want `HW-1: .*implements do.Shutdowner`
-	provideValue(nil, PtrStore{})  // want `HW-5: .*declares its health check on receiver`
-	provide(nil, newBackend)       // want `HW-4: .*` `HW-7: .*`
+	provide(nil, NewShutStore)                                   // want `HW-1: .*implements do.Shutdowner`
+	provideValue(nil, PtrStore{})                                // want `HW-5: .*declares its health check on receiver`
+	provide(nil, newBackend)                                     // want `HW-4: .*` `HW-7: .*`
 
 	//samber-linter:allow hw-4 checked store is resolved during boot
 	provideNamed(nil, "checked-allowed", NewCheckedStore)

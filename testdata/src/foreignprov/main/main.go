@@ -7,8 +7,9 @@
 package main
 
 import (
-	do "github.com/samber/do/v2"
 	"foreignprov/lib"
+
+	do "github.com/samber/do/v2"
 )
 
 var _ = func() bool {
