@@ -63,6 +63,16 @@ func captureStd(t *testing.T) (stdout, stderr *bytes.Buffer) {
 	return stdout, stderr
 }
 
+// must fails the test on the first error; scaffolding helpers use it because
+// a half-written module produces misleading load failures.
+func must(t *testing.T, err error) {
+	t.Helper()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 // writePlainModule scaffolds a standalone module (valid go.mod + main.go),
 // for scans that need no samber/do dependency.
 func writePlainModule(t *testing.T, mainGo string) string {
@@ -154,34 +164,35 @@ func TestExitCodeContract(t *testing.T) {
 	}
 
 	cases := []struct {
-		name    string
-		args    []string
-		module  func(*testing.T) string
-		wantMsg string // substring asserted against combined output
+		name     string
+		args     []string
+		module   func(*testing.T) string
+		wantCode int
+		wantMsg  string // substring asserted against combined output
 	}{
 		// Help: every spelling, including after positional patterns (the
 		// webphone regression), must print help and exit 0.
-		{name: "help long", args: []string{"--help"}, module: cleanModule, wantMsg: "samber-linter"},
-		{name: "help short", args: []string{"-h"}, module: cleanModule, wantMsg: "samber-linter"},
-		{name: "help single-dash-long", args: []string{"-help"}, module: cleanModule, wantMsg: "samber-linter"},
-		{name: "help trailing after pattern", args: []string{"./...", "--help"}, module: cleanModule, wantMsg: "samber-linter"},
+		{name: "help long", args: []string{"--help"}, module: cleanModule, wantCode: 0, wantMsg: "samber-linter"},
+		{name: "help short", args: []string{"-h"}, module: cleanModule, wantCode: 0, wantMsg: "samber-linter"},
+		{name: "help single-dash-long", args: []string{"-help"}, module: cleanModule, wantCode: 0, wantMsg: "samber-linter"},
+		{name: "help trailing after pattern", args: []string{"./...", "--help"}, module: cleanModule, wantCode: 0, wantMsg: "samber-linter"},
 		// Cobra auto-adds help/completion subcommands; they must stay
 		// invocable (and never reach the linter) — ArbitraryArgs keeps them
 		// from swallowing positional package patterns.
-		{name: "help subcommand", args: []string{"help"}, module: cleanModule, wantMsg: "samber-linter"},
-		{name: "completion bash", args: []string{"completion", "bash"}, module: cleanModule},
-		{name: "version", args: []string{"--version"}, module: cleanModule, wantMsg: "test-version"},
+		{name: "help subcommand", args: []string{"help"}, module: cleanModule, wantCode: 0, wantMsg: "samber-linter"},
+		{name: "completion bash", args: []string{"completion", "bash"}, module: cleanModule, wantCode: 0},
+		{name: "version", args: []string{"--version"}, module: cleanModule, wantCode: 0, wantMsg: "test-version"},
 		// Flag misuse: cobra convention exits 1 (stdlib flag exited 2 — the
 		// one documented delta of the cmdguard adoption).
-		{name: "unknown flag exits 1", args: []string{"--bogus"}, module: cleanModule},
+		{name: "unknown flag exits 1", args: []string{"--bogus"}, module: cleanModule, wantCode: 1},
 		// Invalid --output keeps the documented tri-state: exit 2, no scan.
-		{name: "invalid output exits 2", args: []string{"--output", "bogus", "./..."}, module: cleanModule},
+		{name: "invalid output exits 2", args: []string{"--output", "bogus", "./..."}, module: cleanModule, wantCode: 2},
 		// The driver tri-state, through the real wiring.
-		{name: "clean scan exits 0", args: []string{"./..."}, module: cleanModule},
-		{name: "findings exit 1", args: []string{"./..."}, module: writeConsumerModule, wantMsg: "HW-1"},
-		{name: "check forces 0 on findings", args: []string{"--check", "./..."}, module: writeConsumerModule},
-		{name: "load failure exits 2", args: []string{"./..."}, module: writeBrokenModule},
-		{name: "check forces 0 on load failure", args: []string{"--check", "./..."}, module: writeBrokenModule},
+		{name: "clean scan exits 0", args: []string{"./..."}, module: cleanModule, wantCode: 0},
+		{name: "findings exit 1", args: []string{"./..."}, module: writeConsumerModule, wantCode: 1, wantMsg: "HW-1"},
+		{name: "check forces 0 on findings", args: []string{"--check", "./..."}, module: writeConsumerModule, wantCode: 0},
+		{name: "load failure exits 2", args: []string{"./..."}, module: writeBrokenModule, wantCode: 2},
+		{name: "check forces 0 on load failure", args: []string{"--check", "./..."}, module: writeBrokenModule, wantCode: 0},
 	}
 
 	for _, tc := range cases {
@@ -199,13 +210,9 @@ func TestExitCodeContract(t *testing.T) {
 			}
 
 			execErr := cli.ExecuteWithArgs(context.Background(), tc.args)
-			if code := v4.ExitCode(execErr); code < 0 || code > 255 {
-				t.Fatalf("v4.ExitCode(%v) = %d, want a valid exit code", execErr, code)
-			}
-
-			if code := v4.ExitCode(execErr); code != exitCodeFor(tc.name) {
+			if code := v4.ExitCode(execErr); code != tc.wantCode {
 				t.Errorf("exit code = %d, want %d (stdout:\n%s\nstderr:\n%s)",
-					code, exitCodeFor(tc.name), stdout.String(), stderr.String())
+					code, tc.wantCode, stdout.String(), stderr.String())
 			}
 
 			if tc.wantMsg != "" {
@@ -216,22 +223,5 @@ func TestExitCodeContract(t *testing.T) {
 				}
 			}
 		})
-	}
-}
-
-// exitCodeFor is the expected-code table, kept beside the cases so a mismatch
-// reads as one line per contract point.
-func exitCodeFor(name string) int {
-	switch name {
-	case "unknown flag exits 1":
-		return 1
-	case "findings exit 1":
-		return 1
-	case "invalid output exits 2":
-		return 2
-	case "load failure exits 2":
-		return 2
-	default:
-		return 0
 	}
 }
