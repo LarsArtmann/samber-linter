@@ -54,6 +54,9 @@ type ServiceRecord struct {
 	// (interface-typed closure results). Silent by default; HW-unresolved in
 	// --strict mode.
 	Unresolved bool `json:"unresolved,omitempty"`
+	// Pos is the registration call site as "file:line:col" — the driver's
+	// uncovered-registration listing cites it. Empty for rows without a site.
+	Pos string `json:"pos,omitempty"`
 }
 
 // PackageFacts is the analysis.Fact exported per package.

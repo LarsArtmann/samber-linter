@@ -43,32 +43,28 @@ func evalSite(
 		return ServiceRecord{Kind: kind}, nil
 	}
 
-	serviceType, unresolved := resolveStoredType(pass, kind, provider)
+	serviceType, instance := resolveRegistrationTypes(pass, kind, provider)
 
-	rel := types.TypeString(serviceType, types.RelativeTo(pass.Pkg))
-	full := types.TypeString(serviceType, nil)
+	rel := typeStringOrUnknown(serviceType, types.RelativeTo(pass.Pkg))
+	full := typeStringOrUnknown(serviceType, nil)
 	endLine := pass.Fset.Position(call.End()).Line
 	rec := ServiceRecord{
 		Name: full,
 		Type: rel,
 		Kind: kind,
+		Pos:  pass.Fset.Position(call.Pos()).String(),
 	}
 
-	if unresolved || serviceType == nil {
+	if instance == nil {
 		rec.Unresolved = true
 		rec.Name = rec.Type
 
 		var reps []siteReport
 		if strict {
 			reps = append(reps, siteReport{
-				rule: RuleUnresolved,
-				message: fmt.Sprintf(
-					"%s: %s at %s; analyze the concrete type or suppress with //samber-linter:allow %s <reason>",
-					RuleUnresolved,
-					MessageUnresolv,
-					orDash(rel),
-					RuleCodeUnres,
-				),
+				rule:    RuleUnresolved,
+				message: fmt.Sprintf("%s: %s: %s; suppress with //samber-linter:allow %s <reason>",
+					RuleUnresolved, whyUnresolvable(serviceType), MessageUnresolv, RuleCodeUnres),
 				pos:     call.Pos(),
 				endLine: endLine,
 			})
@@ -77,7 +73,7 @@ func evalSite(
 		return rec, reps
 	}
 
-	stored := serviceType // as registered: T (value) or *T (pointer)
+	stored := instance // as registered: T (value) or *T (pointer)
 	valueReg := !isPointer(stored)
 	ptrToBase := types.NewPointer(stored) // for value regs this is *T
 
@@ -145,38 +141,67 @@ func registrationProvider(fnName string, call *ast.CallExpr, substitute ast.Expr
 	return call.Args[idx], true
 }
 
-// resolveStoredType extracts the type the sweep will store for one
-// registration argument: the value itself for eager registrations, the
-// provider's first result otherwise. unresolved is true when that type is not
-// statically knowable (nil type, result-less provider, or an interface-typed
-// closure result whose concrete instance the analyzer cannot see).
-func resolveStoredType(
+// resolveRegistrationTypes extracts the two types that matter at one
+// registration: declared — the type the container registers under (the
+// provider's first result, samber/do's NameOf[T]); instance — the concrete
+// value the runtime sweep type-asserts. nil instance means the concrete type
+// is not statically visible. Interface-typed declared results chase the
+// provider body's return statements for the concrete instance (README §4
+// step 2); closures and package-local function/method providers resolve
+// alike, divergence (multiple implementations) stays unresolvable.
+func resolveRegistrationTypes(
 	pass *analysis.Pass, kind ServiceKind, arg ast.Expr,
-) (types.Type, bool) {
+) (declared, instance types.Type) {
 	if kind == KindEager {
-		serviceType := pass.TypesInfo.TypeOf(arg)
+		declared = pass.TypesInfo.TypeOf(arg)
 
-		return serviceType, serviceType == nil
+		return declared, declared
 	}
 
 	pt := pass.TypesInfo.TypeOf(arg)
 	if pt == nil {
-		return nil, true
+		return nil, nil
 	}
 
 	sig, isSig := pt.Underlying().(*types.Signature)
 	if !isSig || sig.Results() == nil || sig.Results().Len() < 1 {
-		return nil, true
+		return nil, nil
 	}
 
-	serviceType := sig.Results().At(0).Type()
-	if _, isIface := serviceType.Underlying().(*types.Interface); isIface {
-		// Interface-typed closure result: the sweep asserts the stored
-		// concrete instance, which is statically unknowable here.
-		return nil, true
+	declared = sig.Results().At(0).Type()
+	if isConcrete(declared) {
+		return declared, declared
 	}
 
-	return serviceType, false
+	body := providerBody(pass, arg)
+	if body == nil {
+		return declared, nil
+	}
+
+	return declared, concreteInstanceFromReturns(pass, body)
+}
+
+// whyUnresolvable explains WHY an instance could not be resolved, naming the
+// declared type instead of a bare <nil> (the 2026-10-02 webphone report:
+// "could not be resolved statically at <nil>").
+func whyUnresolvable(declared types.Type) string {
+	if declared == nil {
+		return "the provider signature has no statically visible result type"
+	}
+
+	return fmt.Sprintf("registered as %s, but the stored concrete instance is not statically "+
+		"visible (provider returns an interface with no single concrete return)",
+		types.TypeString(declared, nil))
+}
+
+// typeStringOrUnknown renders t relative to nothing; a nil type renders as
+// "<unknown>" instead of the types package's bare "<nil>".
+func typeStringOrUnknown(t types.Type, qf types.Qualifier) string {
+	if t == nil {
+		return "<unknown>"
+	}
+
+	return types.TypeString(t, qf)
 }
 
 // typeFacts is what the sweep can see about the stored instance. All fields
