@@ -662,6 +662,8 @@ func reportCoverage(
 
 	reportStrictUnresolved(out, records, opts, human)
 
+	reportUncovered(out, records, human)
+
 	return coverage
 }
 
@@ -692,6 +694,65 @@ func reportStrictUnresolved(out io.Writer, records []healthwash.ServiceRecord, o
 			"analyze the concrete type or suppress with //samber-linter:allow hw-unresolved <reason>\n",
 		unresolved,
 	)
+}
+
+// reportUncovered names every counted registration whose stored instance
+// implements no Healthchecker variant — the "19% of WHAT" answer the bare
+// coverage ratio leaves out (2026-10-02 webphone: 3/16 with zero names made
+// the ratchet unactionable). Human presentations only; sorted, one row per
+// deduped service, position included when known.
+func reportUncovered(out io.Writer, records []healthwash.ServiceRecord, human bool) {
+	if !human {
+		return
+	}
+
+	uniq := map[string]healthwash.ServiceRecord{}
+
+	for _, record := range records {
+		if !record.AffectsHW6() {
+			continue
+		}
+
+		if prev, ok := uniq[record.Name]; !ok ||
+			(record.Kind != healthwash.KindTransient && prev.ImplementsCheck != record.ImplementsCheck) {
+			uniq[record.Name] = record
+		}
+	}
+
+	registered := len(uniq)
+	if registered == 0 {
+		return
+	}
+
+	uncovered := make([]healthwash.ServiceRecord, 0, registered)
+
+	for _, record := range uniq {
+		if record.ImplementsCheck && record.Kind != healthwash.KindTransient {
+			continue
+		}
+
+		uncovered = append(uncovered, record)
+	}
+
+	if len(uncovered) == 0 {
+		return
+	}
+
+	slices.SortFunc(uncovered, func(a, b healthwash.ServiceRecord) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+
+	fmt.Fprintf(out, "uncovered (%d of %d): the stored instance implements no Healthchecker variant\n",
+		len(uncovered), registered)
+
+	for _, record := range uncovered {
+		pos := record.Pos
+		if pos == "" {
+			pos = "<unknown site>"
+		}
+
+		fmt.Fprintf(out, "    %s — %s (%s)\n", record.Name, pos, record.Kind)
+	}
 }
 
 // writeBaseline persists the current coverage as the ratchet floor.

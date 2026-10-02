@@ -481,11 +481,3 @@ func isSoleNilReturn(body *ast.BlockStmt) bool {
 
 	return ok && nilIdent.Name == "nil"
 }
-
-func orDash(s string) string {
-	if s == "" {
-		return "<unknown>"
-	}
-
-	return s
-}

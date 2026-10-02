@@ -6,7 +6,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/larsartmann/go-finding"
@@ -16,9 +18,30 @@ import (
 // defaultMinConfidence is the exit-1 threshold for the confidence gate.
 const defaultMinConfidence = 0.75
 
+func printUsage(w io.Writer) {
+	fmt.Fprintln(w, "usage: samber-linter [flags] <packages...>")
+	fmt.Fprintln(w, "flags may appear before or after the package patterns")
+}
+
+// wantsHelp reports whether the invocation asks for usage anywhere on the
+// command line. flag.Parse stops at the first positional argument, so a
+// trailing `./... --help` would otherwise load "--help" as an import path
+// (the 2026-10-02 webphone report) instead of printing usage.
+func wantsHelp(args []string) bool {
+	return slices.ContainsFunc(args, func(a string) bool {
+		return a == "-h" || a == "-help" || a == "--help"
+	})
+}
+
 func main() {
 	if version == "" {
 		version = resolveVersion()
+	}
+
+	if wantsHelp(os.Args[1:]) {
+		printUsage(os.Stdout)
+
+		return
 	}
 
 	flagSet := flag.NewFlagSet("samber-linter", flag.ExitOnError)
@@ -69,8 +92,7 @@ func main() {
 	)
 	showVersion := flagSet.Bool("version", false, "print the tool version")
 	flagSet.Usage = func() {
-		fmt.Fprintln(flagSet.Output(), "usage: samber-linter [flags] <packages...>")
-		flagSet.PrintDefaults()
+		printUsage(flagSet.Output())
 	}
 	_ = flagSet.Parse(os.Args[1:])
 
