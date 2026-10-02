@@ -13,7 +13,13 @@ type real struct{}
 
 func (real) HealthCheck() error { return nil } // want HealthCheck:`nil-body health check`
 
-func newReal(i do.Injector) (Checker, error) { return real{}, nil }
+// newReal returns through an interface-typed variable (no concrete return
+// evidence), so the registration stays unresolvable and --strict reports
+// HW-unresolved at the call site.
+func newReal(i do.Injector) (Checker, error) {
+	var c Checker = real{}
+	return c, nil
+}
 
 var _ = func() bool {
 	do.Provide(nil, newReal) // want `HW-unresolved: .*`

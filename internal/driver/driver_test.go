@@ -561,7 +561,10 @@ type real struct{}
 
 func (real) HealthCheck(context.Context) error { return nil }
 
-func newReal(i do.Injector) (Checker, error) { return real{}, nil }
+func newReal(i do.Injector) (Checker, error) {
+	var c Checker = real{}
+	return c, nil
+}
 
 func main() {
 	do.Provide(nil, newReal)

@@ -45,9 +45,6 @@ func TestFlagSurfaceMatchesLegacyContract(t *testing.T) {
 		}
 
 		def := field.Tag.Get("default")
-		if field.Type.Kind() == reflect.Bool && def == "" {
-			def = "false"
-		}
 
 		got[name] = def
 	}
