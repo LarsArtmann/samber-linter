@@ -26,10 +26,10 @@ testing-gap batch (§f.18, 20–23), and the resolver-fixture batch (§f.11–14
 
 ## b) PARTIALLY DONE
 
-| # | Item                                    | State                                                                                                                                             |
-| - | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1 | Final gates                             | `nix build` / `nix flake check` / dogfood re-run in progress at report time; suite + hermetic lint + drift-guard check already green individually |
-| 2 | §f.24 (in-repo `testdata/smoke` module) | judged MOOT: the harness scaffolds offline modules inline (`t.TempDir`), no /tmp or network dependency to remove                                  |
+| # | Item                                    | State                                                                                                                                              |
+| - | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 | Final gates                             | RESOLVED green at session end: `nix build`, `nix flake check` (all checks incl. dprint, treefmt, hermetic lint, drift guard), suite 6/6, dogfood 0 |
+| 2 | §f.24 (in-repo `testdata/smoke` module) | judged MOOT: the harness scaffolds offline modules inline (`t.TempDir`), no /tmp or network dependency to remove                                   |
 
 ## c) NOT STARTED (deliberately, from §f)
 
