@@ -25,9 +25,9 @@ require (
 	github.com/a-h/templ v0.3.1020 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
-	github.com/charmbracelet/ultraviolet v0.0.0-20260930135840-270558f35f71 // indirect
+	github.com/charmbracelet/ultraviolet v0.0.0-20261001125412-878653296cfd // indirect
 	github.com/charmbracelet/x/ansi v0.11.8 // indirect
-	github.com/charmbracelet/x/exp/charmtone v0.0.0-20260803091719-3755ebad01b1 // indirect
+	github.com/charmbracelet/x/exp/charmtone v0.1.0 // indirect
 	github.com/charmbracelet/x/term v0.2.2 // indirect
 	github.com/charmbracelet/x/termios v0.1.1 // indirect
 	github.com/charmbracelet/x/windows v0.2.2 // indirect
@@ -39,22 +39,22 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gofrs/flock v0.13.1 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/knadh/koanf/maps v0.1.2 // indirect
+	github.com/knadh/koanf/maps v0.1.3 // indirect
 	github.com/knadh/koanf/parsers/json v1.0.1 // indirect
 	github.com/knadh/koanf/parsers/toml v0.1.0 // indirect
 	github.com/knadh/koanf/parsers/yaml v1.1.1 // indirect
-	github.com/knadh/koanf/v2 v2.3.6 // indirect
+	github.com/knadh/koanf/v2 v2.3.7 // indirect
 	github.com/larsartmann/go-branded-id v0.7.0 // indirect
 	github.com/larsartmann/go-error-family v0.11.0 // indirect
 	github.com/larsartmann/go-ndjson v0.0.1 // indirect
-	github.com/larsartmann/go-output/d2 v0.37.0 // indirect
-	github.com/larsartmann/go-output/daghtml v0.37.0 // indirect
+	github.com/larsartmann/go-output/d2 v0.38.2 // indirect
+	github.com/larsartmann/go-output/daghtml v0.38.2 // indirect
 	github.com/larsartmann/go-output/escape v0.38.2 // indirect
-	github.com/larsartmann/go-output/graph v0.37.0 // indirect
-	github.com/larsartmann/go-output/plantuml v0.37.0 // indirect
-	github.com/larsartmann/go-output/serialization v0.37.0 // indirect
-	github.com/larsartmann/go-output/tree v0.37.0 // indirect
-	github.com/larsartmann/samber-do-auditlog v0.8.1 // indirect
+	github.com/larsartmann/go-output/graph v0.38.2 // indirect
+	github.com/larsartmann/go-output/plantuml v0.38.2 // indirect
+	github.com/larsartmann/go-output/serialization v0.38.2 // indirect
+	github.com/larsartmann/go-output/tree v0.38.2 // indirect
+	github.com/larsartmann/samber-do-auditlog v0.10.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.1 // indirect
 	github.com/mattn/go-runewidth v0.0.30 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect

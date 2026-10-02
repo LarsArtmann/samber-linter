@@ -7,6 +7,16 @@ Keep a Changelog; versioning: SemVer.
 
 ### Added
 
+- Nothing yet.
+
+### Changed
+
+- Nothing yet.
+
+## [0.4.0] - 2026-10-02
+
+### Added
+
 - **Uncovered-registration listing.** The health-coverage line now names its
   misses: every counted registration whose stored instance implements no
   `Healthchecker` variant is listed sorted by service name with its
@@ -39,6 +49,13 @@ Keep a Changelog; versioning: SemVer.
   message reads "registered as X, but the stored concrete instance is not
   statically visible …" instead of the bare "at <nil>" the old path printed
   for every interface-typed site.
+- **CLI rebuilt on cmdguard** (from the stdlib `flag` FlagSet). The 12
+  flags are a typed struct registered on the root command; the fang UI
+  renders help and errors, driver exit codes stay the tri-state contract,
+  and output stays byte-identical to the previous CLI. pflag parses
+  interspersed flags, so `samber-linter ./... --json` and a trailing
+  `--help` work natively — the old CLI loaded a trailing flag as an import
+  path (2026-10-02 webphone report).
 
 ## [0.3.0] - 2026-09-23
 

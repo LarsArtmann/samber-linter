@@ -28,6 +28,13 @@ When bumping: CI action `version:`, `.custom-gcl.yml`, and nixpkgs' package
 must move together, and `nix run .#lint` must be re-run locally first — a
 golangci binary built with go < go.mod floor refuses the whole config.
 Also verify the GitHub action major still accepts the pin (v6 did not).
+Drift alert (2026-10-02): the locked nixpkgs now ships golangci-lint
+**2.14.0**, so local `nix run .#lint` runs 2.14.0 while CI/`.custom-gcl.yml`
+still pin v2.13.2 — green locally is no longer proof of green CI lint until
+the pin is bumped deliberately (2.14.0 passes this repo's config, verified;
+also note 2.14.0's tagalign fixer/checker disagree on tag ORDER without an
+explicit `order:` setting — the repo pins `flag, help, default` in
+.golangci.yml).
 
 **`README.md` is the contract.** Read it fully before writing any code. Its
 claims carry a verification ledger (§11) with file:line pins into
@@ -74,6 +81,24 @@ These come straight from the spec; violating any of them invalidates the analyze
 
 ## Driver contract (v0.1.1)
 
+- **The CLI is built on cmdguard** (`cmd/samber-linter/main.go`, adopted
+  2026-10-02 from the stdlib `flag` FlagSet). Single-command shape: the 12
+  flags are a typed struct registered on the root command via cmdguard's
+  tag registry; `driver.Run` stays the only owner of user-facing output and
+  the tri-state exit contract — driver exits 1/2 are returned as
+  `v4.ExitError` with a nil cause, and the fang error handler
+  (`reportOnlyUnreportedErrors`) stays silent for exactly those, so output
+  remains byte-identical to the pre-adoption CLI (verified by diffing old
+  vs new binaries across the flag matrix). Non-obvious traps: cobra
+  auto-adds help/completion subcommands, so `root.Args =
+  cobra.ArbitraryArgs` is REQUIRED or positional package patterns die with
+  "unknown command"; fang injects its own module-version `--version` flag
+  unless `fang.WithoutVersion()` — consumers gate on the tool's
+  build-resolved `--version` output, which must stay exact; pflag parses
+  interspersed flags, which structurally replaced the wantsHelp workaround
+  from the 2026-10-02 webphone report. Flag misuse exits 1 (cobra
+  convention) instead of stdlib's 2; `--output` validation keeps exit 2.
+  `flags_test.go` pins the flag surface to the legacy contract.
 - Exit codes: `0` clean, `1` findings/gate failure, `2` load failure or
   triage-only (`--check` advisory forces `0` in every case). A failed gate
   (coverage/baseline/validation) forces `1` even from a triage-only `2`.
@@ -269,15 +294,22 @@ Non-obvious, easy to break:
   errors on stderr) look like successful scans; always inspect stderr and
   the exit path separately. Sweep artifacts (real names, outside the repo):
   `~/backups/ecology/mrconfig-scan-<date>.{tsv,report.txt}` + `errs-<date>/`.
-- **Known false-negative classes (updated 2026-09-20):** registration
+- **Known false-negative classes (updated 2026-10-02):** registration
   matching resolves ONE level of package-local wrapper (a function whose
   body holds exactly one `do.*` call with a bare param in the provider slot
   — `pkg/healthwash/wrapper.go`, fixture `testdata/src/hwwrap`; shipped
-  after v0.2.2). Still invisible: chains deeper than one level, wrappers
-  declared in other packages, wrapper methods, closures, and wrapper bodies
-  with multiple registrations. A clean scan is "no direct or
-  one-level-wrapped registrations found", not "provably no health-washing";
-  when auditing by hand, grep for indirect wrappers the resolver cannot see.
+  after v0.2.2). Since the 2026-10-02 provider-body resolution (commit
+  c9f82bf; fixtures `testdata/src/ifacebody` pins the capability,
+  `unresolvable`/`unresolvedstrict` pin the still-invisible class), the
+  resolver also extracts the concrete instance from an interface-typed
+  provider signature when the package-local body returns exactly one
+  concrete type; interface-typed return expressions, diverging returns, and
+  type parameters stay unresolvable. Still invisible: chains deeper than
+  one level, wrappers/providers declared in other packages, wrapper
+  methods, closures, and wrapper bodies with multiple registrations. A
+  clean scan is "no direct or one-level-wrapped registrations found", not
+  "provably no health-washing"; when auditing by hand, grep for indirect
+  wrappers the resolver cannot see.
 - **treefmt check needs a floor-matching `go` (2026-09-20):** goimports
   shells out to `go` for module metadata; in the `nix flake check` sandbox
   (no network) a `go` older than the go.mod floor dies with
