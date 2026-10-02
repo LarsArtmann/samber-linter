@@ -164,6 +164,12 @@ linters:
           name: unused-parameter
         - disabled: true
           name: redefines-builtin-id
+    tagalign:
+      align: true
+      order:
+        - flag
+        - help
+        - default
     testifylint:
       disable:
         - go-require
