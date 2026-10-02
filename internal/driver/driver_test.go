@@ -124,6 +124,68 @@ func TestRunEndToEnd(t *testing.T) {
 	}
 }
 
+// TestUncoveredList: the coverage ratio names its misses — every counted
+// registration whose stored instance implements no Healthchecker variant is
+// listed with its site on human output ("19% of WHAT" was unactionable:
+// 2026-10-02 webphone report). Machine presentations stay pure.
+func TestUncoveredList(t *testing.T) {
+	t.Parallel()
+
+	app := e2eModule(t)
+
+	var out, errOut bytes.Buffer
+
+	code := Run(Options{
+		Patterns: []string{"./..."}, Dir: app, Version: "test",
+		Env: []string{"GOFLAGS=-mod=mod"},
+		Stdout: &out, Stderr: &errOut,
+		MinConfidence: finding.ConfidenceHigh,
+	})
+	if code != 1 {
+		t.Fatalf("exit = %d, want 1; stderr: %s", code, errOut.String())
+	}
+
+	output := out.String()
+
+	for _, want := range []string{
+		"uncovered (2 of 3): the stored instance implements no Healthchecker variant",
+		"    *main.Handler — ",
+		"    *main.Store — ",
+	} {
+		if !strings.Contains(output, want) {
+			t.Errorf("output missing uncovered row %q:\n%s", want, output)
+		}
+	}
+
+	if strings.Contains(output, "*main.Honest — ") {
+		t.Errorf("checked service must not be listed uncovered:\n%s", output)
+	}
+
+	// Sorted by service name: Handler before Store.
+	handlerIdx := strings.Index(output, "    *main.Handler — ")
+	storeIdx := strings.Index(output, "    *main.Store — ")
+	if handlerIdx < 0 || storeIdx < 0 || handlerIdx > storeIdx {
+		t.Errorf("uncovered rows not sorted by name:\n%s", output)
+	}
+
+	out.Reset()
+
+	code = Run(Options{
+		Patterns: []string{"./..."}, Dir: app, Version: "test",
+		Env:    []string{"GOFLAGS=-mod=mod"},
+		JSON:   true,
+		Stdout: &out, Stderr: &errOut,
+		MinConfidence: finding.ConfidenceHigh,
+	})
+	if code != 1 {
+		t.Fatalf("json exit = %d, want 1", code)
+	}
+
+	if strings.Contains(out.String(), "uncovered (") {
+		t.Errorf("uncovered list must stay off machine output:\n%s", out.String())
+	}
+}
+
 // TestSetBaselineAndRatchet: --set-baseline writes the floor atomically; a
 // committed higher floor fails on regression.
 func TestSetBaselineAndRatchet(t *testing.T) {
