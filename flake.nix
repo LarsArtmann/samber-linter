@@ -26,7 +26,10 @@
 
       go-standard = {
         pname = "samber-linter";
-        vendorHash = "sha256-xFAbKhwzCRsdKA7wuLDqiV8wxbPUJulEJREsln3JdbM=";
+        # Refreshed 2026-10-02 (got-hash from the clean-HEAD FOD): the
+        # cmdguard/cobra/fang CLI migration added module deps, invalidating
+        # the pre-migration hash.
+        vendorHash = "sha256-4UFFL6pjIzMIzaMQTkC6Ec+GS0pjip+wdvaoAHXSNqk=";
         description = "Static analyzer that detects health-washing in samber/do v2 dependency-injection containers";
         subPackages = [ "./cmd/samber-linter" ];
 
