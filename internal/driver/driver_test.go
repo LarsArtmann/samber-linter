@@ -1108,6 +1108,36 @@ func TestLoadFailureExitsTwo(t *testing.T) {
 	}
 }
 
+// TestCheckForcesZeroOnLoadFailure: --check is "report everything, always
+// exit 0" (README) — a load failure must not break a consumer's advisory CI
+// leg either (the CLI harness caught this gap 2026-10-02).
+func TestCheckForcesZeroOnLoadFailure(t *testing.T) {
+	t.Parallel()
+
+	broken := t.TempDir()
+	must(t, os.WriteFile(filepath.Join(broken, "go.mod"),
+		[]byte("mod ule example.com/broken\n"), 0o644))
+	must(t, os.WriteFile(filepath.Join(broken, "main.go"),
+		[]byte("package main\n\nfunc main() {}\n"), 0o644))
+
+	var out, errOut bytes.Buffer
+
+	code := Run(Options{
+		Patterns: []string{"./..."}, Dir: broken, Version: "test", Check: true,
+		Env:    []string{"GOFLAGS=-mod=mod"},
+		Stdout: &out, Stderr: &errOut,
+	})
+	if code != 0 {
+		t.Fatalf("--check load-failure exit = %d, want 0; stderr: %s", code, errOut.String())
+	}
+
+	for _, want := range []string{"load failed", "--check: advisory run; exit code forced to 0"} {
+		if !strings.Contains(errOut.String(), want) {
+			t.Errorf("stderr missing %q:\n%s", want, errOut.String())
+		}
+	}
+}
+
 // TestGoWorkMultiModule: a go.work workspace spanning an app module and a
 // local samber/do stub module (the shape real consumers like go.work-based
 // monorepos present) must load and analyze across module boundaries.

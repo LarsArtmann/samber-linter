@@ -130,6 +130,14 @@ func Run(opts Options) int {
 	if err != nil {
 		fmt.Fprintf(errw, "%s: load failed: %v\n", ToolName, err)
 
+		// --check is "report everything, always exit 0" (README): a load
+		// failure must not break a consumer's advisory CI leg either.
+		if opts.Check {
+			fmt.Fprintln(errw, "--check: advisory run; exit code forced to 0")
+
+			return 0
+		}
+
 		return 2 // exit 1 is reserved for findings; a tool that cannot load has none
 	}
 

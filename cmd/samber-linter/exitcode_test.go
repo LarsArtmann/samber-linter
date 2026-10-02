@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -18,16 +19,25 @@ import (
 // before it ships. It replaces the manual smoke loop from the cmdguard
 // adoption session (status 2026-10-02 11:42).
 
-// captureStd swaps os.Stdout/os.Stderr for pipes and returns their buffers,
-// restored via t.Cleanup. The CLI and the driver write to the process fds
-// directly, so fd-level capture is the only faithful vantage point. Tests
-// using it must not run in parallel.
-func captureStd(t *testing.T) (stdout, stderr *bytes.Buffer) {
+// capturedStd swaps os.Stdout/os.Stderr for pipes until released. The CLI
+// and the driver write to the process fds directly, so fd-level capture is
+// the only faithful vantage point. release() closes the write ends and
+// waits for the drain goroutines, so buffer contents are complete the moment
+// it returns; it is idempotent and also runs via t.Cleanup. Tests using it
+// must not run in parallel.
+type capturedStd struct {
+	outBuf, errBuf bytes.Buffer
+	oldOut, oldErr *os.File
+	wOut, wErr     *os.File
+	doneOut        chan struct{}
+	doneErr        chan struct{}
+}
+
+func captureStd(t *testing.T) *capturedStd {
 	t.Helper()
 
-	stdout, stderr = &bytes.Buffer{}, &bytes.Buffer{}
+	cap := &capturedStd{oldOut: os.Stdout, oldErr: os.Stderr}
 
-	oldOut, oldErr := os.Stdout, os.Stderr
 	rOut, wOut, err := os.Pipe()
 	if err != nil {
 		t.Fatalf("stdout pipe: %v", err)
@@ -38,29 +48,37 @@ func captureStd(t *testing.T) (stdout, stderr *bytes.Buffer) {
 		t.Fatalf("stderr pipe: %v", err)
 	}
 
+	cap.wOut, cap.wErr = wOut, wErr
 	os.Stdout, os.Stderr = wOut, wErr
 
-	doneOut := make(chan struct{})
+	cap.doneOut = make(chan struct{})
 	go func() {
-		_, _ = io.Copy(stdout, rOut)
-		close(doneOut)
+		_, _ = io.Copy(&cap.outBuf, rOut)
+		close(cap.doneOut)
 	}()
 
-	doneErr := make(chan struct{})
+	cap.doneErr = make(chan struct{})
 	go func() {
-		_, _ = io.Copy(stderr, rErr)
-		close(doneErr)
+		_, _ = io.Copy(&cap.errBuf, rErr)
+		close(cap.doneErr)
 	}()
 
-	t.Cleanup(func() {
-		os.Stdout, os.Stderr = oldOut, oldErr
-		_ = wOut.Close()
-		_ = wErr.Close()
-		<-doneOut
-		<-doneErr
-	})
+	t.Cleanup(cap.release)
 
-	return stdout, stderr
+	return cap
+}
+
+func (cap *capturedStd) release() {
+	if cap.wOut == nil {
+		return
+	}
+
+	os.Stdout, os.Stderr = cap.oldOut, cap.oldErr
+	_ = cap.wOut.Close()
+	_ = cap.wErr.Close()
+	<-cap.doneOut
+	<-cap.doneErr
+	cap.wOut = nil
 }
 
 // must fails the test on the first error; scaffolding helpers use it because
@@ -202,25 +220,60 @@ func TestExitCodeContract(t *testing.T) {
 			version = "test-version"
 			t.Cleanup(func() { version = "" })
 
-			stdout, stderr := captureStd(t)
+			captured := captureStd(t)
 
 			cli, err := newCLI()
 			if err != nil {
 				t.Fatalf("building CLI: %v", err)
 			}
 
-			execErr := cli.ExecuteWithArgs(context.Background(), tc.args)
+			// main's exact entry path: normalizeHelpFlag then execute.
+			execErr := cli.ExecuteWithArgs(context.Background(), normalizeHelpFlag(tc.args))
+
+			captured.release()
+
 			if code := v4.ExitCode(execErr); code != tc.wantCode {
 				t.Errorf("exit code = %d, want %d (stdout:\n%s\nstderr:\n%s)",
-					code, tc.wantCode, stdout.String(), stderr.String())
+					code, tc.wantCode, captured.outBuf.String(), captured.errBuf.String())
 			}
 
 			if tc.wantMsg != "" {
-				combined := stdout.String() + stderr.String()
+				combined := captured.outBuf.String() + captured.errBuf.String()
 				if !strings.Contains(combined, tc.wantMsg) {
 					t.Errorf("output missing %q (stdout:\n%s\nstderr:\n%s)",
-						tc.wantMsg, stdout.String(), stderr.String())
+						tc.wantMsg, captured.outBuf.String(), captured.errBuf.String())
 				}
+			}
+		})
+	}
+}
+
+// TestNormalizeHelpFlag pins the exact rewrite rule: the bare -help token
+// becomes --help everywhere it appears; everything else passes through
+// untouched (including lookalikes, which stay genuine flag misuse).
+func TestNormalizeHelpFlag(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		in   []string
+		want []string
+	}{
+		{name: "bare -help", in: []string{"-help"}, want: []string{"--help"}},
+		{name: "after pattern", in: []string{"./...", "-help"}, want: []string{"./...", "--help"}},
+		{name: "long help untouched", in: []string{"--help"}, want: []string{"--help"}},
+		{name: "short help untouched", in: []string{"-h"}, want: []string{"-h"}},
+		{name: "help subcommand untouched", in: []string{"help"}, want: []string{"help"}},
+		{name: "valued lookalike untouched", in: []string{"-help=3"}, want: []string{"-help=3"}},
+		{name: "unknown flag untouched", in: []string{"--bogus", "./..."}, want: []string{"--bogus", "./..."}},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := normalizeHelpFlag(tc.in); !slices.Equal(got, tc.want) {
+				t.Errorf("normalizeHelpFlag(%v) = %v, want %v", tc.in, got, tc.want)
 			}
 		})
 	}

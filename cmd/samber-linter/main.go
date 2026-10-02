@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 
 	"charm.land/fang/v2"
@@ -64,7 +65,28 @@ func main() {
 		os.Exit(2)
 	}
 
-	cli.ExecuteAndExit(context.Background())
+	if err := cli.ExecuteWithArgs(context.Background(), normalizeHelpFlag(os.Args[1:])); err != nil {
+		os.Exit(v4.ExitCode(err))
+	}
+}
+
+// normalizeHelpFlag rewrites the bare "-help" token to "--help" before cobra
+// parses it: pflag reads single-dash tokens as shorthand clusters, so "-help"
+// would die on unknown shorthand 'e' (styled error, exit 1) instead of
+// printing help the way the stdlib-flag CLI this tool shipped as v0.1..v0.3
+// did. Only the exact standalone token is rewritten; genuine flag misuse
+// (including "-help=x") stays an error.
+func normalizeHelpFlag(args []string) []string {
+	for i, arg := range args {
+		if arg == "-help" {
+			rewritten := slices.Clone(args)
+			rewritten[i] = "--help"
+
+			return rewritten
+		}
+	}
+
+	return args
 }
 
 // newCLI builds the complete CLI exactly as main runs it: cmdguard
