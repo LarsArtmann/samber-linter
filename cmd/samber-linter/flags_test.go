@@ -2,6 +2,7 @@ package main
 
 import (
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -79,10 +80,11 @@ func TestBaselineFallsBackToDefault(t *testing.T) {
 	}
 }
 
-// TestOutputHelpListsSupportedFormats proves the --output help names exactly
+// TestOutputHelpListsSupportedFormats proves the --output help lists exactly
 // the formats the driver accepts — the static tag cannot (the list is
 // dynamic), so dynamicOutputHelp owns it and this test guards the wiring
-// against the real CLI construction.
+// against the real CLI construction. Equality is exact and ordered: a format
+// missing from help, an extra name, or reordering all fail.
 func TestOutputHelpListsSupportedFormats(t *testing.T) {
 	t.Parallel()
 
@@ -100,9 +102,16 @@ func TestOutputHelpListsSupportedFormats(t *testing.T) {
 		t.Fatal("output flag not registered")
 	}
 
-	for _, name := range driver.SupportedOutputFormatNames() {
-		if !strings.Contains(outputFlag.Usage, name) {
-			t.Errorf("--output help %q does not mention supported format %q", outputFlag.Usage, name)
-		}
+	open := strings.Index(outputFlag.Usage, "(")
+	closeParen := strings.Index(outputFlag.Usage, ")")
+	if open < 0 || closeParen < open {
+		t.Fatalf("--output usage %q has no (...) format list to verify", outputFlag.Usage)
+	}
+
+	got := strings.Split(outputFlag.Usage[open+1:closeParen], ", ")
+	want := driver.SupportedOutputFormatNames()
+
+	if !slices.Equal(got, want) {
+		t.Errorf("--output help lists %v, want exactly %v", got, want)
 	}
 }
