@@ -157,13 +157,13 @@ func providerBody(pass *analysis.Pass, arg ast.Expr) *ast.BlockStmt {
 func funcDeclBody(pass *analysis.Pass, fn *types.Func) *ast.BlockStmt {
 	for _, file := range pass.Files {
 		for _, decl := range file.Decls {
-			fd, isFnDecl := decl.(*ast.FuncDecl)
-			if !isFnDecl || fd.Body == nil {
+			funcDecl, isFnDecl := decl.(*ast.FuncDecl)
+			if !isFnDecl || funcDecl.Body == nil {
 				continue
 			}
 
-			if obj, isFunc := pass.TypesInfo.Defs[fd.Name].(*types.Func); isFunc && obj == fn {
-				return fd.Body
+			if obj, isFunc := pass.TypesInfo.Defs[funcDecl.Name].(*types.Func); isFunc && obj == fn {
+				return funcDecl.Body
 			}
 		}
 	}
