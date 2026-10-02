@@ -1,3 +1,5 @@
+// want package:"healthwash: registration records"
+
 // Package lib declares the provider AND its return interface; main only
 // registers. The provider body lives here, outside the registering package's
 // file set: provider-body inspection must NOT see it (the same doctrine as

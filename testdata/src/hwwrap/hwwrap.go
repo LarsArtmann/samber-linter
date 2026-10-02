@@ -29,6 +29,21 @@ type PtrStore struct{}
 func (p *PtrStore) HealthCheck(context.Context) error { return p.ping() }
 func (p *PtrStore) ping() error                       { return nil }
 
+// Backend + pg pin the wrapper × provider-body composition: the wrapper
+// substitutes the call-site provider argument, and provider-body resolution
+// must then see newBackend's body in THIS package — one concrete return
+// through an interface signature, exactly like the ifacebody fixture, but
+// reached through the wrapper channel.
+type Backend interface {
+	HealthCheck(context.Context) error
+}
+
+type pg struct{}
+
+func (pg) HealthCheck(context.Context) error { return nil } // want HealthCheck:`nil-body health check`
+
+func newBackend(i do.Injector) (Backend, error) { return pg{}, nil }
+
 // Handler implements no lifecycle interface: the wrapper channel must not
 // make rule precision worse.
 type Handler struct{ dep *CheckedStore }
@@ -52,8 +67,9 @@ func provideValue[T any](i do.Injector, value T) {
 
 var _ = func() bool {
 	provideNamed[*CheckedStore](nil, "checked", NewCheckedStore) // want `HW-4: .*registered lazily`
-	provide(nil, NewShutStore)                                   // want `HW-1: .*implements do.Shutdowner`
-	provideValue(nil, PtrStore{})                                // want `HW-5: .*declares its health check on receiver`
+	provide(nil, NewShutStore)     // want `HW-1: .*implements do.Shutdowner`
+	provideValue(nil, PtrStore{})  // want `HW-5: .*declares its health check on receiver`
+	provide(nil, newBackend)       // want `HW-4: .*` `HW-7: .*`
 
 	//samber-linter:allow hw-4 checked store is resolved during boot
 	provideNamed(nil, "checked-allowed", NewCheckedStore)
