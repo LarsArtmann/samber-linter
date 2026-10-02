@@ -137,7 +137,7 @@ func TestUncoveredList(t *testing.T) {
 
 	code := Run(Options{
 		Patterns: []string{"./..."}, Dir: app, Version: "test",
-		Env: []string{"GOFLAGS=-mod=mod"},
+		Env:    []string{"GOFLAGS=-mod=mod"},
 		Stdout: &out, Stderr: &errOut,
 		MinConfidence: finding.ConfidenceHigh,
 	})
@@ -149,21 +149,21 @@ func TestUncoveredList(t *testing.T) {
 
 	for _, want := range []string{
 		"uncovered (2 of 3): the stored instance implements no Healthchecker variant",
-		"    *main.Handler — ",
-		"    *main.Store — ",
+		"    *example.com/app.Handler — ",
+		"    *example.com/app.Store — ",
 	} {
 		if !strings.Contains(output, want) {
 			t.Errorf("output missing uncovered row %q:\n%s", want, output)
 		}
 	}
 
-	if strings.Contains(output, "*main.Honest — ") {
+	if strings.Contains(output, "*example.com/app.Honest — ") {
 		t.Errorf("checked service must not be listed uncovered:\n%s", output)
 	}
 
 	// Sorted by service name: Handler before Store.
-	handlerIdx := strings.Index(output, "    *main.Handler — ")
-	storeIdx := strings.Index(output, "    *main.Store — ")
+	handlerIdx := strings.Index(output, "    *example.com/app.Handler — ")
+	storeIdx := strings.Index(output, "    *example.com/app.Store — ")
 	if handlerIdx < 0 || storeIdx < 0 || handlerIdx > storeIdx {
 		t.Errorf("uncovered rows not sorted by name:\n%s", output)
 	}

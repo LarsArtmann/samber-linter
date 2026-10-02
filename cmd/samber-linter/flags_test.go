@@ -15,18 +15,18 @@ import (
 // text, and the defaults the README documents.
 func TestFlagSurfaceMatchesLegacyContract(t *testing.T) {
 	want := map[string]string{ // flag name -> default tag
-		"json":          "",
-		"sarif":         "",
-		"output":        "",
-		"strict":        "",
-		"disable":       "",
-		"check":         "",
-		"coverage-min":  "-1",
-		"set-baseline":  "",
-		"baseline":      driver.DefaultBaselinePath,
-		"config":        "",
+		"json":           "",
+		"sarif":          "",
+		"output":         "",
+		"strict":         "",
+		"disable":        "",
+		"check":          "",
+		"coverage-min":   "-1",
+		"set-baseline":   "",
+		"baseline":       driver.DefaultBaselinePath,
+		"config":         "",
 		"min-confidence": strconv.FormatFloat(defaultMinConfidence, 'f', -1, 64),
-		"version":       "",
+		"version":        "",
 	}
 
 	got := make(map[string]string)

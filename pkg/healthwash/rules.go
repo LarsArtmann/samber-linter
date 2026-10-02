@@ -62,7 +62,7 @@ func evalSite(
 		var reps []siteReport
 		if strict {
 			reps = append(reps, siteReport{
-				rule:    RuleUnresolved,
+				rule: RuleUnresolved,
 				message: fmt.Sprintf("%s: %s: %s; suppress with //samber-linter:allow %s <reason>",
 					RuleUnresolved, whyUnresolvable(serviceType), MessageUnresolv, RuleCodeUnres),
 				pos:     call.Pos(),

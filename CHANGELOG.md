@@ -7,11 +7,38 @@ Keep a Changelog; versioning: SemVer.
 
 ### Added
 
-- Nothing yet.
+- **Uncovered-registration listing.** The health-coverage line now names its
+  misses: every counted registration whose stored instance implements no
+  `Healthchecker` variant is listed sorted by service name with its
+  registration site (`file:line`) and kind on human output. The bare ratio
+  ("3/16 = 19%") was unactionable — the 2026-10-02 webphone run showed
+  "no health-washing found" beside a 19% coverage gap with zero names.
+  Machine presentations (`--json`, `--sarif`, structured `--output`) stay
+  pure. `ServiceRecord` gains an additive `pos` field.
 
 ### Changed
 
-- Nothing yet.
+- **Interface-typed registrations now resolve their concrete instance.**
+  README §4 step 2 always said to analyze the concrete returned type (the
+  runtime sweep asserts the stored instance, not the registration
+  interface); the analyzer instead bailed on every interface-typed provider
+  result — the same webphone run marked its three interface registrations
+  (`gateway.MessageGateway`, `gateway.FaxGateway`, `http.Handler`)
+  unresolvable although each provider body returns exactly one concrete
+  type. Interface-typed declared results now chase the provider body's
+  return statements (closure literals and package-local function/method
+  providers alike) and unify them into the stored instance type. Returns
+  carrying no concrete evidence (untyped nil error paths,
+  interface-typed expressions, type parameters) are skipped; divergent
+  concrete returns stay unresolvable (README: multiple implementations).
+  Consumers with committed baselines may see the coverage denominator grow
+  and new findings surface — they were false negatives. Fixtures:
+  `testdata/src/ifacebody` pins the resolved path; `unresolvable` and
+  `unresolvedstrict` now pin the genuinely opaque shapes.
+- **HW-unresolved messages name the declared type.** The strict-mode
+  message reads "registered as X, but the stored concrete instance is not
+  statically visible …" instead of the bare "at <nil>" the old path printed
+  for every interface-typed site.
 
 ## [0.3.0] - 2026-09-23
 
