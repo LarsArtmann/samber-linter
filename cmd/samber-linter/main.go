@@ -58,6 +58,21 @@ func main() {
 		version = resolveVersion()
 	}
 
+	cli, err := newCLI()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "samber-linter: building CLI: %v\n", err)
+		os.Exit(2)
+	}
+
+	cli.ExecuteAndExit(context.Background())
+}
+
+// newCLI builds the complete CLI exactly as main runs it: cmdguard
+// construction, the root command's Use line, ArbitraryArgs (cobra's default
+// root arg policy would reject positional package patterns as "unknown
+// command"), and the RunE bridge into runLinter. Extracted from main so the
+// contract tests execute the real wiring, not a parallel copy of it.
+func newCLI() (*v4.CLI[linterFlags], error) {
 	cli, err := v4.NewCLI[linterFlags](
 		"samber-linter",
 		"detects health-washing in samber/do v2 containers",
@@ -71,22 +86,19 @@ func main() {
 		v4.WithFangErrorHandler(reportOnlyUnreportedErrors),
 	)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "samber-linter: building CLI: %v\n", err)
-		os.Exit(2)
+		return nil, err
 	}
 
 	root := cli.RootCommand()
 	root.Use = "samber-linter [flags] <packages...>"
 
-	// cobra auto-adds help/completion subcommands; cobra's default root arg
-	// policy then rejects positional package patterns as "unknown command".
 	root.Args = cobra.ArbitraryArgs
 
 	root.RunE = func(_ *cobra.Command, args []string) error {
 		return runLinter(cli.Config(), args)
 	}
 
-	cli.ExecuteAndExit(context.Background())
+	return cli, nil
 }
 
 // runLinter maps the parsed flag struct onto one driver pass and converts the
@@ -99,6 +111,29 @@ func runLinter(cfg *linterFlags, args []string) error {
 		return nil
 	}
 
+	opts, err := buildDriverOptions(cfg, args, version)
+	if err != nil {
+		// Actionable and not yet reported: keep the message (fang prints it)
+		// and stay on the documented tri-state (2 = no findings produced).
+		return newReportedExitError(2, err)
+	}
+
+	opts.Stdout = os.Stdout
+	opts.Stderr = os.Stderr
+
+	code := driver.Run(opts)
+	if code == 0 {
+		return nil
+	}
+
+	return newSilentExitError(code)
+}
+
+// buildDriverOptions maps the parsed flag struct onto driver.Options, owning
+// the two defaults the flag tags cannot express: the ./... pattern fallback
+// and the empty --baseline fallback to the driver's documented default path
+// (tag values are compile-time strings; the constant lives in the driver).
+func buildDriverOptions(cfg *linterFlags, args []string, toolVersion string) (driver.Options, error) {
 	patterns := args
 	if len(patterns) == 0 {
 		patterns = []string{"./..."}
@@ -106,19 +141,15 @@ func runLinter(cfg *linterFlags, args []string) error {
 
 	outputFormat, err := driver.ParseOutputFormat(cfg.OutputFormat)
 	if err != nil {
-		// Actionable and not yet reported: keep the message (fang prints it)
-		// and stay on the documented tri-state (2 = no findings produced).
-		return newReportedExitError(2, err)
+		return driver.Options{}, err
 	}
 
-	// The tag default cannot carry the driver constant (compile-time string),
-	// so the empty flag falls back to the documented baseline path.
 	baselinePath := cfg.BaselinePath
 	if baselinePath == "" {
 		baselinePath = driver.DefaultBaselinePath
 	}
 
-	code := driver.Run(driver.Options{
+	return driver.Options{
 		Patterns:      patterns,
 		Strict:        cfg.Strict,
 		JSON:          cfg.JSON,
@@ -131,15 +162,8 @@ func runLinter(cfg *linterFlags, args []string) error {
 		ConfigPath:    cfg.ConfigPath,
 		DisableRules:  cfg.DisableRules,
 		MinConfidence: finding.Confidence(cfg.MinConfidence),
-		Version:       version,
-		Stdout:        os.Stdout,
-		Stderr:        os.Stderr,
-	})
-	if code == 0 {
-		return nil
-	}
-
-	return newSilentExitError(code)
+		Version:       toolVersion,
+	}, nil
 }
 
 // newSilentExitError wraps a driver exit code whose user-facing report the
