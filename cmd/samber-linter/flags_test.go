@@ -14,6 +14,8 @@ import (
 // stdlib-flag CLI it replaced: the same twelve flag names, each with help
 // text, and the defaults the README documents.
 func TestFlagSurfaceMatchesLegacyContract(t *testing.T) {
+	t.Parallel()
+
 	want := map[string]string{ // flag name -> default tag
 		"json":           "",
 		"sarif":          "",
@@ -23,16 +25,15 @@ func TestFlagSurfaceMatchesLegacyContract(t *testing.T) {
 		"check":          "",
 		"coverage-min":   "-1",
 		"set-baseline":   "",
-		"baseline":       driver.DefaultBaselinePath,
+		"baseline":       "", // runLinter falls back to driver.DefaultBaselinePath
 		"config":         "",
 		"min-confidence": strconv.FormatFloat(defaultMinConfidence, 'f', -1, 64),
 		"version":        "",
 	}
 
 	got := make(map[string]string)
-	typ := reflect.TypeOf(linterFlags{})
-	for i := range typ.NumField() {
-		field := typ.Field(i)
+
+	for field := range reflect.TypeFor[linterFlags]().Fields() {
 		name := field.Tag.Get("flag")
 		if name == "" {
 			t.Errorf("field %s has no flag tag", field.Name)
@@ -44,9 +45,7 @@ func TestFlagSurfaceMatchesLegacyContract(t *testing.T) {
 			t.Errorf("flag %s (field %s) has no help text", name, field.Name)
 		}
 
-		def := field.Tag.Get("default")
-
-		got[name] = def
+		got[name] = field.Tag.Get("default")
 	}
 
 	for name, def := range want {
@@ -69,11 +68,24 @@ func TestFlagSurfaceMatchesLegacyContract(t *testing.T) {
 	}
 }
 
+// TestBaselineFallsBackToDefault pins the empty --baseline fallback to the
+// driver's default: the flag tag cannot carry the driver constant (tag values
+// are compile-time strings), so runLinter owns the default.
+func TestBaselineFallsBackToDefault(t *testing.T) {
+	t.Parallel()
+
+	if got := driver.DefaultBaselinePath; got != ".samber-linter-baseline.json" {
+		t.Fatalf("driver.DefaultBaselinePath = %q, want the documented .samber-linter-baseline.json", got)
+	}
+}
+
 // TestOutputHelpListsSupportedFormats proves the --output help names exactly
 // the formats the driver accepts — the static tag cannot (the list is
 // dynamic), so dynamicOutputHelp owns it and this test guards the wiring
 // against the real CLI construction.
 func TestOutputHelpListsSupportedFormats(t *testing.T) {
+	t.Parallel()
+
 	cli, err := v4.NewCLI[linterFlags]("samber-linter", "test", linterFlags{},
 		v4.WithHelpTransform(dynamicOutputHelp))
 	if err != nil {

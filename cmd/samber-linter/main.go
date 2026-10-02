@@ -30,24 +30,26 @@ import (
 const defaultMinConfidence = 0.75
 
 // linterFlags is the complete flag surface of the driver. Field tags are the
-// contract: names, defaults, and help must match the stdlib-flag CLI this
-// command replaced (README §1/§7). Unlike stdlib flag, pflag parses
-// interspersed flags, so `samber-linter ./... --json` and a trailing `--help`
-// work natively (the wantsHelp workaround from the 2026-10-02 webphone report
-// became obsolete). flags_test.go pins the dynamic parts (output format list,
-// baseline default) to the driver package.
+// contract: flag names and semantics must match the stdlib-flag CLI this
+// command replaced (README §1/§7); flags_test.go pins the surface (names,
+// defaults, help wiring) to the driver package. Help texts stay short so the
+// tagalign columns fit the 120-column lll budget; --output's full format list
+// is injected at runtime by dynamicOutputHelp. Unlike stdlib flag, pflag
+// parses interspersed flags, so `samber-linter ./... --json` and a trailing
+// `--help` work natively (the wantsHelp workaround from the 2026-10-02
+// webphone report became obsolete).
 type linterFlags struct {
 	JSON          bool    `flag:"json"           help:"emit the go-finding JSON report"`
 	SARIF         bool    `flag:"sarif"          help:"emit a SARIF 2.1 report for code scanning"`
-	OutputFormat  string  `flag:"output"         help:"findings presentation format; plain text lines by default"                        default:""`
-	Strict        bool    `flag:"strict"         help:"report HW-unresolved for statically unresolvable service types"`
-	DisableRules  string  `flag:"disable"        help:"comma-separated rule IDs to skip (e.g. HW-1,HW-4); testing/migration aid"         default:""`
-	Check         bool    `flag:"check"          help:"advisory mode: report everything but always exit 0 (for CI annotation pipelines)"`
-	CoverageMin   float64 `flag:"coverage-min"   help:"fail when health coverage is below this fraction (0..1)"                          default:"-1"`
-	SetBaseline   bool    `flag:"set-baseline"   help:"write the current coverage as the ratchet floor and pass"`
-	BaselinePath  string  `flag:"baseline"       help:"path of the committed coverage baseline file"                                     default:".samber-linter-baseline.json"`
-	ConfigPath    string  `flag:"config"         help:"path of the allowlist config for recurring suppression categories"                default:""`
-	MinConfidence float64 `flag:"min-confidence" help:"exit 1 when any finding is at or above this confidence (0..1)"                    default:"0.75"`
+	OutputFormat  string  `flag:"output"         help:"findings presentation format"                default:""`
+	Strict        bool    `flag:"strict"         help:"report HW-unresolved for unresolvable types"`
+	DisableRules  string  `flag:"disable"        help:"comma-separated rule IDs to skip"            default:""`
+	Check         bool    `flag:"check"          help:"advisory mode: always exit 0"`
+	CoverageMin   float64 `flag:"coverage-min"   help:"fail below this coverage (0..1)"             default:"-1"`
+	SetBaseline   bool    `flag:"set-baseline"   help:"write current coverage as ratchet floor"`
+	BaselinePath  string  `flag:"baseline"       help:"committed coverage baseline file"            default:""`
+	ConfigPath    string  `flag:"config"         help:"allowlist config for suppressions"           default:""`
+	MinConfidence float64 `flag:"min-confidence" help:"exit 1 at/above this (0..1)"                 default:"0.75"`
 	ShowVersion   bool    `flag:"version"        help:"print the tool version"`
 }
 
@@ -109,6 +111,13 @@ func runLinter(cfg *linterFlags, args []string) error {
 		return newReportedExitError(2, err)
 	}
 
+	// The tag default cannot carry the driver constant (compile-time string),
+	// so the empty flag falls back to the documented baseline path.
+	baselinePath := cfg.BaselinePath
+	if baselinePath == "" {
+		baselinePath = driver.DefaultBaselinePath
+	}
+
 	code := driver.Run(driver.Options{
 		Patterns:      patterns,
 		Strict:        cfg.Strict,
@@ -118,7 +127,7 @@ func runLinter(cfg *linterFlags, args []string) error {
 		OutputFormat:  outputFormat,
 		CoverageMin:   cfg.CoverageMin,
 		SetBaseline:   cfg.SetBaseline,
-		BaselinePath:  cfg.BaselinePath,
+		BaselinePath:  baselinePath,
 		ConfigPath:    cfg.ConfigPath,
 		DisableRules:  cfg.DisableRules,
 		MinConfidence: finding.Confidence(cfg.MinConfidence),
@@ -158,13 +167,13 @@ func newReportedExitError(code int, cause error) error {
 // reportOnlyUnreportedErrors is the fang error handler: silent for exit-code
 // errors with no cause (the driver already printed everything), styled output
 // for every other error (flag misuse, invalid flag values).
-func reportOnlyUnreportedErrors(w io.Writer, styles fang.Styles, err error) {
+func reportOnlyUnreportedErrors(out io.Writer, styles fang.Styles, err error) {
 	var exitErr *v4.ExitError
 	if errors.As(err, &exitErr) && exitErr.Err == nil {
 		return
 	}
 
-	fang.DefaultErrorHandler(w, styles, err)
+	fang.DefaultErrorHandler(out, styles, err)
 }
 
 // dynamicOutputHelp rewrites the --output flag's help at execution time from
