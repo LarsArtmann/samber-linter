@@ -40,6 +40,10 @@ func TestTransientCheckShouldDispatch(t *testing.T) {
 		t.Fatalf("transient service %s missing from sweep results: %v", svcName, results)
 	}
 	if !errors.Is(err, errTransientDown) {
-		t.Fatalf("transient service implements a check but the sweep never dispatched it: got %v, want %v", err, errTransientDown)
+		t.Fatalf(
+			"transient service implements a check but the sweep never dispatched it: got %v, want %v",
+			err,
+			errTransientDown,
+		)
 	}
 }

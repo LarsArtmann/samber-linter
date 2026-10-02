@@ -37,18 +37,18 @@ const defaultMinConfidence = 0.75
 // became obsolete). flags_test.go pins the dynamic parts (output format list,
 // baseline default) to the driver package.
 type linterFlags struct {
-	JSON          bool    `flag:"json" help:"emit the go-finding JSON report"`
-	SARIF         bool    `flag:"sarif" help:"emit a SARIF 2.1 report for code scanning"`
-	OutputFormat  string  `flag:"output" default:"" help:"findings presentation format; plain text lines by default"`
-	Strict        bool    `flag:"strict" help:"report HW-unresolved for statically unresolvable service types"`
-	DisableRules  string  `flag:"disable" default:"" help:"comma-separated rule IDs to skip (e.g. HW-1,HW-4); testing/migration aid"`
-	Check         bool    `flag:"check" help:"advisory mode: report everything but always exit 0 (for CI annotation pipelines)"`
-	CoverageMin   float64 `flag:"coverage-min" default:"-1" help:"fail when health coverage is below this fraction (0..1)"`
-	SetBaseline   bool    `flag:"set-baseline" help:"write the current coverage as the ratchet floor and pass"`
-	BaselinePath  string  `flag:"baseline" default:".samber-linter-baseline.json" help:"path of the committed coverage baseline file"`
-	ConfigPath    string  `flag:"config" default:"" help:"path of the allowlist config for recurring suppression categories"`
-	MinConfidence float64 `flag:"min-confidence" default:"0.75" help:"exit 1 when any finding is at or above this confidence (0..1)"`
-	ShowVersion   bool    `flag:"version" help:"print the tool version"`
+	JSON          bool    `flag:"json"           help:"emit the go-finding JSON report"`
+	SARIF         bool    `flag:"sarif"          help:"emit a SARIF 2.1 report for code scanning"`
+	OutputFormat  string  `flag:"output"         help:"findings presentation format; plain text lines by default"                        default:""`
+	Strict        bool    `flag:"strict"         help:"report HW-unresolved for statically unresolvable service types"`
+	DisableRules  string  `flag:"disable"        help:"comma-separated rule IDs to skip (e.g. HW-1,HW-4); testing/migration aid"         default:""`
+	Check         bool    `flag:"check"          help:"advisory mode: report everything but always exit 0 (for CI annotation pipelines)"`
+	CoverageMin   float64 `flag:"coverage-min"   help:"fail when health coverage is below this fraction (0..1)"                          default:"-1"`
+	SetBaseline   bool    `flag:"set-baseline"   help:"write the current coverage as the ratchet floor and pass"`
+	BaselinePath  string  `flag:"baseline"       help:"path of the committed coverage baseline file"                                     default:".samber-linter-baseline.json"`
+	ConfigPath    string  `flag:"config"         help:"path of the allowlist config for recurring suppression categories"                default:""`
+	MinConfidence float64 `flag:"min-confidence" help:"exit 1 when any finding is at or above this confidence (0..1)"                    default:"0.75"`
+	ShowVersion   bool    `flag:"version"        help:"print the tool version"`
 }
 
 func main() {
