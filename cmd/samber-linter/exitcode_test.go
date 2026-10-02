@@ -194,7 +194,13 @@ func TestExitCodeContract(t *testing.T) { //nolint:paralleltest // fd capture an
 		// webphone regression), must print help and exit 0.
 		{name: "help long", args: []string{"--help"}, module: cleanModule, wantCode: 0, wantMsg: "samber-linter"},
 		{name: "help short", args: []string{"-h"}, module: cleanModule, wantCode: 0, wantMsg: "samber-linter"},
-		{name: "help single-dash-long", args: []string{"-help"}, module: cleanModule, wantCode: 0, wantMsg: "samber-linter"},
+		{
+			name:     "help single-dash-long",
+			args:     []string{"-help"},
+			module:   cleanModule,
+			wantCode: 0,
+			wantMsg:  "samber-linter",
+		},
 		{
 			name:     "help trailing after pattern",
 			args:     []string{"./...", "--help"},
@@ -212,11 +218,21 @@ func TestExitCodeContract(t *testing.T) { //nolint:paralleltest // fd capture an
 		// one documented delta of the cmdguard adoption).
 		{name: "unknown flag exits 1", args: []string{"--bogus"}, module: cleanModule, wantCode: 1},
 		// Invalid --output keeps the documented tri-state: exit 2, no scan.
-		{name: "invalid output exits 2", args: []string{"--output", "bogus", "./..."}, module: cleanModule, wantCode: 2},
+		{
+			name:     "invalid output exits 2",
+			args:     []string{"--output", "bogus", "./..."},
+			module:   cleanModule,
+			wantCode: 2,
+		},
 		// The driver tri-state, through the real wiring.
 		{name: "clean scan exits 0", args: []string{"./..."}, module: cleanModule, wantCode: 0},
 		{name: "findings exit 1", args: []string{"./..."}, module: writeConsumerModule, wantCode: 1, wantMsg: "HW-1"},
-		{name: "check forces 0 on findings", args: []string{"--check", "./..."}, module: writeConsumerModule, wantCode: 0},
+		{
+			name:     "check forces 0 on findings",
+			args:     []string{"--check", "./..."},
+			module:   writeConsumerModule,
+			wantCode: 0,
+		},
 		{name: "load failure exits 2", args: []string{"./..."}, module: writeBrokenModule, wantCode: 2},
 		{
 			name:     "check forces 0 on load failure",
@@ -227,9 +243,9 @@ func TestExitCodeContract(t *testing.T) { //nolint:paralleltest // fd capture an
 	}
 
 	//nolint:paralleltest // fd capture and t.Chdir require sequential execution
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Chdir(tc.module(t))
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Chdir(testCase.module(t))
 
 			version = "test-version"
 
@@ -243,20 +259,20 @@ func TestExitCodeContract(t *testing.T) { //nolint:paralleltest // fd capture an
 			}
 
 			// main's exact entry path: normalizeHelpFlag then execute.
-			execErr := cli.ExecuteWithArgs(context.Background(), normalizeHelpFlag(tc.args))
+			execErr := cli.ExecuteWithArgs(context.Background(), normalizeHelpFlag(testCase.args))
 
 			captured.release()
 
-			if code := v4.ExitCode(execErr); code != tc.wantCode {
+			if code := v4.ExitCode(execErr); code != testCase.wantCode {
 				t.Errorf("exit code = %d, want %d (stdout:\n%s\nstderr:\n%s)",
-					code, tc.wantCode, captured.outBuf.String(), captured.errBuf.String())
+					code, testCase.wantCode, captured.outBuf.String(), captured.errBuf.String())
 			}
 
-			if tc.wantMsg != "" {
+			if testCase.wantMsg != "" {
 				combined := captured.outBuf.String() + captured.errBuf.String()
-				if !strings.Contains(combined, tc.wantMsg) {
+				if !strings.Contains(combined, testCase.wantMsg) {
 					t.Errorf("output missing %q (stdout:\n%s\nstderr:\n%s)",
-						tc.wantMsg, captured.outBuf.String(), captured.errBuf.String())
+						testCase.wantMsg, captured.outBuf.String(), captured.errBuf.String())
 				}
 			}
 		})
@@ -283,12 +299,12 @@ func TestNormalizeHelpFlag(t *testing.T) {
 		{name: "unknown flag untouched", in: []string{"--bogus", "./..."}, want: []string{"--bogus", "./..."}},
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			if got := normalizeHelpFlag(tc.in); !slices.Equal(got, tc.want) {
-				t.Errorf("normalizeHelpFlag(%v) = %v, want %v", tc.in, got, tc.want)
+			if got := normalizeHelpFlag(testCase.in); !slices.Equal(got, testCase.want) {
+				t.Errorf("normalizeHelpFlag(%v) = %v, want %v", testCase.in, got, testCase.want)
 			}
 		})
 	}
