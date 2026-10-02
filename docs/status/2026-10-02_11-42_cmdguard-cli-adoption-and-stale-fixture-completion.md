@@ -24,7 +24,7 @@ integration), `nix build`, `nix flake check` (build + tests + treefmt + dprint +
 hermetic lint + vendor-hash), hermetic lint 0 issues, self-dogfood clean (baseline 0
 registered intact).
 
-**Caveat:** after `17c6715`, *another* session landed uncommitted dep bumps
+**Caveat:** after `17c6715`, _another_ session landed uncommitted dep bumps
 (`go.mod`/`go.sum` charmbracelet indirects, `flake.lock` nixpkgs input) in the tree.
 They are **not mine, not validated by my green gates, and left untouched** per the
 never-revert-others'-work rule. AGENTS.md is staged for the daemon.
@@ -33,35 +33,35 @@ never-revert-others'-work rule. AGENTS.md is staged for the daemon.
 
 ## a) FULLY DONE (verified, with evidence)
 
-| # | Item | Evidence |
-| - | ---- | -------- |
-| 1 | cmdguard v4.0.2 adopted as CLI framework; stdlib `flag` removed | `cmd/samber-linter/main.go` (rewrite); `go.mod` adds cmdguard/fang/cobra |
-| 2 | Byte-parity old-vs-new binary across flag matrix | diff loop over `./...`, `--json`, `--sarif`, `--output table`, `--check`, `--strict`, `--disable`, `--min-confidence`, `--coverage-min`: 0 diffs (old binary built from 365bb4a worktree) |
-| 3 | Tri-state exit contract preserved (0/1/2), `--check` advisory, `--output` validation keeps exit 2 | smoke: findings→1, check→0, `--output bogus`→2 with styled actionable error |
-| 4 | Driver exits 1/2 are silent (no duplicate fang error); only unreported errors print | findings run prints nothing extra; `reportOnlyUnreportedErrors` handler |
-| 5 | `--version` contract preserved (exact string; fang's module-version flag suppressed via `fang.WithoutVersion()`) | smoke: `v0.3.1-0.20261002085556-…`, exit 0 |
-| 6 | Trailing `./... --help` works natively (webphone root cause structurally fixed, wantsHelp workaround superseded) | smoke `--help`, `./... --help`, `-h`, `-help`: all exit 0, identical help |
-| 7 | Concurrent session's stale fixtures completed — intent preserved (still unresolvable via interface-var returns) | `testdata/src/unresolvable`, `testdata/src/unresolvedstrict`, `internal/driver` `unresolvedModule` |
-| 8 | New `testdata/src/ifacebody` fixture pins the new provider-body resolution (concrete return through interface signature → HW-4 + HW-7) | registered in `TestGoldenCorpus`; green |
-| 9 | Flag-surface contract tests (12 names, defaults, help presence, extra-flag rejection, `--output` help lists all supported formats) | `cmd/samber-linter/flags_test.go`, green |
-| 10 | Baseline default moved from tag to code fallback (`"" → driver.DefaultBaselinePath`), constant pinned by test | `runLinter` + `TestBaselineFallsBackToDefault` |
-| 11 | Full test suite green (incl. plugin custom-build integration, 29–154 s) | `go test ./...`: ok cmd / driver / healthaudit / healthwash / sdk / plugin |
-| 12 | `nix build` green; vendorHash refreshed with comment; ldflags version stamp works | `result/bin/samber-linter --version` → `devel+17c6715`; commit 52f4543 |
-| 13 | `nix flake check`: **all checks passed** (validated commit 17c6715 = includes new lint config) | background job 01C output |
-| 14 | Hermetic lint 0 issues; new files lint-clean | `nix run .#lint` → `0 issues.` |
-| 15 | `.golangci.yml`: tagalign `order: [flag, help, default]` pinned — v2.14.0's fixer and checker disagreed on tag order without it | lint went 12 tagalign findings → 0 |
-| 16 | Self-dogfood clean; baseline 0 registered intact (cmdguard's internal `ProvideValue` lives in dependency code, invisible to `./...`) | `go run ./cmd/samber-linter ./...` → `no health-washing found`, exit 0 |
-| 17 | AGENTS.md updated: adoption decision + traps (ArbitraryArgs requirement, fang version injection, tagalign pin, exit-code delta), false-negative classes rewritten for provider-body resolution, golangci version-drift alert | AGENTS.md (staged) |
-| 18 | Worktrees (`/tmp/sl-clean`, `/tmp/sl-pre`) removed; `git worktree list` clean | session end state |
+| #  | Item                                                                                                                                                                                                                         | Evidence                                                                                                                                                                                  |
+| -- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1  | cmdguard v4.0.2 adopted as CLI framework; stdlib `flag` removed                                                                                                                                                              | `cmd/samber-linter/main.go` (rewrite); `go.mod` adds cmdguard/fang/cobra                                                                                                                  |
+| 2  | Byte-parity old-vs-new binary across flag matrix                                                                                                                                                                             | diff loop over `./...`, `--json`, `--sarif`, `--output table`, `--check`, `--strict`, `--disable`, `--min-confidence`, `--coverage-min`: 0 diffs (old binary built from 365bb4a worktree) |
+| 3  | Tri-state exit contract preserved (0/1/2), `--check` advisory, `--output` validation keeps exit 2                                                                                                                            | smoke: findings→1, check→0, `--output bogus`→2 with styled actionable error                                                                                                               |
+| 4  | Driver exits 1/2 are silent (no duplicate fang error); only unreported errors print                                                                                                                                          | findings run prints nothing extra; `reportOnlyUnreportedErrors` handler                                                                                                                   |
+| 5  | `--version` contract preserved (exact string; fang's module-version flag suppressed via `fang.WithoutVersion()`)                                                                                                             | smoke: `v0.3.1-0.20261002085556-…`, exit 0                                                                                                                                                |
+| 6  | Trailing `./... --help` works natively (webphone root cause structurally fixed, wantsHelp workaround superseded)                                                                                                             | smoke `--help`, `./... --help`, `-h`, `-help`: all exit 0, identical help                                                                                                                 |
+| 7  | Concurrent session's stale fixtures completed — intent preserved (still unresolvable via interface-var returns)                                                                                                              | `testdata/src/unresolvable`, `testdata/src/unresolvedstrict`, `internal/driver` `unresolvedModule`                                                                                        |
+| 8  | New `testdata/src/ifacebody` fixture pins the new provider-body resolution (concrete return through interface signature → HW-4 + HW-7)                                                                                       | registered in `TestGoldenCorpus`; green                                                                                                                                                   |
+| 9  | Flag-surface contract tests (12 names, defaults, help presence, extra-flag rejection, `--output` help lists all supported formats)                                                                                           | `cmd/samber-linter/flags_test.go`, green                                                                                                                                                  |
+| 10 | Baseline default moved from tag to code fallback (`"" → driver.DefaultBaselinePath`), constant pinned by test                                                                                                                | `runLinter` + `TestBaselineFallsBackToDefault`                                                                                                                                            |
+| 11 | Full test suite green (incl. plugin custom-build integration, 29–154 s)                                                                                                                                                      | `go test ./...`: ok cmd / driver / healthaudit / healthwash / sdk / plugin                                                                                                                |
+| 12 | `nix build` green; vendorHash refreshed with comment; ldflags version stamp works                                                                                                                                            | `result/bin/samber-linter --version` → `devel+17c6715`; commit 52f4543                                                                                                                    |
+| 13 | `nix flake check`: **all checks passed** (validated commit 17c6715 = includes new lint config)                                                                                                                               | background job 01C output                                                                                                                                                                 |
+| 14 | Hermetic lint 0 issues; new files lint-clean                                                                                                                                                                                 | `nix run .#lint` → `0 issues.`                                                                                                                                                            |
+| 15 | `.golangci.yml`: tagalign `order: [flag, help, default]` pinned — v2.14.0's fixer and checker disagreed on tag order without it                                                                                              | lint went 12 tagalign findings → 0                                                                                                                                                        |
+| 16 | Self-dogfood clean; baseline 0 registered intact (cmdguard's internal `ProvideValue` lives in dependency code, invisible to `./...`)                                                                                         | `go run ./cmd/samber-linter ./...` → `no health-washing found`, exit 0                                                                                                                    |
+| 17 | AGENTS.md updated: adoption decision + traps (ArbitraryArgs requirement, fang version injection, tagalign pin, exit-code delta), false-negative classes rewritten for provider-body resolution, golangci version-drift alert | AGENTS.md (staged)                                                                                                                                                                        |
+| 18 | Worktrees (`/tmp/sl-clean`, `/tmp/sl-pre`) removed; `git worktree list` clean                                                                                                                                                | session end state                                                                                                                                                                         |
 
 ## b) PARTIALLY DONE
 
-| # | Item | State |
-| - | ---- | ----- |
-| 1 | golangci-lint "one version everywhere" | nixpkgs now ships **2.14.0** (local hermetic lint) while CI action + `.custom-gcl.yml` pin **v2.13.2**. Flagged in AGENTS.md as drift alert; deliberately NOT aligned (unrelated-scope rule). 2.14.0 passes this repo's config (verified locally). |
-| 2 | Baseline fallback coverage | the constant is pinned, but no test exercises `runLinter`'s `"" → DefaultBaselinePath` path end-to-end |
-| 3 | README verification | quick-start + exit-code sections verified unaffected; did **not** re-read the full §11 verification ledger for CLI-adjacent claims |
-| 4 | Supply-chain look at the ~60 new indirect deps (cobra, fang, koanf, charmbracelet…) | build-verified public and green; not individually audited |
+| # | Item                                                                                | State                                                                                                                                                                                                                                              |
+| - | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 | golangci-lint "one version everywhere"                                              | nixpkgs now ships **2.14.0** (local hermetic lint) while CI action + `.custom-gcl.yml` pin **v2.13.2**. Flagged in AGENTS.md as drift alert; deliberately NOT aligned (unrelated-scope rule). 2.14.0 passes this repo's config (verified locally). |
+| 2 | Baseline fallback coverage                                                          | the constant is pinned, but no test exercises `runLinter`'s `"" → DefaultBaselinePath` path end-to-end                                                                                                                                             |
+| 3 | README verification                                                                 | quick-start + exit-code sections verified unaffected; did **not** re-read the full §11 verification ledger for CLI-adjacent claims                                                                                                                 |
+| 4 | Supply-chain look at the ~60 new indirect deps (cobra, fang, koanf, charmbracelet…) | build-verified public and green; not individually audited                                                                                                                                                                                          |
 
 ## c) NOT STARTED
 
@@ -90,7 +90,7 @@ never-revert-others'-work rule. AGENTS.md is staged for the daemon.
 1. **Wrote into a file an active second session had just changed.** I read `main.go`
    at 10:29, the other session committed their `wantsHelp` fix at 10:39, and I
    overwrote it at ~10:50. The tool's modified-since-read warning caught it — that is
-   luck, not discipline. I *knew* another session was live (its commits were landing
+   luck, not discipline. I _knew_ another session was live (its commits were landing
    minutes earlier) and still didn't re-read immediately before writing. Their fix is
    superseded and credited, but the collision was real.
 2. **Never read the full diff of the code I was wrapping.** The concurrent session's
@@ -107,7 +107,7 @@ never-revert-others'-work rule. AGENTS.md is staged for the daemon.
    module) vanished mid-session; I noticed the `cd` failure and let the parity loop
    run against the linter's own repo (a no-findings target) instead of rebuilding the
    fixture. Formatter-only diffs since the real parity make the risk tiny, but the
-   *final* binary state was not parity-proven on findings.
+   _final_ binary state was not parity-proven on findings.
 6. **Self-inflicted false red:** running the full suite while hermetic lint was
    still running failed the plugin test with "parallel golangci-lint is running". I
    initially treated it as a suite failure before recognizing my own race.
@@ -143,6 +143,7 @@ never-revert-others'-work rule. AGENTS.md is staged for the daemon.
 ## f) NEXT (up to 50, ordered by impact)
 
 **CI / release (highest leverage)**
+
 1. Decide + execute golangci pin alignment: CI action & `.custom-gcl.yml` → 2.14.0
    (local lint already verified on 2.14.0), or pin nixpkgs back to 2.13.2.
 2. Add a flake drift guard: fail when nixpkgs' golangci-lint ≠ the CI pin (mirror the
@@ -162,76 +163,76 @@ never-revert-others'-work rule. AGENTS.md is staged for the daemon.
 
 **Analyzer / resolver (concurrent session's family)**
 10. Review 365bb4a's `driver.go` +61 lines in full; confirm strict-summary behavior
-    under the new resolver for multi-registration modules.
+under the new resolver for multi-registration modules.
 11. Fixture: diverging returns in a provider body (`if x { return a{}, nil }` →
-    `return b{}, nil`) stay unresolvable (comment promises it; nothing pins it).
+`return b{}, nil`) stay unresolvable (comment promises it; nothing pins it).
 12. Fixture: provider declared in another package stays unresolvable (doctrine
-    comment; nothing pins it).
+comment; nothing pins it).
 13. Check wrapper resolution × provider-body resolution compose (wrapper whose inner
-    `do.*` call has a concrete-returning provider); pin if composable.
+`do.*` call has a concrete-returning provider); pin if composable.
 14. HW-7 cross-package fact × ifacebody interplay (fact exported in B, registration
-    resolved in A) — covered by hw7cross? Verify, pin if not.
+resolved in A) — covered by hw7cross? Verify, pin if not.
 15. Re-survey `samber-do-auditlog` (biggest ecology offender) — resolver change may
-    change its row.
+change its row.
 16. Revisit the 2026-09-20 sweep conclusion "no new HW rule" now that
-    provider-body inspection exists (findings may surface where none did).
+provider-body inspection exists (findings may surface where none did).
 17. Annotate the 2026-09-20 status reports touched by the resolver change (docs-health
-    ANNOTATE mode, inline).
+ANNOTATE mode, inline).
 
 **Testing gaps**
 18. Unit-test `runLinter`'s baseline fallback end-to-end (empty `--baseline` →
-    `driver.DefaultBaselinePath` reaches `driver.Options`).
+`driver.DefaultBaselinePath` reaches `driver.Options`).
 19. Re-run the old-vs-new binary parity on a findings-bearing module for the FINAL
-    binary (post-formatter state).
+binary (post-formatter state).
 20. Add `-h`/`-help` variants to the flag contract tests (manual smoke today only).
 21. One table-driven exit-code contract harness (0/1/2 + unknown-flag 1 + bad
-    `--output` 2) as the single regression gate for the CLI.
+`--output` 2) as the single regression gate for the CLI.
 22. Pin that cobra's auto `completion`/`help` subcommands never appear in dogfood
-    scan results (they register nothing — prove it stays that way).
+scan results (they register nothing — prove it stays that way).
 23. Property test: `dynamicOutputHelp` lists ≡ `driver.SupportedOutputFormatNames()`
-    exactly (today: one-directional substring check).
+exactly (today: one-directional substring check).
 24. cmdguard smoke fixtures in-repo (`testdata/smoke` module with a finding) so CLI
-    regression tests don't depend on /tmp.
+regression tests don't depend on /tmp.
 
 **Upstream / ecosystem (verify-before-filing first)**
 25. File the tagalign fixer/checker tag-order disagreement against golangci-lint
-    (v2.14.0; reproduce: struct with flag/help/default, `run --fix` then `run`).
-26. Document (or file) that `golangci-lint fmt` does not apply *linter* autofixes —
-    `run --fix` does; cost this session several iterations.
+(v2.14.0; reproduce: struct with flag/help/default, `run --fix` then `run`).
+26. Document (or file) that `golangci-lint fmt` does not apply _linter_ autofixes —
+`run --fix` does; cost this session several iterations.
 27. cmdguard: feed back the single-command experience — `RootCommand().RunE` +
-    mandatory `Args = ArbitraryArgs` trap + `fang.WithoutVersion()` for exact
-    `--version` contracts (advances their `Run[T,F]` proposal with real usage).
+mandatory `Args = ArbitraryArgs` trap + `fang.WithoutVersion()` for exact
+`--version` contracts (advances their `Run[T,F]` proposal with real usage).
 28. cmdguard: their pending HW-2 / `HealthCheck` API decision now has this repo as a
-    pinned v4.0.2 consumer — the v4.x-break-vs-v5 decision affects us directly.
+pinned v4.0.2 consumer — the v4.x-break-vs-v5 decision affects us directly.
 29. Webphone follow-up: tell the reporter the trailing `--help` root cause is
-    structurally fixed upstream of their report.
+structurally fixed upstream of their report.
 
 **Docs / knowledge**
 30. Decide whether README §5/§11 should name cmdguard as the CLI framework (it is now
-    behavior-bearing for the contract tool: help rendering, error styling, exits).
+behavior-bearing for the contract tool: help rendering, error styling, exits).
 31. Cross-link the binding-constraint "Type resolution rules" bullet in AGENTS.md to
-    the `ifacebody` fixture (partially done via false-negative section).
+the `ifacebody` fixture (partially done via false-negative section).
 32. Close the 2026-09-10 open questions with the new reality: styled-table default
-    for `--output table` (cmdguard in-tree now), `-o` short alias via tag `short:"o"`.
+for `--output table` (cmdguard in-tree now), `-o` short alias via tag `short:"o"`.
 33. Record in AGENTS.md the LSP-lags-one-edit lesson + "trust binaries over LSP" for
-    lint-visible work.
+lint-visible work.
 
 **Nix / build**
 34. Investigate the `result` symlink in repo root (gitignored? daemon-committable?)
 35. Re-run `nix flake check --all-systems` (aarch64 currently unverified).
 36. Consider `nix run .#fmt` (treefmt) vs `golangci fmt` overlap: golines/tagalign
-    are NOT in treefmt — either add or document the split (today: two formatters,
-    two commands, easy to run the wrong one).
+are NOT in treefmt — either add or document the split (today: two formatters,
+two commands, easy to run the wrong one).
 
 **Process**
 37. Write the two-sessions-one-tree protocol into AGENTS.md (re-read-before-write,
-    family ownership) — today's collision was caught by a tool warning, not policy.
+family ownership) — today's collision was caught by a tool warning, not policy.
 38. Promote the old-vs-new parity loop to a permanent script for future CLI
-    migrations (`scripts/cli-parity.sh <old-bin> <new-bin> <fixture>`).
+migrations (`scripts/cli-parity.sh <old-bin> <new-bin> <fixture>`).
 39. Decide who lands the in-tree dep bumps (charmbracelet indirects, flake.lock) and
-    re-gate.
+re-gate.
 40. Post-release: consumer fleet note that `samber-linter` help/exit semantics changed
-    (only unknown-flag exit 2→1; everything else byte-identical).
+(only unknown-flag exit 2→1; everything else byte-identical).
 
 ## g) QUESTIONS I CANNOT ANSWER MYSELF
 

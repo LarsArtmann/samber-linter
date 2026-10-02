@@ -142,6 +142,36 @@
                 dprint check --config "$TMPDIR/config.json"
                 touch $out
               '';
+
+          # One golangci-lint version everywhere (AGENTS policy): the CI action
+          # pin, the custom-build pin, and the nixpkgs package the hermetic
+          # lint check runs must agree. A golangci binary built with a go
+          # older than the go.mod floor refuses the whole config, so drift
+          # here means "green locally proves nothing about CI lint" (the
+          # 2026-10-02 alert) — fail loudly instead.
+          checks.golangci-version-drift =
+            pkgs.runCommand "samber-linter-golangci-pin-drift"
+              { nixpkgsVersion = pkgs.golangci-lint.version; }
+              ''
+                fail() {
+                  echo "golangci-lint version drift: $1"
+                  echo "Policy: one version everywhere. Move the CI lint pin (.github/workflows/ci.yml), .custom-gcl.yml, and nixpkgs together, then re-run 'nix run .#lint' before pushing."
+                  exit 1
+                }
+
+                pin_gcl=$(sed -n 's/^version:[[:space:]]*\(v[0-9.]\+\)[[:space:]]*$/\1/p' ${inputs.self}/.custom-gcl.yml)
+                [ -n "$pin_gcl" ] || fail "no 'version: vX.Y.Z' line found in .custom-gcl.yml"
+
+                pin_ci=$(sed -n 's/^[[:space:]]*version:[[:space:]]*\(v[0-9.]\+\)[[:space:]]*$/\1/p' ${inputs.self}/.github/workflows/ci.yml)
+                [ -n "$pin_ci" ] || fail "no golangci-lint 'version: vX.Y.Z' pin found in .github/workflows/ci.yml"
+
+                [ "$pin_gcl" = "$pin_ci" ] || fail "CI pin $pin_ci != .custom-gcl.yml pin $pin_gcl"
+
+                [ "v$nixpkgsVersion" = "$pin_gcl" ] || fail "nixpkgs golangci-lint $nixpkgsVersion != pin $pin_gcl (hermetic lint would verify a different binary than CI runs)"
+
+                echo "golangci-lint pins aligned: $pin_gcl (nixpkgs $nixpkgsVersion)"
+                touch $out
+              '';
         };
     };
 }
