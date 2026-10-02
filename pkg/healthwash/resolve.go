@@ -36,13 +36,14 @@ func findDoPackage(pass *analysis.Pass) *types.Package {
 }
 
 func loadInterfaces(doPkg *types.Package) ifaces {
-	i := ifaces{}
-	i.healthchecker = lookupInterface(doPkg, "Healthchecker")
-	i.healthcheckerCtx = lookupInterface(doPkg, "HealthcheckerWithContext")
-	i.shutdowner = lookupInterface(doPkg, "Shutdowner")
-	i.shutdownerErr = lookupInterface(doPkg, "ShutdownerWithError")
-	i.shutdownerCtx = lookupInterface(doPkg, "ShutdownerWithContext")
-	i.shutdownerCtxErr = lookupInterface(doPkg, "ShutdownerWithContextAndError")
+	i := ifaces{
+		healthchecker:    lookupInterface(doPkg, "Healthchecker"),
+		healthcheckerCtx: lookupInterface(doPkg, "HealthcheckerWithContext"),
+		shutdowner:       lookupInterface(doPkg, "Shutdowner"),
+		shutdownerErr:    lookupInterface(doPkg, "ShutdownerWithError"),
+		shutdownerCtx:    lookupInterface(doPkg, "ShutdownerWithContext"),
+		shutdownerCtxErr: lookupInterface(doPkg, "ShutdownerWithContextAndError"),
+	}
 
 	return i
 }
