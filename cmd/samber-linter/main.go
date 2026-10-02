@@ -163,7 +163,7 @@ func buildDriverOptions(cfg *linterFlags, args []string, toolVersion string) (dr
 
 	outputFormat, err := driver.ParseOutputFormat(cfg.OutputFormat)
 	if err != nil {
-		return driver.Options{}, err
+		return driver.Options{}, fmt.Errorf("parsing --output %q: %w", cfg.OutputFormat, err)
 	}
 
 	baselinePath := cfg.BaselinePath

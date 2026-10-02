@@ -36,7 +36,7 @@ type capturedStd struct {
 func captureStd(t *testing.T) *capturedStd {
 	t.Helper()
 
-	cap := &capturedStd{oldOut: os.Stdout, oldErr: os.Stderr}
+	captured := &capturedStd{oldOut: os.Stdout, oldErr: os.Stderr}
 
 	rOut, wOut, err := os.Pipe()
 	if err != nil {
@@ -48,37 +48,37 @@ func captureStd(t *testing.T) *capturedStd {
 		t.Fatalf("stderr pipe: %v", err)
 	}
 
-	cap.wOut, cap.wErr = wOut, wErr
+	captured.wOut, captured.wErr = wOut, wErr
 	os.Stdout, os.Stderr = wOut, wErr
 
-	cap.doneOut = make(chan struct{})
+	captured.doneOut = make(chan struct{})
 	go func() {
-		_, _ = io.Copy(&cap.outBuf, rOut)
-		close(cap.doneOut)
+		_, _ = io.Copy(&captured.outBuf, rOut)
+		close(captured.doneOut)
 	}()
 
-	cap.doneErr = make(chan struct{})
+	captured.doneErr = make(chan struct{})
 	go func() {
-		_, _ = io.Copy(&cap.errBuf, rErr)
-		close(cap.doneErr)
+		_, _ = io.Copy(&captured.errBuf, rErr)
+		close(captured.doneErr)
 	}()
 
-	t.Cleanup(cap.release)
+	t.Cleanup(captured.release)
 
-	return cap
+	return captured
 }
 
-func (cap *capturedStd) release() {
-	if cap.wOut == nil {
+func (captured *capturedStd) release() {
+	if captured.wOut == nil {
 		return
 	}
 
-	os.Stdout, os.Stderr = cap.oldOut, cap.oldErr
-	_ = cap.wOut.Close()
-	_ = cap.wErr.Close()
-	<-cap.doneOut
-	<-cap.doneErr
-	cap.wOut = nil
+	os.Stdout, os.Stderr = captured.oldOut, captured.oldErr
+	_ = captured.wOut.Close()
+	_ = captured.wErr.Close()
+	<-captured.doneOut
+	<-captured.doneErr
+	captured.wOut = nil
 }
 
 // must fails the test on the first error; scaffolding helpers use it because
@@ -176,8 +176,10 @@ func writeBrokenModule(t *testing.T) string {
 	return dir
 }
 
-func TestExitCodeContract(t *testing.T) {
+func TestExitCodeContract(t *testing.T) { //nolint:paralleltest // fd capture and t.Chdir require sequential execution
 	cleanModule := func(t *testing.T) string {
+		t.Helper()
+
 		return writePlainModule(t, "package main\n\nfunc main() {}\n")
 	}
 
@@ -193,7 +195,13 @@ func TestExitCodeContract(t *testing.T) {
 		{name: "help long", args: []string{"--help"}, module: cleanModule, wantCode: 0, wantMsg: "samber-linter"},
 		{name: "help short", args: []string{"-h"}, module: cleanModule, wantCode: 0, wantMsg: "samber-linter"},
 		{name: "help single-dash-long", args: []string{"-help"}, module: cleanModule, wantCode: 0, wantMsg: "samber-linter"},
-		{name: "help trailing after pattern", args: []string{"./...", "--help"}, module: cleanModule, wantCode: 0, wantMsg: "samber-linter"},
+		{
+			name:     "help trailing after pattern",
+			args:     []string{"./...", "--help"},
+			module:   cleanModule,
+			wantCode: 0,
+			wantMsg:  "samber-linter",
+		},
 		// Cobra auto-adds help/completion subcommands; they must stay
 		// invocable (and never reach the linter) — ArbitraryArgs keeps them
 		// from swallowing positional package patterns.
@@ -210,14 +218,21 @@ func TestExitCodeContract(t *testing.T) {
 		{name: "findings exit 1", args: []string{"./..."}, module: writeConsumerModule, wantCode: 1, wantMsg: "HW-1"},
 		{name: "check forces 0 on findings", args: []string{"--check", "./..."}, module: writeConsumerModule, wantCode: 0},
 		{name: "load failure exits 2", args: []string{"./..."}, module: writeBrokenModule, wantCode: 2},
-		{name: "check forces 0 on load failure", args: []string{"--check", "./..."}, module: writeBrokenModule, wantCode: 0},
+		{
+			name:     "check forces 0 on load failure",
+			args:     []string{"--check", "./..."},
+			module:   writeBrokenModule,
+			wantCode: 0,
+		},
 	}
 
+	//nolint:paralleltest // fd capture and t.Chdir require sequential execution
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Chdir(tc.module(t))
 
 			version = "test-version"
+
 			t.Cleanup(func() { version = "" })
 
 			captured := captureStd(t)

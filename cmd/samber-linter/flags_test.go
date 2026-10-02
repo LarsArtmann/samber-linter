@@ -104,6 +104,7 @@ func TestOutputHelpListsSupportedFormats(t *testing.T) {
 
 	open := strings.Index(outputFlag.Usage, "(")
 	closeParen := strings.Index(outputFlag.Usage, ")")
+
 	if open < 0 || closeParen < open {
 		t.Fatalf("--output usage %q has no (...) format list to verify", outputFlag.Usage)
 	}
