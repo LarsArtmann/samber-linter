@@ -164,6 +164,7 @@ func TestUncoveredList(t *testing.T) {
 	// Sorted by service name: Handler before Store.
 	handlerIdx := strings.Index(output, "    *example.com/app.Handler — ")
 	storeIdx := strings.Index(output, "    *example.com/app.Store — ")
+
 	if handlerIdx < 0 || storeIdx < 0 || handlerIdx > storeIdx {
 		t.Errorf("uncovered rows not sorted by name:\n%s", output)
 	}

@@ -706,44 +706,15 @@ func reportUncovered(out io.Writer, records []healthwash.ServiceRecord, human bo
 		return
 	}
 
-	uniq := map[string]healthwash.ServiceRecord{}
-
-	for _, record := range records {
-		if !record.AffectsHW6() {
-			continue
-		}
-
-		if prev, ok := uniq[record.Name]; !ok ||
-			(record.Kind != healthwash.KindTransient && prev.ImplementsCheck != record.ImplementsCheck) {
-			uniq[record.Name] = record
-		}
-	}
-
-	registered := len(uniq)
-	if registered == 0 {
-		return
-	}
-
-	uncovered := make([]healthwash.ServiceRecord, 0, registered)
-
-	for _, record := range uniq {
-		if record.ImplementsCheck && record.Kind != healthwash.KindTransient {
-			continue
-		}
-
-		uncovered = append(uncovered, record)
-	}
+	all := uncoveredRecordsAll(records)
+	uncovered := uncheckedRecords(all)
 
 	if len(uncovered) == 0 {
 		return
 	}
 
-	slices.SortFunc(uncovered, func(a, b healthwash.ServiceRecord) int {
-		return strings.Compare(a.Name, b.Name)
-	})
-
 	fmt.Fprintf(out, "uncovered (%d of %d): the stored instance implements no Healthchecker variant\n",
-		len(uncovered), registered)
+		len(uncovered), len(all))
 
 	for _, record := range uncovered {
 		pos := record.Pos
@@ -753,6 +724,52 @@ func reportUncovered(out io.Writer, records []healthwash.ServiceRecord, human bo
 
 		fmt.Fprintf(out, "    %s — %s (%s)\n", record.Name, pos, record.Kind)
 	}
+}
+
+// uncoveredRecordsAll dedupes non-alias records by service name with the
+// same keep rule the coverage math uses (reportCoverage's uniq map).
+func uncoveredRecordsAll(records []healthwash.ServiceRecord) []healthwash.ServiceRecord {
+	uniq := map[string]healthwash.ServiceRecord{}
+
+	for _, record := range records {
+		if !record.AffectsHW6() {
+			continue // alias rows delegate to their target; never counted
+		}
+
+		if prev, ok := uniq[record.Name]; !ok ||
+			(record.Kind != healthwash.KindTransient && prev.ImplementsCheck != record.ImplementsCheck) {
+			uniq[record.Name] = record
+		}
+	}
+
+	out := make([]healthwash.ServiceRecord, 0, len(uniq))
+	for _, record := range uniq {
+		out = append(out, record)
+	}
+
+	return out
+}
+
+// uncheckedRecords filters the deduped set to registrations the sweep never
+// checks — no Healthchecker variant on the stored instance, or transients
+// (the sweep never dispatches to them even when one implements a check) —
+// sorted by service name.
+func uncheckedRecords(all []healthwash.ServiceRecord) []healthwash.ServiceRecord {
+	uncovered := make([]healthwash.ServiceRecord, 0, len(all))
+
+	for _, record := range all {
+		if record.ImplementsCheck && record.Kind != healthwash.KindTransient {
+			continue
+		}
+
+		uncovered = append(uncovered, record)
+	}
+
+	slices.SortFunc(uncovered, func(a, b healthwash.ServiceRecord) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+
+	return uncovered
 }
 
 // writeBaseline persists the current coverage as the ratchet floor.

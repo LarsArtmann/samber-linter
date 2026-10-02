@@ -151,11 +151,11 @@ func registrationProvider(fnName string, call *ast.CallExpr, substitute ast.Expr
 // alike, divergence (multiple implementations) stays unresolvable.
 func resolveRegistrationTypes(
 	pass *analysis.Pass, kind ServiceKind, arg ast.Expr,
-) (declared, instance types.Type) {
+) (types.Type, types.Type) {
 	if kind == KindEager {
-		declared = pass.TypesInfo.TypeOf(arg)
+		eager := pass.TypesInfo.TypeOf(arg)
 
-		return declared, declared
+		return eager, eager
 	}
 
 	pt := pass.TypesInfo.TypeOf(arg)
@@ -168,7 +168,7 @@ func resolveRegistrationTypes(
 		return nil, nil
 	}
 
-	declared = sig.Results().At(0).Type()
+	declared := sig.Results().At(0).Type()
 	if isConcrete(declared) {
 		return declared, declared
 	}
