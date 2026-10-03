@@ -29,7 +29,7 @@
         # Refreshed 2026-10-02 (got-hash from the clean-HEAD FOD): the
         # cmdguard/cobra/fang CLI migration added module deps, invalidating
         # the pre-migration hash.
-        vendorHash = "sha256-lp4uWTm6wyxC5MYfe5KGwzfSX7Ebh8pz4doQV2aqO6A=";
+        vendorHash = "sha256-9w7D9nyuitluLTq3a5gW+T3BEYwfobB3HdxHu92fBdE=";
         description = "Static analyzer that detects health-washing in samber/do v2 dependency-injection containers";
         subPackages = [ "./cmd/samber-linter" ];
 
