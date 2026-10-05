@@ -9,11 +9,11 @@ require (
 	github.com/larsartmann/go-atomic-write v0.6.0
 	github.com/larsartmann/go-finding v1.14.0
 	github.com/larsartmann/go-linter-sdk v0.3.1
-	github.com/larsartmann/go-output v0.38.3
-	github.com/larsartmann/go-output/delimited v0.38.3
-	github.com/larsartmann/go-output/markdown v0.38.3
-	github.com/larsartmann/go-output/markup v0.38.3
-	github.com/larsartmann/go-output/table v0.38.3
+	github.com/larsartmann/go-output v0.38.4
+	github.com/larsartmann/go-output/delimited v0.38.4
+	github.com/larsartmann/go-output/markdown v0.38.4
+	github.com/larsartmann/go-output/markup v0.38.4
+	github.com/larsartmann/go-output/table v0.38.4
 	github.com/samber/do/v2 v2.1.0
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/mod v0.41.0
@@ -47,14 +47,14 @@ require (
 	github.com/larsartmann/go-branded-id v0.7.0 // indirect
 	github.com/larsartmann/go-error-family v0.11.0 // indirect
 	github.com/larsartmann/go-ndjson v0.0.1 // indirect
-	github.com/larsartmann/go-output/d2 v0.38.3 // indirect
+	github.com/larsartmann/go-output/d2 v0.38.4 // indirect
 	github.com/larsartmann/go-output/daghtml v0.38.3 // indirect
 	github.com/larsartmann/go-output/escape v0.38.3 // indirect
-	github.com/larsartmann/go-output/graph v0.38.3 // indirect
-	github.com/larsartmann/go-output/plantuml v0.38.3 // indirect
-	github.com/larsartmann/go-output/serialization v0.38.3 // indirect
-	github.com/larsartmann/go-output/tree v0.38.3 // indirect
-	github.com/larsartmann/samber-do-auditlog v0.10.0 // indirect
+	github.com/larsartmann/go-output/graph v0.38.4 // indirect
+	github.com/larsartmann/go-output/plantuml v0.38.4 // indirect
+	github.com/larsartmann/go-output/serialization v0.38.4 // indirect
+	github.com/larsartmann/go-output/tree v0.38.4 // indirect
+	github.com/larsartmann/samber-do-auditlog v0.11.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.1 // indirect
 	github.com/mattn/go-runewidth v0.0.30 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect

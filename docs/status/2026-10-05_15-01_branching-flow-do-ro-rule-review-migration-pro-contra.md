@@ -10,7 +10,7 @@ commits, repo tree clean. Working dir: samber-linter; explored:
    and `roleak` (RO-1..RO-5, samber/ro): findings-UX enrichment ideas
    (root-cause grouping, consistency outliers, type-in-suggestion), precision
    machinery (accessor suppression, structural provider-closure recognition),
-   and confirmation that DO-9 *delegates* to our `healthwash.New()`.
+   and confirmation that DO-9 _delegates_ to our `healthwash.New()`.
 2. **PRO/CONTRA on migrating both rule families into samber-linter**, with the
    decisive finding: branching-flow **is** module `github.com/larsartmann/go-design-smells`
    and **depends on samber-linter v0.4.0** (`go.mod:25`; `doanalyzerv2/analyzer_healthwash.go:34`
@@ -42,7 +42,7 @@ commits, repo tree clean. Working dir: samber-linter; explored:
 - Checked samber-linter's own state for comparison (`pkg/healthwash/rules.go`
   eval-site precedence, file listing; grep confirmed no Suggestion field in healthwash).
 - Delivered both answers with file:line citations and a concrete recommendation
-  + offered next actions (prototype root-cause grouping; price the port).
+  - offered next actions (prototype root-cause grouping; price the port).
 
 ## b) PARTIALLY DONE
 
@@ -88,7 +88,7 @@ Nothing destructive — the session was read-only and the tree is clean
   the strongest claim from "code exists" to "verified green".
 - **Always grep for prior decisions** in the other repo (docs/, TODO_LIST,
   AGENTS.md, docs/status/) before issuing a recommendation — my pro/contra
-   could duplicate or contradict an existing ADR.
+  could duplicate or contradict an existing ADR.
 - **Verify the data model before proposing UX features** (go-finding.Finding
   fields) — otherwise the proposal may be unrepresentable as described.
 - **Memory discipline violated**: durable discoveries (cycle blocker, consumer
@@ -102,6 +102,7 @@ Nothing destructive — the session was read-only and the tree is clean
 ## f) NEXT: up to 50 things (ranked, session-scoped)
 
 **Decision & scoping**
+
 1. Decide Q1 below: umbrella (port DO-1..DO-8) vs stay health-washing-only. Everything else keys off this.
 2. Search branching-flow docs/TODO_LIST/AGENTS.md + docs/status/ for a prior migration ADR or the Oct-5 session report.
 3. If porting: full inventory of what moves (8 DO rules, 11 test files, 3 cmd column specs, enum codegen, severity maps).
