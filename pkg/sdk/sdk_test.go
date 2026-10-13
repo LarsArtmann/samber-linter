@@ -93,6 +93,7 @@ func hw7CrossModule(t *testing.T) string {
 
 	app := filepath.Join(dir, "app")
 	must(t, os.MkdirAll(filepath.Join(app, "lib"), 0o755))
+
 	goMod := "module example.com/app\n\ngo 1.26\n\n" +
 		"require github.com/samber/do/v2 v2.1.0\n\n" +
 		"replace github.com/samber/do/v2 => ../dostub\n"
@@ -199,7 +200,11 @@ func TestAnalyze_HW7CrossPackage(t *testing.T) {
 	}
 
 	if len(hw7) != 1 {
-		t.Fatalf("HW-7 findings = %d, want 1 (declared in lib, registered in main); all rules: %v", len(hw7), rules(findings))
+		t.Fatalf(
+			"HW-7 findings = %d, want 1 (declared in lib, registered in main); all rules: %v",
+			len(hw7),
+			rules(findings),
+		)
 	}
 
 	if hw7[0].Severity != finding.SeverityWarning {
