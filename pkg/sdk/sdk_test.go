@@ -10,13 +10,10 @@ import (
 	"github.com/larsartmann/samber-linter/pkg/sdk"
 )
 
-// e2eModule writes a self-contained module in dir: one HW-1 site (Shutdowner
-// without Healthchecker), one honest service, one clean handler, and a local
-// samber/do v2 stub (via replace) so loading works offline.
-func e2eModule(t *testing.T) string {
+// writeDoStub materializes the offline samber/do v2 stub (via replace) so
+// loading works without the module proxy.
+func writeDoStub(t *testing.T, dir string) {
 	t.Helper()
-
-	dir := t.TempDir()
 
 	stub := filepath.Join(dir, "dostub")
 	must(t, os.MkdirAll(stub, 0o755))
@@ -25,6 +22,16 @@ func e2eModule(t *testing.T) string {
 	src, err := os.ReadFile(filepath.Join("..", "..", "testdata", "src", "github.com", "samber", "do", "v2", "do.go"))
 	must(t, err)
 	must(t, os.WriteFile(filepath.Join(stub, "do.go"), src, 0o644))
+}
+
+// e2eModule writes a self-contained module in dir: one HW-1 site (Shutdowner
+// without Healthchecker), one honest service, one clean handler, and a local
+// samber/do v2 stub (via replace) so loading works offline.
+func e2eModule(t *testing.T) string {
+	t.Helper()
+
+	dir := t.TempDir()
+	writeDoStub(t, dir)
 
 	app := filepath.Join(dir, "app")
 	must(t, os.MkdirAll(app, 0o755))
@@ -70,6 +77,53 @@ func main() {
 }
 `
 	must(t, os.WriteFile(filepath.Join(app, "main.go"), []byte(mainGo), 0o644))
+
+	return app
+}
+
+// hw7CrossModule writes a two-package module: lib declares the services,
+// main registers them. HW-7's evidence (a `return nil` check body) lives in
+// lib and must cross the package boundary as an object fact — the invariant
+// the driver's two-sweep exists to guarantee.
+func hw7CrossModule(t *testing.T) string {
+	t.Helper()
+
+	dir := t.TempDir()
+	writeDoStub(t, dir)
+
+	app := filepath.Join(dir, "app")
+	must(t, os.MkdirAll(filepath.Join(app, "lib"), 0o755))
+	goMod := "module example.com/app\n\ngo 1.26\n\n" +
+		"require github.com/samber/do/v2 v2.1.0\n\n" +
+		"replace github.com/samber/do/v2 => ../dostub\n"
+	must(t, os.WriteFile(filepath.Join(app, "go.mod"), []byte(goMod), 0o644))
+	must(t, os.WriteFile(filepath.Join(app, "lib", "lib.go"), []byte(`package lib
+
+import "context"
+
+type ForeignNil struct{}
+
+func (f *ForeignNil) HealthCheck(context.Context) error { return nil }
+
+type ForeignReal struct{}
+
+func (f *ForeignReal) HealthCheck(context.Context) error { return f.probe() }
+
+func (f *ForeignReal) probe() error { return nil }
+`), 0o644))
+	must(t, os.WriteFile(filepath.Join(app, "main.go"), []byte(`package main
+
+import (
+	"example.com/app/lib"
+
+	do "github.com/samber/do/v2"
+)
+
+func main() {
+	do.ProvideValue(nil, &lib.ForeignNil{})  // HW-7, evidence in another package
+	do.ProvideValue(nil, &lib.ForeignReal{}) // clean
+}
+`), 0o644))
 
 	return app
 }
@@ -123,6 +177,33 @@ func TestAnalyze_CleanModuleReturnsNoFindings(t *testing.T) {
 		if f.Rule != "HW-1" {
 			t.Errorf("unexpected finding %q on the HW-1-only fixture: %s", f.Rule, f.Message)
 		}
+	}
+}
+
+func TestAnalyze_HW7CrossPackage(t *testing.T) {
+	t.Parallel()
+
+	app := hw7CrossModule(t)
+
+	findings, err := sdk.Analyze(context.Background(), app)
+	if err != nil {
+		t.Fatalf("Analyze returned error: %v", err)
+	}
+
+	var hw7 []finding.Finding
+
+	for _, f := range findings {
+		if f.Rule == "HW-7" {
+			hw7 = append(hw7, f)
+		}
+	}
+
+	if len(hw7) != 1 {
+		t.Fatalf("HW-7 findings = %d, want 1 (declared in lib, registered in main); all rules: %v", len(hw7), rules(findings))
+	}
+
+	if hw7[0].Severity != finding.SeverityWarning {
+		t.Errorf("HW-7 severity = %q, want %q", hw7[0].Severity, finding.SeverityWarning)
 	}
 }
 
