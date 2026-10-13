@@ -296,6 +296,11 @@ Non-obvious, easy to break:
   (hermetic), with a drift guard that fails when dprint.json references a
   plugin version the flake does not pin — bump both together. Untracked
   files are invisible to that check (flake source = git-tracked files only).
+  `nix fmt` runs treefmt ONLY: markdown/json/yaml edits are NOT covered by
+  it — run dprint (or the check) for those (2026-10-13 trap: session edited
+  markdown, ran nix fmt, assumed clean; the gate was also silently broken —
+  it scanned only its own sandbox until the 2026-10-13 fix, so its green
+  had meant nothing; SECURITY.md drift survived it for months).
 - `scripts/ecology-scan.sh [root]` surveys all local samber/do v2 consumers:
   pseudonymous output (`p-` + 4 hex of sha256(abs path), matched against
   `~/backups/ecology/keyfile.json` — never commit real names), ranked by
