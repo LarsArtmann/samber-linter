@@ -50,7 +50,7 @@ claims carry a verification ledger (§11) with file:line pins into
 
 A static analyzer that detects **health-washing** in `samber/do` v2 DI
 containers: services that render green `pass` on health dashboards but cannot
-actually fail. Analyzer package name: `healthwash`. Rule IDs: `HW-1` … `HW-6`
+actually fail. Analyzer package name: `healthwash`. Rule IDs: `HW-1` … `HW-8`
 (README §3 has the full rule table with severities).
 
 ## Binding implementation constraints (easy to get wrong)
