@@ -138,6 +138,10 @@
 
                 jq '.plugins = $ARGS.positional' ${inputs.self}/dprint.json --args $pluginPaths > config.json
                 export HOME=$TMPDIR
+                # dprint scans files relative to the config's directory ($TMPDIR),
+                # so its own plugin cache under $HOME/.cache lands in scope and the
+                # check flags dprint's cache metadata instead of the repo.
+                export DPRINT_CACHE_DIR="$(mktemp -d)"
                 cd ${inputs.self}
                 dprint check --config "$TMPDIR/config.json"
                 touch $out
