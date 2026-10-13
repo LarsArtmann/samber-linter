@@ -138,12 +138,18 @@
 
                 jq '.plugins = $ARGS.positional' ${inputs.self}/dprint.json --args $pluginPaths > config.json
                 export HOME=$TMPDIR
-                # dprint scans files relative to the config's directory ($TMPDIR),
-                # so its own plugin cache under $HOME/.cache lands in scope and the
-                # check flags dprint's cache metadata instead of the repo.
-                export DPRINT_CACHE_DIR="$(mktemp -d)"
-                cd ${inputs.self}
-                dprint check --config "$TMPDIR/config.json"
+                # dprint scans the CONFIG's directory. The rewritten config must
+                # live inside a copy of the source or the check validates dprint's
+                # own plugin cache and never the repo (ghost gate, fixed
+                # 2026-10-13 — it had been "green" for months while checking
+                # nothing). The dprint cache must stay outside that copy or its
+                # metadata gets flagged instead.
+                cp -r ${inputs.self}/. "$NIX_BUILD_TOP/src"
+                chmod -R u+w "$NIX_BUILD_TOP/src"
+                jq '.plugins = $ARGS.positional' "$NIX_BUILD_TOP/src/dprint.json" --args $pluginPaths > "$NIX_BUILD_TOP/src/.dprint-config.json"
+                export DPRINT_CACHE_DIR="$NIX_BUILD_TOP/dprint-cache"
+                cd "$NIX_BUILD_TOP/src"
+                dprint check --config .dprint-config.json
                 touch $out
               '';
 
