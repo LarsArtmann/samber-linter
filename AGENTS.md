@@ -152,6 +152,16 @@ These come straight from the spec; violating any of them invalidates the analyze
   two-package `hw7cross` fixture (both packages named in ONE Run call — the
   syntax for fact expectations is `ObjectName:"pattern"`, NOT `fact:`).
   Still invisible: bodies in modules outside the scan set.
+- **pkg/sdk is the in-process surface for BuildFlow** (`~/projects/BuildFlow`
+  tools/providers/samber_linter.go runs `sdk.Analyze` per Go module; its
+  flake input tracks `github:LarsArtmann/samber-linter/master`):
+  `sdk.Analyze` wraps `driver.Analyze`, so it inherits the two-sweep
+  factStore — cross-package HW-7 reaches BuildFlow's provider unchanged.
+  Pinned by `TestAnalyze_HW7CrossPackage` in pkg/sdk (discrimination proven:
+  a sweep-2 per-package factStore mutant fails it AND driver's
+  `TestHW7CrossPackage`). HW-6 baseline/coverage gates stay CLI-only by
+  design. NilBodyFact is deliberately NOT exported through pkg/sdk — facts
+  are analysis-internal; consumers get findings.
 - **The HW-6 gates compose, never short-circuit**: `--coverage-min` is an
   absolute floor AND a baseline file that exists is always validated and
   enforced as a ratchet — even when `--coverage-min` is also passed. The
