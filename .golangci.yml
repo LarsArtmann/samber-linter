@@ -1,7 +1,7 @@
 version: "2"
 run:
   timeout: 5m
-  go: 1.26.7
+  go: "1.27"
   build-tags:
     - goexperiment.arenas
     - goexperiment.goroutineleakprofile
@@ -68,7 +68,6 @@ linters:
     - intrange
     - iotamixing
     - ireturn
-    - lll
     - loggercheck
     - maintidx
     - makezero
@@ -134,9 +133,17 @@ linters:
     ginkgolinter:
       forbid-focus-container: true
       forbid-spec-pollution: true
+    gocognit:
+      min-complexity: 25
+    goconst:
+      ignore-tests: true
+      min-len: 4
+      min-occurrences: 5
     gocritic:
       disabled-checks:
         - ifElseChain
+    gocyclo:
+      min-complexity: 20
     gomoddirectives:
       replace-local: true
     gosec:
@@ -158,6 +165,8 @@ linters:
         - "1"
         - "2"
         - "100"
+    nestif:
+      min-complexity: 6
     revive:
       rules:
         - disabled: true
@@ -205,7 +214,7 @@ linters:
     rules:
       - path: _test\.go
         linters:
-          - exhaustruct
+          - exhaustruct_v5
           - testpackage
           - gochecknoglobals
           - funlen
@@ -241,5 +250,5 @@ formatters:
     paths:
       - _templ\.go$
 issues:
-  max-issues-per-linter: 50
-  max-same-issues: 10
+  max-issues-per-linter: 0
+  max-same-issues: 0
