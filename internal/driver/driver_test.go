@@ -1148,9 +1148,9 @@ func TestCheckForcesZeroOnLoadFailure(t *testing.T) {
 // the test saw exit 0 "no health-washing found" (caught by the BuildFlow
 // gate, 2026-10-31). t.Setenv pins GOWORK to the temp workspace and
 // auto-restores it; sequential tests finish before the parallel batch
-// resumes, so the pin cannot race sibling tests.
-//
-//nolint:paralleltest // sequential by design: t.Setenv pins GOWORK for the subprocess go list
+// resumes, so the pin cannot race sibling tests. (t.Setenv in the body also
+// satisfies the paralleltest linter, so no nolint is needed — an unused one
+// would trip nolintlint.)
 func TestGoWorkMultiModule(t *testing.T) {
 	dir := t.TempDir()
 
