@@ -1142,14 +1142,14 @@ func TestCheckForcesZeroOnLoadFailure(t *testing.T) {
 // local samber/do stub module (the shape real consumers like go.work-based
 // monorepos present) must load and analyze across module boundaries.
 //
-// Deliberately NOT parallel: it pins GOWORK to the temp workspace for the
-// duration of the run, because ambient GOWORK=off (exported by this repo's
+// Deliberately NOT parallel: ambient GOWORK=off (exported by this repo's
 // devshell and by CI environments) leaks into go list and silently disables
-// workspace mode — the analyzer then finds nothing and the test sees
-// exit 0 "no health-washing found" (caught by the BuildFlow gate, 2026-10-31).
-// Sequential tests run to completion before the parallel batch resumes, so
-// the env mutation is race-free.
-func TestGoWorkMultiModule(t *testing.T) {
+// workspace mode for the temp go.work — the analyzer then finds nothing and
+// the test saw exit 0 "no health-washing found" (caught by the BuildFlow
+// gate, 2026-10-31). t.Setenv pins GOWORK to the temp workspace and
+// auto-restores it; sequential tests finish before the parallel batch
+// resumes, so the pin cannot race sibling tests.
+func TestGoWorkMultiModule(t *testing.T) { //nolint:paralleltest // sequential by design: GOWORK pin below
 	dir := t.TempDir()
 
 	stub := filepath.Join(dir, "dostub")
@@ -1186,15 +1186,7 @@ func main() {
 	must(t, os.WriteFile(filepath.Join(dir, "go.work"),
 		[]byte("go 1.26\n\nuse (\n\t./app\n\t./dostub\n)\n"), 0o644))
 
-	prevWork, hadWork := os.LookupEnv("GOWORK")
-	must(t, os.Setenv("GOWORK", filepath.Join(dir, "go.work")))
-	defer func() {
-		if hadWork {
-			must(t, os.Setenv("GOWORK", prevWork))
-		} else {
-			must(t, os.Unsetenv("GOWORK"))
-		}
-	}()
+	t.Setenv("GOWORK", filepath.Join(dir, "go.work"))
 
 	var out, errOut bytes.Buffer
 
