@@ -11,7 +11,7 @@ import (
 // registration: a selector whose callee is a known registration function of
 // the do package (package-path match, resilient to dot-imports and renames).
 func doRegistrationCall(pass *analysis.Pass, call *ast.CallExpr) (string, ServiceKind, bool) {
-	sel, isSel := call.Fun.(*ast.SelectorExpr)
+	sel, isSel := unwrapInstantiation(call.Fun).(*ast.SelectorExpr)
 	if !isSel {
 		return "", "", false
 	}
@@ -27,6 +27,20 @@ func doRegistrationCall(pass *analysis.Pass, call *ast.CallExpr) (string, Servic
 	}
 
 	return fn.Name(), kind, true
+}
+
+// unwrapInstantiation strips explicit generic instantiation (f[T], f[T1,
+// T2]) from a callee expression so instantiated registration calls resolve
+// to the same selector as inferred ones.
+func unwrapInstantiation(fun ast.Expr) ast.Expr {
+	switch candidate := fun.(type) {
+	case *ast.IndexExpr:
+		return unwrapInstantiation(candidate.X)
+	case *ast.IndexListExpr:
+		return unwrapInstantiation(candidate.X)
+	}
+
+	return fun
 }
 
 // wrapperInfo describes one resolvable repo-local wrapper: a package-level

@@ -18,7 +18,7 @@ func TestGoldenCorpus(t *testing.T) {
 
 	analysistest.Run(t, testdataDir(), New(),
 		"golden", "hw5value", "hw3transient", "hw4lazy", "hw2bare", "hw7nil",
-		"hw8empty", "hwwrap", "ifacebody",
+		"hw8empty", "hwwrap", "ifacebody", "instcall",
 		"suppress", "suppressspan", "edges", "overr", "unresolvable", "diverging",
 		"hw7cross/lib", "hw7cross/main",
 		"foreignprov/lib", "foreignprov/main",
