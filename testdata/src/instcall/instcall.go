@@ -26,7 +26,9 @@ func (pg) HealthCheck(context.Context) error { return nil } // want HealthCheck:
 func newBackend(i do.Injector) (Backend, error) { return pg{}, nil }
 
 var _ = func() bool {
-	do.Provide[Backend](nil, newBackend) // want `HW-4: .*` `HW-7: .*`
-	do.Provide[Backend](nil, func(_ do.Injector) (Backend, error) { return pg{}, nil }) // want `HW-4: .*` `HW-7: .*`
+	do.Provide[Backend](nil, newBackend)                            // want `HW-4: .*` `HW-7: .*`
+	do.Provide[Backend](nil, func(_ do.Injector) (Backend, error) { // want `HW-4: .*` `HW-7: .*`
+		return pg{}, nil
+	})
 	return true
 }()
