@@ -19,6 +19,13 @@ execution plan is historical:
 
 ## Short-term work queue (bounded, actionable)
 
+- [ ] **Sandbox lint debt: gocognit 30 on `TestBuildDriverOptions`**
+      (`cmd/samber-linter/options_test.go:15`, limit 25; file untouched since
+      2026-10-02). Pre-existing — surfaced by the BuildFlow nix-build gate on
+      2026-10-31 while landing the instantiated-call fix (`50df0ad`); it is
+      the one finding keeping that gate's `lint` check red (historically
+      83% failed runs). Fix by extracting subtests/table cases; do NOT bump
+      the gocognit threshold.
 - [x] **Release the post-v0.2.2 batch: DONE 2026-09-23.** Cut v0.3.0
       (HW-8 + wrapper-indirection detection + single-source rule table) with
       the README §12 release flow.

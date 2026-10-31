@@ -1149,7 +1149,9 @@ func TestCheckForcesZeroOnLoadFailure(t *testing.T) {
 // gate, 2026-10-31). t.Setenv pins GOWORK to the temp workspace and
 // auto-restores it; sequential tests finish before the parallel batch
 // resumes, so the pin cannot race sibling tests.
-func TestGoWorkMultiModule(t *testing.T) { //nolint:paralleltest // sequential by design: GOWORK pin below
+//
+//nolint:paralleltest // sequential by design: t.Setenv pins GOWORK for the subprocess go list
+func TestGoWorkMultiModule(t *testing.T) {
 	dir := t.TempDir()
 
 	stub := filepath.Join(dir, "dostub")
