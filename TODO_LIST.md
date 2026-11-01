@@ -19,6 +19,16 @@ execution plan is historical:
 
 ## Short-term work queue (bounded, actionable)
 
+- [ ] **CHANGELOG entry for the instantiated-call fix (`50df0ad` + follow-ups)**
+      — shipped 2026-10-31 with code and tests but no changelog entry, violating
+      this file's own "completed items live in CHANGELOG.md" rule (harvested from
+      the 2026-11-01 storbi closeout report §d-5).
+- [ ] **Push + release decision**: ~8 local commits (instantiated-call detection,
+      GOWORK test isolation, dprint fix, debt records) sit unpushed on master;
+      consumers get nothing until push + tag. Owner call — harvested 2026-11-01.
+- [ ] **Instantiated cross-package fixture** (foreignprov-inst variant): the
+      five-shape repro proved instantiated cross-package providers land as
+      HW-unresolved, but no testdata pins that shape (harvested 2026-11-01).
 - [ ] **Sandbox lint debt: gocognit 30 on `TestBuildDriverOptions`**
       (`cmd/samber-linter/options_test.go:15`, limit 25; file untouched since
       2026-10-02). Pre-existing — surfaced by the BuildFlow nix-build gate on
