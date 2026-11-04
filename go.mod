@@ -6,7 +6,7 @@ require (
 	charm.land/fang/v2 v2.0.1
 	github.com/golangci/plugin-module-register v0.1.2
 	github.com/larsartmann/cmdguard/v4 v4.2.0
-	github.com/larsartmann/go-atomic-write v0.6.1
+	github.com/larsartmann/go-atomic-write v0.6.2
 	github.com/larsartmann/go-finding v1.15.0
 	github.com/larsartmann/go-linter-sdk v0.4.0
 	github.com/larsartmann/go-output v0.38.7
