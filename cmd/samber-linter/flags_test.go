@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	v4 "github.com/larsartmann/cmdguard/v4/pkg/cmdguard/v4"
+	v5 "github.com/larsartmann/cmdguard/v5/pkg/cmdguard/v5"
 	"github.com/larsartmann/samber-linter/internal/driver"
 )
 
@@ -88,8 +88,8 @@ func TestBaselineFallsBackToDefault(t *testing.T) {
 func TestOutputHelpListsSupportedFormats(t *testing.T) {
 	t.Parallel()
 
-	cli, err := v4.NewCLI[linterFlags]("samber-linter", "test", linterFlags{},
-		v4.WithHelpTransform(dynamicOutputHelp))
+	cli, err := v5.NewCLI[linterFlags]("samber-linter", "test", linterFlags{},
+		v5.WithHelpTransform(dynamicOutputHelp))
 	if err != nil {
 		t.Fatalf("building CLI: %v", err)
 	}

@@ -19,7 +19,7 @@ import (
 	"strings"
 
 	"charm.land/fang/v2"
-	v4 "github.com/larsartmann/cmdguard/v4/pkg/cmdguard/v4"
+	v5 "github.com/larsartmann/cmdguard/v5/pkg/cmdguard/v5"
 	"github.com/larsartmann/go-finding"
 	"github.com/larsartmann/samber-linter/internal/driver"
 	"github.com/spf13/cobra"
@@ -66,7 +66,7 @@ func main() {
 	}
 
 	if err := cli.ExecuteWithArgs(context.Background(), normalizeHelpFlag(os.Args[1:])); err != nil {
-		os.Exit(v4.ExitCode(err))
+		os.Exit(v5.ExitCode(err))
 	}
 }
 
@@ -94,18 +94,18 @@ func normalizeHelpFlag(args []string) []string {
 // root arg policy would reject positional package patterns as "unknown
 // command"), and the RunE bridge into runLinter. Extracted from main so the
 // contract tests execute the real wiring, not a parallel copy of it.
-func newCLI() (*v4.CLI[linterFlags], error) {
-	cli, err := v4.NewCLI[linterFlags](
+func newCLI() (*v5.CLI[linterFlags], error) {
+	cli, err := v5.NewCLI[linterFlags](
 		"samber-linter",
 		"detects health-washing in samber/do v2 containers",
 		linterFlags{},
-		v4.WithCLILong(longDescription),
-		v4.WithHelpTransform(dynamicOutputHelp),
+		v5.WithCLILong(longDescription),
+		v5.WithHelpTransform(dynamicOutputHelp),
 		// fang would inject its own --version flag backed by the module
 		// version; the tool's --version prints the build-resolved version
 		// string exactly (consumers gate on it), so fang's must stay off.
-		v4.WithFangOptions(fang.WithoutVersion()),
-		v4.WithFangErrorHandler(reportOnlyUnreportedErrors),
+		v5.WithFangOptions(fang.WithoutVersion()),
+		v5.WithFangErrorHandler(reportOnlyUnreportedErrors),
 	)
 	if err != nil {
 		return nil, err
@@ -191,7 +191,7 @@ func buildDriverOptions(cfg *linterFlags, args []string, toolVersion string) (dr
 // newSilentExitError wraps a driver exit code whose user-facing report the
 // driver has already printed.
 func newSilentExitError(code int) error {
-	exitErr, err := v4.NewExitError(code, nil)
+	exitErr, err := v5.NewExitError(code, nil)
 	if err != nil {
 		return fmt.Errorf("mapping driver exit code %d: %w", code, err)
 	}
@@ -202,7 +202,7 @@ func newSilentExitError(code int) error {
 // newReportedExitError wraps an error fang should still print, pinned to a
 // specific exit code.
 func newReportedExitError(code int, cause error) error {
-	exitErr, err := v4.NewExitError(code, cause)
+	exitErr, err := v5.NewExitError(code, cause)
 	if err != nil {
 		return fmt.Errorf("mapping exit code %d: %w", code, err)
 	}
@@ -214,7 +214,7 @@ func newReportedExitError(code int, cause error) error {
 // errors with no cause (the driver already printed everything), styled output
 // for every other error (flag misuse, invalid flag values).
 func reportOnlyUnreportedErrors(out io.Writer, styles fang.Styles, err error) {
-	var exitErr *v4.ExitError
+	var exitErr *v5.ExitError
 	if errors.As(err, &exitErr) && exitErr.Err == nil {
 		return
 	}

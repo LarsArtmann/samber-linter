@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	v4 "github.com/larsartmann/cmdguard/v4/pkg/cmdguard/v4"
+	v5 "github.com/larsartmann/cmdguard/v5/pkg/cmdguard/v5"
 )
 
 // The exit-code contract in one table: this harness executes the REAL CLI
@@ -262,7 +262,7 @@ func TestExitCodeContract(t *testing.T) {
 
 			captured.release()
 
-			if code := v4.ExitCode(execErr); code != testCase.wantCode {
+			if code := v5.ExitCode(execErr); code != testCase.wantCode {
 				t.Errorf("exit code = %d, want %d (stdout:\n%s\nstderr:\n%s)",
 					code, testCase.wantCode, captured.outBuf.String(), captured.errBuf.String())
 			}
