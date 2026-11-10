@@ -176,7 +176,7 @@ func writeBrokenModule(t *testing.T) string {
 	return dir
 }
 
-func TestExitCodeContract(t *testing.T) { //nolint:paralleltest // fd capture and t.Chdir require sequential execution
+func TestExitCodeContract(t *testing.T) {
 	cleanModule := func(t *testing.T) string {
 		t.Helper()
 
@@ -242,7 +242,6 @@ func TestExitCodeContract(t *testing.T) { //nolint:paralleltest // fd capture an
 		},
 	}
 
-	//nolint:paralleltest // fd capture and t.Chdir require sequential execution
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Chdir(testCase.module(t))
