@@ -5,7 +5,7 @@ go 1.27
 require (
 	charm.land/fang/v2 v2.0.1
 	github.com/golangci/plugin-module-register v0.1.2
-	github.com/larsartmann/cmdguard/v5 v5.0.0
+	github.com/larsartmann/cmdguard/v5 v5.1.0
 	github.com/larsartmann/go-atomic-write v0.6.2
 	github.com/larsartmann/go-finding v1.15.1
 	github.com/larsartmann/go-linter-sdk v0.4.1
@@ -54,7 +54,7 @@ require (
 	github.com/larsartmann/go-output/plantuml v0.38.7 // indirect
 	github.com/larsartmann/go-output/serialization v0.38.7 // indirect
 	github.com/larsartmann/go-output/tree v0.38.7 // indirect
-	github.com/larsartmann/samber-do-auditlog v0.12.2 // indirect
+	github.com/larsartmann/samber-do-auditlog v0.12.3 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.1 // indirect
 	github.com/mattn/go-runewidth v0.0.31 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
