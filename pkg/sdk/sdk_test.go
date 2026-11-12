@@ -24,13 +24,21 @@ func writeDoStub(t *testing.T, dir string) {
 	must(t, os.WriteFile(filepath.Join(stub, "do.go"), src, 0o644))
 }
 
-// e2eModule writes a self-contained module in dir: one HW-1 site (Shutdowner
-// without Healthchecker), one honest service, one clean handler, and a local
-// samber/do v2 stub (via replace) so loading works offline.
+// e2eModule writes a self-contained module in a fresh temp dir: one HW-1
+// site (Shutdowner without Healthchecker), one honest service, one clean
+// handler, and a local samber/do v2 stub (via replace) so loading works
+// offline.
 func e2eModule(t *testing.T) string {
 	t.Helper()
 
-	dir := t.TempDir()
+	return e2eModuleUnder(t, t.TempDir())
+}
+
+// e2eModuleUnder writes the same fixture into the caller's root so tests can
+// surround it with hostile ancestors (a foreign go.work above app).
+func e2eModuleUnder(t *testing.T, dir string) string {
+	t.Helper()
+
 	writeDoStub(t, dir)
 
 	app := filepath.Join(dir, "app")
@@ -239,4 +247,42 @@ func rules(findings []finding.Finding) []finding.RuleName {
 	}
 
 	return out
+}
+
+// TestAnalyzeEnv_GOWORKOffEscapesWorkspaceShadow reproduces the in-process
+// orchestrator trap (CV 2026-11-12): a module kept out of the host repo's
+// go.work fails to load under the inherited workspace, and AnalyzeEnv with
+// GOWORK=off recovers it — the discrimination proof that the env actually
+// reaches the loader.
+func TestAnalyzeEnv_GOWORKOffEscapesWorkspaceShadow(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	app := e2eModuleUnder(t, root)
+
+	other := filepath.Join(root, "other")
+	must(t, os.MkdirAll(other, 0o755))
+	must(t, os.WriteFile(filepath.Join(other, "go.mod"), []byte("module example.com/other\n\ngo 1.26\n"), 0o644))
+	must(t, os.WriteFile(filepath.Join(root, "go.work"), []byte("go 1.26\n\nuse ./other\n"), 0o644))
+
+	if _, err := sdk.Analyze(context.Background(), app); err == nil {
+		t.Fatal("Analyze succeeded under a foreign go.work; want the workspace-shadow load error")
+	}
+
+	findings, err := sdk.AnalyzeEnv(context.Background(), app, []string{"GOWORK=off"})
+	if err != nil {
+		t.Fatalf("AnalyzeEnv with GOWORK=off returned error: %v", err)
+	}
+
+	hw1 := 0
+
+	for _, f := range findings {
+		if f.Rule == "HW-1" {
+			hw1++
+		}
+	}
+
+	if hw1 != 1 {
+		t.Fatalf("HW-1 findings = %d, want 1 under GOWORK=off; all rules: %v", hw1, rules(findings))
+	}
 }

@@ -26,3 +26,17 @@ func Analyze(ctx context.Context, dir string) ([]finding.Finding, error) {
 
 	return findings, nil
 }
+
+// AnalyzeEnv is Analyze with extra environment entries for the package
+// loading subprocess (last occurrence wins over inherited env — the driver
+// sanitizes hostile inherited values). In-process orchestrators that audit
+// modules OUTSIDE their own go workspace pass ["GOWORK=off"] here instead of
+// mutating the process environment (which would race concurrent loaders).
+func AnalyzeEnv(ctx context.Context, dir string, env []string) ([]finding.Finding, error) {
+	findings, err := driver.Analyze(ctx, driver.Options{Dir: dir, Env: env})
+	if err != nil {
+		return nil, fmt.Errorf("analyze %s: %w", dir, err)
+	}
+
+	return findings, nil
+}
