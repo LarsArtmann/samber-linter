@@ -3,6 +3,17 @@
 All notable changes to this project are documented here. Format based on
 Keep a Changelog; versioning: SemVer.
 
+## [0.4.1] - 2026-11-12
+
+### Added
+
+- **`sdk.AnalyzeEnv` — per-call env for in-process audits of non-workspace
+  modules.** In-process orchestrators (BuildFlow's DAG provider) that audit a
+  module OUTSIDE their host repo's go workspace now pass `["GOWORK=off"]` per
+  call instead of mutating the process environment (which would race
+  concurrent loaders). Discrimination test reproduces the workspace-shadow
+  load failure and proves the recovery.
+
 ## [Unreleased]
 
 ### Added
