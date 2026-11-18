@@ -243,7 +243,7 @@ func TestExitCodeContract(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range cases {
+	for _, testCase := range cases { //nolint:paralleltest // subtests t.Chdir; parallel subtests would race the process-global cwd
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Chdir(testCase.module(t))
 
