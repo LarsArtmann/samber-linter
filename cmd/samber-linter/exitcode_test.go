@@ -116,7 +116,9 @@ func writeConsumerModule(t *testing.T) string {
 	must(t, os.MkdirAll(stub, 0o755))
 	must(t, os.WriteFile(filepath.Join(stub, "go.mod"),
 		[]byte("module github.com/samber/do/v2\n\ngo 1.26\n"), 0o644))
-	src, err := os.ReadFile(filepath.Join("..", "..", "testdata", "src", "github.com", "samber", "do", "v2", "do.go"))
+	src, err := os.ReadFile(
+		filepath.Join("..", "..", "testdata", "src", "github.com", "samber", "do", "v2", "do.go"),
+	)
 	must(t, err)
 	must(t, os.WriteFile(filepath.Join(stub, "do.go"), src, 0o644))
 
@@ -176,7 +178,9 @@ func writeBrokenModule(t *testing.T) string {
 	return dir
 }
 
-func TestExitCodeContract(t *testing.T) { //nolint:paralleltest // subtests t.Chdir into per-case temp modules; parallel subtests would race the process-global cwd
+func TestExitCodeContract(
+	t *testing.T,
+) { //nolint:paralleltest // subtests t.Chdir; parallel would race cwd
 	cleanModule := func(t *testing.T) string {
 		t.Helper()
 
@@ -192,8 +196,20 @@ func TestExitCodeContract(t *testing.T) { //nolint:paralleltest // subtests t.Ch
 	}{
 		// Help: every spelling, including after positional patterns (the
 		// webphone regression), must print help and exit 0.
-		{name: "help long", args: []string{"--help"}, module: cleanModule, wantCode: 0, wantMsg: "samber-linter"},
-		{name: "help short", args: []string{"-h"}, module: cleanModule, wantCode: 0, wantMsg: "samber-linter"},
+		{
+			name:     "help long",
+			args:     []string{"--help"},
+			module:   cleanModule,
+			wantCode: 0,
+			wantMsg:  "samber-linter",
+		},
+		{
+			name:     "help short",
+			args:     []string{"-h"},
+			module:   cleanModule,
+			wantCode: 0,
+			wantMsg:  "samber-linter",
+		},
 		{
 			name:     "help single-dash-long",
 			args:     []string{"-help"},
@@ -211,9 +227,26 @@ func TestExitCodeContract(t *testing.T) { //nolint:paralleltest // subtests t.Ch
 		// Cobra auto-adds help/completion subcommands; they must stay
 		// invocable (and never reach the linter) — ArbitraryArgs keeps them
 		// from swallowing positional package patterns.
-		{name: "help subcommand", args: []string{"help"}, module: cleanModule, wantCode: 0, wantMsg: "samber-linter"},
-		{name: "completion bash", args: []string{"completion", "bash"}, module: cleanModule, wantCode: 0},
-		{name: "version", args: []string{"--version"}, module: cleanModule, wantCode: 0, wantMsg: "test-version"},
+		{
+			name:     "help subcommand",
+			args:     []string{"help"},
+			module:   cleanModule,
+			wantCode: 0,
+			wantMsg:  "samber-linter",
+		},
+		{
+			name:     "completion bash",
+			args:     []string{"completion", "bash"},
+			module:   cleanModule,
+			wantCode: 0,
+		},
+		{
+			name:     "version",
+			args:     []string{"--version"},
+			module:   cleanModule,
+			wantCode: 0,
+			wantMsg:  "test-version",
+		},
 		// Flag misuse: cobra convention exits 1 (stdlib flag exited 2 — the
 		// one documented delta of the cmdguard adoption).
 		{name: "unknown flag exits 1", args: []string{"--bogus"}, module: cleanModule, wantCode: 1},
@@ -226,14 +259,25 @@ func TestExitCodeContract(t *testing.T) { //nolint:paralleltest // subtests t.Ch
 		},
 		// The driver tri-state, through the real wiring.
 		{name: "clean scan exits 0", args: []string{"./..."}, module: cleanModule, wantCode: 0},
-		{name: "findings exit 1", args: []string{"./..."}, module: writeConsumerModule, wantCode: 1, wantMsg: "HW-1"},
+		{
+			name:     "findings exit 1",
+			args:     []string{"./..."},
+			module:   writeConsumerModule,
+			wantCode: 1,
+			wantMsg:  "HW-1",
+		},
 		{
 			name:     "check forces 0 on findings",
 			args:     []string{"--check", "./..."},
 			module:   writeConsumerModule,
 			wantCode: 0,
 		},
-		{name: "load failure exits 2", args: []string{"./..."}, module: writeBrokenModule, wantCode: 2},
+		{
+			name:     "load failure exits 2",
+			args:     []string{"./..."},
+			module:   writeBrokenModule,
+			wantCode: 2,
+		},
 		{
 			name:     "check forces 0 on load failure",
 			args:     []string{"--check", "./..."},
@@ -295,7 +339,11 @@ func TestNormalizeHelpFlag(t *testing.T) {
 		{name: "short help untouched", in: []string{"-h"}, want: []string{"-h"}},
 		{name: "help subcommand untouched", in: []string{"help"}, want: []string{"help"}},
 		{name: "valued lookalike untouched", in: []string{"-help=3"}, want: []string{"-help=3"}},
-		{name: "unknown flag untouched", in: []string{"--bogus", "./..."}, want: []string{"--bogus", "./..."}},
+		{
+			name: "unknown flag untouched",
+			in:   []string{"--bogus", "./..."},
+			want: []string{"--bogus", "./..."},
+		},
 	}
 
 	for _, testCase := range cases {
