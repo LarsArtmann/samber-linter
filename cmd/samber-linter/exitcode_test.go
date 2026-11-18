@@ -177,6 +177,7 @@ func writeBrokenModule(t *testing.T) string {
 }
 
 func TestExitCodeContract(t *testing.T) {
+	//nolint:paralleltest // subtests t.Chdir into per-case temp modules; parallel subtests would race the process-global cwd
 	cleanModule := func(t *testing.T) string {
 		t.Helper()
 
