@@ -25,6 +25,10 @@
       imports = [ inputs.go-nix-helpers.flakeModules.go-standard ];
 
       go-standard = {
+
+        enableCompletions = true;
+
+        completionStyle = "subcommand";
         pname = "samber-linter";
         # Refreshed 2026-10-02 (got-hash from the clean-HEAD FOD): the
         # cmdguard/cobra/fang CLI migration added module deps, invalidating
