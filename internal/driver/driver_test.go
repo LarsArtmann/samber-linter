@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/larsartmann/go-finding"
+	linter "github.com/larsartmann/go-linter-sdk"
 )
 
 // writeConsumerModule scaffolds a self-contained consumer module under dir:
@@ -698,6 +699,54 @@ func TestStrictUnresolvedSummary(t *testing.T) {
 	var parsed map[string]any
 	if err := json.Unmarshal([]byte(strings.TrimSpace(lastJSONLine(out.String()))), &parsed); err != nil {
 		t.Fatalf("json output invalid:\n%s", out.String())
+	}
+}
+
+// TestRunReportCarriesFileScanEvidence: fleet coverage contract — reports
+// must say how many files were actually examined so a dashboard can tell
+// "clean tree" from "scanned nothing". The healthwash analyzer cannot count
+// its own go/analysis inputs; the driver counts what it loaded and swept,
+// and the evidence rides into summary.filesScanned through the SDK's
+// linter.CoverageReporter contract.
+func TestRunReportCarriesFileScanEvidence(t *testing.T) {
+	t.Parallel()
+
+	var _ linter.CoverageReporter = scanCoverage{}
+
+	app := e2eModule(t)
+
+	var out, errOut bytes.Buffer
+
+	code := Run(Options{
+		Patterns: []string{"./..."}, Dir: app, Version: "test",
+		Env:           []string{"GOFLAGS=-mod=mod"},
+		JSON:          true,
+		Stdout:        &out, Stderr: &errOut,
+		MinConfidence: finding.ConfidenceHigh,
+	})
+	if code != 1 {
+		t.Fatalf("exit = %d, want 1; stderr: %s", code, errOut.String())
+	}
+
+	var parsed struct {
+		Summary struct {
+			FilesScanned   int      `json:"filesScanned"`
+			SkippedModules []string `json:"skippedModules"`
+		} `json:"summary"`
+	}
+
+	if err := json.Unmarshal([]byte(strings.TrimSpace(lastJSONLine(out.String()))), &parsed); err != nil {
+		t.Fatalf("json output invalid:\n%s", out.String())
+	}
+
+	if parsed.Summary.FilesScanned != 1 {
+		t.Errorf("summary.filesScanned = %d, want 1 (the module's single main.go; zero would read as \"scanned nothing\")",
+			parsed.Summary.FilesScanned)
+	}
+
+	if parsed.Summary.SkippedModules != nil {
+		t.Errorf("summary.skippedModules = %v, want nil (the driver never invents module skips)",
+			parsed.Summary.SkippedModules)
 	}
 }
 

@@ -149,6 +149,17 @@ func Run(opts Options) int {
 	report := finding.NewReportFromFindings(
 		finding.ToolInfo{Name: ToolName, Version: opts.Version}, findings)
 
+	// File-scan evidence: the healthwash analyzer is a go/analysis analyzer —
+	// the framework hands it pre-parsed files, so the rule itself cannot know
+	// what it examined. The driver owns loading and sweeps every parsed file
+	// through the analyzer, which makes it the honest counting point; routing
+	// the count through the SDK's CoverageReporter contract keeps --json from
+	// rendering the "scanned nothing" zero that fleet dashboards cannot tell
+	// apart from a genuinely empty tree.
+	scan := scanCoverage{scanned: analyzedFileCount(pkgs)}
+	files, skipped := scan.Coverage(context.Background(), "")
+	report.AddDetectResult(finding.DetectResult{FilesScanned: files, SkippedModules: skipped})
+
 	if !emitOutputs(out, errw, report, findings, opts) {
 		return 1
 	}
@@ -435,6 +446,36 @@ func runAnalyzer(
 	_, _ = analyzer.Run(pass)
 
 	return diags, records
+}
+
+// analyzedFileCount sums the parsed Go files the sweeps handed to the
+// analyzer across the loaded packages: exactly the pass.Files slices
+// runAnalyzer builds, clean files included. Zero is legal evidence (an empty
+// target tree), never a missing measurement.
+func analyzedFileCount(pkgs []*packages.Package) int {
+	total := 0
+
+	for _, pkg := range pkgs {
+		total += len(pkg.Syntax)
+	}
+
+	return total
+}
+
+// scanCoverage carries one run's file-scan evidence and reports it through
+// the SDK's optional linter.CoverageReporter contract. Coverage is evidence,
+// not a filter: implementing it changes nothing about which findings a run
+// emits. Nested go.mod roots are not enumerated here (package patterns
+// already scope the load, and opts.Patterns is caller-owned), so
+// SkippedModules stays nil — absent evidence is never invented.
+type scanCoverage struct {
+	scanned int
+}
+
+// Coverage implements linter.CoverageReporter: filesScanned counts every Go
+// file the analyzer examined in the most recent run.
+func (c scanCoverage) Coverage(_ context.Context, _ string) (int, []string) {
+	return c.scanned, nil
 }
 
 func toFinding(
