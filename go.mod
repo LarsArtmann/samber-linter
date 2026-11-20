@@ -8,7 +8,7 @@ require (
 	github.com/larsartmann/cmdguard/v5 v5.1.0
 	github.com/larsartmann/go-atomic-write v0.6.2
 	github.com/larsartmann/go-finding v1.15.1
-	github.com/larsartmann/go-linter-sdk v0.6.0
+	github.com/larsartmann/go-linter-sdk v0.6.1
 	github.com/larsartmann/go-output v0.38.7
 	github.com/larsartmann/go-output/delimited v0.38.7
 	github.com/larsartmann/go-output/markdown v0.38.7
