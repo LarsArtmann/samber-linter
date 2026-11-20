@@ -16,7 +16,7 @@ require (
 	github.com/larsartmann/go-output/table v0.38.7
 	github.com/samber/do/v2 v2.1.0
 	github.com/spf13/cobra v1.10.2
-	golang.org/x/mod v0.42.0
+	golang.org/x/mod v0.43.0
 	golang.org/x/tools v0.52.0
 )
 
