@@ -178,9 +178,7 @@ func writeBrokenModule(t *testing.T) string {
 	return dir
 }
 
-func TestExitCodeContract(
-	t *testing.T,
-) { //nolint:paralleltest // subtests t.Chdir; parallel would race cwd
+func TestExitCodeContract(t *testing.T) { //nolint:paralleltest // subtests t.Chdir; cannot run parallel
 	cleanModule := func(t *testing.T) string {
 		t.Helper()
 
@@ -286,7 +284,7 @@ func TestExitCodeContract(
 		},
 	}
 
-	for _, testCase := range cases { //nolint:paralleltest // subtests t.Chdir; parallel subtests would race the process-global cwd
+	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Chdir(testCase.module(t))
 
