@@ -740,7 +740,7 @@ func TestRunReportCarriesFileScanEvidence(t *testing.T) {
 	}
 
 	if parsed.Summary.FilesScanned != 1 {
-		t.Errorf("summary.filesScanned = %d, want 1 (the module's single main.go; zero would read as \"scanned nothing\")",
+		t.Errorf("summary.filesScanned = %d, want 1 (zero would read as \"scanned nothing\")",
 			parsed.Summary.FilesScanned)
 	}
 

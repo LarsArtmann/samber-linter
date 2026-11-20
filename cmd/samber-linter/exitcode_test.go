@@ -178,7 +178,10 @@ func writeBrokenModule(t *testing.T) string {
 	return dir
 }
 
-func TestExitCodeContract(t *testing.T) { //nolint:paralleltest // subtests t.Chdir; cannot run parallel
+// Serial by necessity: subtests t.Chdir (t.Chdir forbids t.Parallel — the
+// cwd is process-global), so neither the parent nor any subtest may run in
+// parallel.
+func TestExitCodeContract(t *testing.T) {
 	cleanModule := func(t *testing.T) string {
 		t.Helper()
 

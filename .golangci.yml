@@ -209,6 +209,7 @@ linters:
         - .WithMessage(
         - .WithMessagef(
         - .WithStack(
+        - v5.NewExitError(
   exclusions:
     generated: lax
     rules:
