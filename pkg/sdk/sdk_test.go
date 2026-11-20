@@ -251,9 +251,16 @@ func rules(findings []finding.Finding) []finding.RuleName {
 
 // TestAnalyzeEnv_GOWORKOffEscapesWorkspaceShadow reproduces the in-process
 // orchestrator trap (CV 2026-11-12): a module kept out of the host repo's
-// go.work fails to load under the inherited workspace, and AnalyzeEnv with
+// go.work fails to load under that workspace, and AnalyzeEnv with
 // GOWORK=off recovers it — the discrimination proof that the env actually
 // reaches the loader.
+//
+// The foreign workspace is PINNED explicitly via AnalyzeEnv rather than
+// relying on walk-up discovery: an ambient GOWORK=off (common in
+// sibling-checkout sessions that run `GOWORK=off go test`) inherits into
+// the loader child and lets the shadow half spuriously succeed (the 2026-
+// 11-19 issue #5 flake). Explicit entries are appended after the inherited
+// env and the go command's last-wins rule makes them authoritative.
 func TestAnalyzeEnv_GOWORKOffEscapesWorkspaceShadow(t *testing.T) {
 	t.Parallel()
 
@@ -265,7 +272,9 @@ func TestAnalyzeEnv_GOWORKOffEscapesWorkspaceShadow(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(other, "go.mod"), []byte("module example.com/other\n\ngo 1.26\n"), 0o644))
 	must(t, os.WriteFile(filepath.Join(root, "go.work"), []byte("go 1.26\n\nuse ./other\n"), 0o644))
 
-	if _, err := sdk.Analyze(context.Background(), app); err == nil {
+	shadow := []string{"GOWORK=" + filepath.Join(root, "go.work")}
+
+	if _, err := sdk.AnalyzeEnv(context.Background(), app, shadow); err == nil {
 		t.Fatal("Analyze succeeded under a foreign go.work; want the workspace-shadow load error")
 	}
 

@@ -719,9 +719,9 @@ func TestRunReportCarriesFileScanEvidence(t *testing.T) {
 
 	code := Run(Options{
 		Patterns: []string{"./..."}, Dir: app, Version: "test",
-		Env:           []string{"GOFLAGS=-mod=mod"},
-		JSON:          true,
-		Stdout:        &out, Stderr: &errOut,
+		Env:    []string{"GOFLAGS=-mod=mod"},
+		JSON:   true,
+		Stdout: &out, Stderr: &errOut,
 		MinConfidence: finding.ConfidenceHigh,
 	})
 	if code != 1 {
