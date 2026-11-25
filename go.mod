@@ -16,8 +16,8 @@ require (
 	github.com/larsartmann/go-output/table v0.38.7
 	github.com/samber/do/v2 v2.1.0
 	github.com/spf13/cobra v1.10.2
-	golang.org/x/mod v0.42.0
-	golang.org/x/tools v0.52.0
+	golang.org/x/mod v0.43.0
+	golang.org/x/tools v0.53.0
 )
 
 require (
@@ -73,8 +73,8 @@ require (
 	github.com/xo/terminfo v1.3.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.6 // indirect
-	golang.org/x/sync v0.24.0 // indirect
-	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/sync v0.25.0 // indirect
+	golang.org/x/sys v0.50.0 // indirect
 	golang.org/x/term v0.47.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
 )
